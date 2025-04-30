@@ -1,4 +1,5 @@
 from flask import Flask, render_template
+from werkzeug.security import generate_password_hash, check_password_hash
 from flask_restx import Api, Resource, fields, reqparse
 import sqlite3
 import re
