@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🐇 Морковный гид по Swagger API 🥕</title>
+    <style>
+        body {
+            font-family: 'Comic Sans MS', cursive;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #FFF3E0 url('https://i.imgur.com/6Q7WzXq.png') repeat-x bottom;
+        }
+        .carrot-box {
+            background: #FFF8E1;
+            border: 3px dashed #FFB74D;
+            border-radius: 20px;
+            padding: 25px;
+            margin: 20px 0;
+            box-shadow: 0 8px 15px rgba(255, 152, 0, 0.1);
+        }
+        h1, h2 {
+            color: #E64A19;
+            text-shadow: 2px 2px #FFE0B2;
+        }
+        .api-method {
+            padding: 15px;
+            margin: 15px 0;
+            background: #FFF3E0;
+            border-left: 5px solid #FF9800;
+        }
+        .method-get { border-color: #4CAF50; }
+        .method-post { border-color: #FF9800; }
+        .method-put { border-color: #2196F3; }
+        .method-delete { border-color: #F44336; }
+        .emoji { font-size: 1.5em; }
+        a {
+            color: #F57C00;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline wavy #FF9800;
+        }
+        .warning {
+            background: #FFE0B2;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="carrot-box">
+        <h1>🥕 Путеводитель по Морковному API 🐇</h1>
+        
+        <div class="carrot-box">
+            <h2>🔍 Как найти Swagger?</h2>
+            <p>Перейдите по адресу: 
+                <a href="/swagger/" target="_blank">/swagger/</a>
+                <span class="emoji">👉🕳️</span>
+            </p>
+            <img src="https://i.imgur.com/7G7WzBq.png" alt="Зайчик с лупой" style="width: 200px;">
+        </div>
+
+        <div class="carrot-box">
+            <h2>📚 Основные разделы API</h2>
+            
+            <div class="api-method method-get">
+                <h3>GET /accounts 🥬</h3>
+                <p>Получить список всех зайцев-пользователей</p>
+                <p>Пример ответа:</p>
+                <pre>[
+  {
+    "id": 1,
+    "username": "BugsBunny",
+    "email": "bugs@warner.com",
+    "about_me": "Люблю морковку!"
+  }
+]</pre>
+            </div>
+
+            <div class="api-method method-post">
+                <h3>POST /accounts 🥕</h3>
+                <p>Создать нового зайца</p>
+                <p>Обязательные поля:</p>
+                <ul>
+                    <li>username (3-20 символов)</li>
+                    <li>email (с @ и доменом)</li>
+                    <li>password (от 6 символов)</li>
+                </ul>
+            </div>
+
+            <div class="api-method method-put">
+                <h3>PUT /accounts/{id}/about 🖋️</h3>
+                <p>Обновить информацию "О себе"</p>
+                <p>Пример тела запроса:</p>
+                <pre>{
+  "about_me": "Новое хобби: прыжки через API"
+}</pre>
+            </div>
+        </div>
+
+        <div class="carrot-box warning">
+            <h2>⚠️ Важные правила</h2>
+            <ul>
+                <li>Не пытайтесь съесть API-ключи! 🚫🥕</li>
+                <li>Пароли хранятся в зашифрованном виде</li>
+                <li>Максимальный размер морковки (тела запроса) - 1MB</li>
+            </ul>
+        </div>
+
+        <div class="carrot-box">
+            <h2>🔧 SOAP-сервис для продвинутых зайцев</h2>
+            <p>WSDL-описание: <a href="/soap?wsdl">/soap?wsdl</a></p>
+            <p>Пример SOAP-запроса:</p>
+            <pre>&lt;soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"&gt;
+   &lt;soap:Body&gt;
+      &lt;get_user_by_id xmlns="soap.users"&gt;
+         &lt;user_id&gt;1&lt;/user_id&gt;
+      &lt;/get_user_by_id&gt;
+   &lt;/soap:Body&gt;
+&lt;/soap:Envelope&gt;</pre>
+        </div>
+
+        <div class="carrot-box">
+            <h2>🐰 Советы от опытных зайцев</h2>
+            <ul>
+                <li>Всегда проверяйте ответы API 🧐</li>
+                <li>Используйте параметры фильтрации</li>
+                <li>Не храните морковки (пароли) в открытом виде</li>
+                <li>При ошибках - проверяйте логи в норке</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>
