@@ -169,7 +169,7 @@ class AccountsResource(Resource):
 
     @app.route('/api-docs')
     def api_docs():
-        return render_template('swagger_guide.html')
+        return render_template('swagger_giude.html')
     
     
     @app.route('/view-db')
