@@ -1,63 +1,133 @@
- 
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Просмотр базы данных</title>
+    <title>Морковный архив данных 🥕</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .container { max-width: 1200px; margin: 0 auto; }
-        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
-        th { background-color: #f5f5f5; }
-        tr:hover { background-color: #f9f9f9; }
-        .tables-list { margin: 20px 0; padding: 15px; background: #f8f9fa; }
+        body { 
+            font-family: 'Courier New', monospace;
+            margin: 20px;
+            background: #FFF3E0;
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto;
+            padding: 20px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 0 15px rgba(255, 152, 0, 0.2);
+        }
+        h1 {
+            color: #FF9800;
+            text-align: center;
+            font-size: 2.5em;
+            text-shadow: 2px 2px #FFE0B2;
+        }
+        table {
+            width: 100%; 
+            border-collapse: collapse; 
+            margin: 20px 0;
+            background: #FFF8E1;
+            border: 3px dashed #FFB74D;
+        }
+        th, td { 
+            padding: 12px; 
+            text-align: left; 
+            border-bottom: 2px dotted #FFCC80; 
+        }
+        th { 
+            background-color: #FFE0B2; 
+            font-family: 'Comic Sans MS', cursive;
+            color: #BF360C;
+        }
+        tr:hover { 
+            background-color: #FFF3E0; 
+            transform: scale(1.02);
+            transition: 0.3s;
+        }
+        .tables-list {
+            margin: 20px 0;
+            padding: 15px;
+            background: #FFF3E0;
+            border-radius: 15px;
+            border: 2px solid #FFCC80;
+        }
+        .profile-link {
+            color: #E64A19;
+            text-decoration: none;
+        }
+        .profile-link:hover {
+            text-decoration: underline wavy #FF9800;
+        }
+        a[href="/"] {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #FF9800;
+            color: white!important;
+            border-radius: 25px;
+            text-decoration: none;
+            margin-top: 20px;
+            transition: 0.3s;
+        }
+        a[href="/"]:hover {
+            transform: rotate(-3deg) scale(1.1);
+            background: #F57C00;
+        }
+        .bunny-emoji {
+            font-size: 1.5em;
+            vertical-align: middle;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Содержимое базы данных</h1>
+        <h1>🐇 Секретная морковная база данных 🥕</h1>
         
         <div class="tables-list">
-            <h3>Таблицы в базе данных:</h3>
+            <h3>📚 Заячьи хранилища:</h3>
             <ul>
                 {% for table in tables %}
-                    <li>{{ table }}</li>
+                    <li>🗄️ {{ table }} {% if table == 'accounts' %}(Участники клуба){% endif %}</li>
                 {% endfor %}
             </ul>
         </div>
 
-        <h2>Таблица: accounts</h2>
+        <h2>🥕 Таблица "Морковные аккаунты" 🐰</h2>
         <table>
             <thead>
                 <tr>
-                    <th>ID</th>
-                    <th>Имя пользователя</th>
-                    <th>Email</th>
-                    <th>О себе</th>
+                    <th>🎯 Номер ушка</th>
+                    <th>📛 Кличка</th>
+                    <th>✉️ Морковный адрес</th>
+                    <th>🎩 Любимые занятия</th>
                 </tr>
             </thead>
             <tbody>
                 {% for account in accounts %}
                 <tr>
-                    <<td>
+                    <td>
                         <a href="{{ url_for('user_profile', user_id=account.id) }}" class="profile-link">
-                            {{ account.username }}
+                            🕵️♂️ {{ account.username }}
                         </a>
                     </td>
-                    <td>{{ account.username }}</td>
-                    <td>{{ account.email }}</td>
-                    <td>{{ account.about_me }}</td>
+                    <td>{{ account.username }} {% if loop.first %}👑{% endif %}</td>
+                    <td>{{ account.email|replace('@', ' 🐇 ')|safe }}</td>
+                    <td>{{ account.about_me or "Обожает грызть морковку и копать норки" }}</td>
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="4">Нет данных</td>
+                    <td colspan="4">🕳️ Все зайцы на перерыве... попробуйте позже!</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
         
-        <a href="/">Вернуться на главную</a>
+        <a href="/">🏠 Вернуться в норку</a>
+        
+        <div style="text-align: center; margin-top: 30px;">
+            <img src="https://i.imgur.com/5Rmc8Yp.png" alt="Зайчик-администратор" style="width: 150px;">
+            <p>⚠️ Внимание! Данные защищены морковным шифрованием 🥕🔒</p>
+        </div>
     </div>
 </body>
 </html>
