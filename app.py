@@ -329,7 +329,18 @@ class AboutMeResource(Resource):
             return {'message': 'Информация удалена'}
         except psycopg2.Error as e:
             api.abort(500, 'Ошибка базы данных')
-
+@app.route('/test-db')
+def test_db():
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute('SELECT version()')
+        version = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        return f"PostgreSQL version: {version[0]}"
+    except Exception as e:
+        return f"Ошибка: {str(e)}", 500
 if __name__ == '__main__':
     init_db()
     app.run()
