@@ -48,11 +48,18 @@ parser = reqparse.RequestParser()
 parser.add_argument('username', type=str, required=True, help='Имя пользователя обязательно')
 parser.add_argument('email', type=str, required=True, help='Email обязателен')
 parser.add_argument('password', type=str, required=True, help='Пароль обязателен')
-
 def get_db():
-    conn = psycopg2.connect(os.getenv('DATABASE_URL'))
-    return conn
-
+    try:
+        return psycopg2.connect(
+            os.environ.get('postgresql://db_analitick_veb_user:qtUD994hJSlRfZ79F95fZMDajBKOuVuo@dpg-d09ln50gjchc7398l9bg-a.oregon-postgres.render.com/db_analitick_veb'),
+            sslmode='require'
+        )
+    except psycopg2.OperationalError as e:
+        print(f"Connection failed: {str(e)}")
+        raise
+    except Exception as e:
+        print(f"Unexpected error: {str(e)}")
+        raise
 def init_db():
     """Инициализация базы данных"""
     conn = get_db()
