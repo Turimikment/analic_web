@@ -13,15 +13,6 @@ app = Flask(__name__)
 def home():
     return render_template('index.html')
 
-# Конфигурация PostgreSQL
-app.config['POSTGRES_HOST'] = os.environ.get('PG_HOST', 'localhost')
-app.config['POSTGRES_PORT'] = os.environ.get('PG_PORT', '5432')
-app.config['POSTGRES_DB'] = os.environ.get('PG_DATABASE', 'render')
-app.config['POSTGRES_USER'] = os.environ.get('PG_USER', 'render')
-app.config['POSTGRES_PASSWORD'] = os.environ.get('PG_PASSWORD', 'your_password')
-app.config['SECRET_KEY'] = 'supersecretkey'
-app.config['ERROR_404_HELP'] = False
-
 api = Api(
     app,
     version='1.0',
@@ -59,15 +50,7 @@ parser.add_argument('email', type=str, required=True, help='Email обязате
 parser.add_argument('password', type=str, required=True, help='Пароль обязателен')
 
 def get_db():
-    """Возвращает соединение с PostgreSQL"""
-    conn = psycopg2.connect(
-        host=app.config['POSTGRES_HOST'],
-        port=app.config['POSTGRES_PORT'],
-        dbname=app.config['POSTGRES_DB'],
-        user=app.config['POSTGRES_USER'],
-        password=app.config['POSTGRES_PASSWORD'],
-        cursor_factory=DictCursor
-    )
+    conn = psycopg2.connect(os.getenv('DATABASE_URL'))
     return conn
 
 def init_db():
