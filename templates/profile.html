@@ -1,76 +1,129 @@
- 
 <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Профиль {{ user.username }}</title>
+    <title>Норка {{ user.username }} 🐇</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Comic Sans MS', cursive;
             max-width: 800px;
             margin: 0 auto;
             padding: 20px;
-            background-color: #f5f5f5;
+            background: #f0f8ff url('https://i.imgur.com/6Q7WzXq.png') repeat-x bottom;
+            min-height: 100vh;
         }
         .profile-card {
-            background: white;
+            background: #fff9e6;
             padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-radius: 20px;
+            box-shadow: 0 8px 15px rgba(255, 152, 0, 0.1);
+            border: 3px dashed #FFB74D;
+            position: relative;
+        }
+        .profile-card::before {
+            content: '🐰';
+            position: absolute;
+            top: -30px;
+            right: -30px;
+            font-size: 60px;
+            transform: rotate(15deg);
         }
         .profile-header {
             margin-bottom: 25px;
-            border-bottom: 2px solid #eee;
+            border-bottom: 3px solid #FF9800;
             padding-bottom: 15px;
         }
+        .profile-header h1 {
+            color: #E64A19;
+            margin: 0;
+            font-size: 2.2em;
+            text-shadow: 2px 2px #FFE0B2;
+        }
         .profile-field {
-            margin: 15px 0;
-            padding: 10px;
-            background: #f9f9f9;
-            border-radius: 5px;
+            margin: 20px 0;
+            padding: 15px;
+            background: #FFF3E0;
+            border-radius: 10px;
+            border: 2px dotted #FFCC80;
+            transition: transform 0.3s;
+        }
+        .profile-field:hover {
+            transform: translateX(10px);
         }
         .field-label {
-            color: #666;
+            color: #BF360C;
             font-size: 0.9em;
             margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .field-label::before {
+            content: '🥕';
+            font-size: 1.2em;
         }
         .field-value {
-            font-size: 1.1em;
-            color: #333;
+            font-size: 1.3em;
+            color: #5D4037;
+            padding-left: 25px;
         }
         .back-link {
             display: inline-block;
-            margin-top: 20px;
-            color: #007bff;
+            margin-top: 25px;
+            padding: 10px 25px;
+            background: #FF9800;
+            color: white !important;
+            border-radius: 15px;
             text-decoration: none;
+            font-weight: bold;
+            transition: all 0.3s;
+            border: 2px solid #F57C00;
+        }
+        .back-link:hover {
+            background: #F57C00;
+            transform: rotate(-3deg) scale(1.05);
+        }
+        .carrot-counter {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #FF5722;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-size: 1.2em;
         }
     </style>
 </head>
 <body>
     <div class="profile-card">
         <div class="profile-header">
-            <h1>Профиль пользователя: {{ user.username }}</h1>
+            <h1>🐇 Норка {{ user.username }} 🥕</h1>
         </div>
         
         <div class="profile-field">
-            <div class="field-label">Имя пользователя:</div>
-            <div class="field-value">{{ user.username }}</div>
+            <div class="field-label">Кличка в огороде:</div>
+            <div class="field-value">{{ user.username }} {% if user.id == 1 %}👑{% endif %}</div>
         </div>
         
         <div class="profile-field">
-            <div class="field-label">Email:</div>
-            <div class="field-value">{{ user.email }}</div>
+            <div class="field-label">Морковная почта:</div>
+            <div class="field-value">{{ user.email|replace('@', ' 🐇 ')|safe }}</div>
         </div>
         
         <div class="profile-field">
-            <div class="field-label">О себе:</div>
+            <div class="field-label">Любимые занятия:</div>
             <div class="field-value">
-                {{ user.about_me if user.about_me else "Пользователь пока ничего о себе не написал" }}
+                {{ user.about_me if user.about_me else "Обожаю грызть морковку и делать API-запросы!" }}
             </div>
         </div>
         
-        <a href="/" class="back-link">← На главную</a>
+        <a href="/" class="back-link">🚪 Вернуться в главную норку</a>
+    </div>
+
+    <div class="carrot-counter">
+        🥕 Морковок собрано: {{ user.about_me|length if user.about_me else 0 }}
     </div>
 </body>
 </html>
