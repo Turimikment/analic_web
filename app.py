@@ -17,12 +17,22 @@ app.config['DATABASE'] = 'accounts.db'
 app.config['SECRET_KEY'] = 'supersecretkey'
 app.config['ERROR_404_HELP'] = False
 
-api = Api(app, 
-          version='1.0', 
-          title='Account API',
-          description='API для управления учетными записями',
-          doc='/swagger/')
-
+api = Api(
+    app,
+    version='1.0',
+    title='Account API',
+    description='API для управления пользователями',
+    doc='/swagger/',
+    default='Основные операции',
+    default_label='Операции с аккаунтами',
+    swagger_ui_params={
+        "docExpansion": "full",
+        "deepLinking": True,
+        "displayOperationId": False,
+        "showExtensions": True,
+        "defaultModelsExpandDepth": -1  # Скрыть модели схем
+    }
+)
 # Модели для Swagger
 account_model = api.model('Account', {
     'id': fields.Integer(readonly=True),
