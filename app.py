@@ -50,8 +50,44 @@ def init_db():
     conn.commit()
     cursor.close()
     conn.close()
+api = Api(
+    app,
+    version='1.0',
+    title='Account API',
+    description='API для управления пользователями',
+    doc='/swagger/',
+    default='Основные операции',
+    default_label='Операции с аккаунтами',
+    swagger_ui_params={
+        "docExpansion": "full",
+        "deepLinking": True,
+        "displayOperationId": False,
+        "showExtensions": True,
+        "defaultModelsExpandDepth": -1  # Скрыть модели схем
+    }
+)
 
-# ... (остальные функции и валидации остаются без изменений) ...
+# Модели для Swagger
+account_model = api.model('Account', {
+    'id': fields.Integer(readonly=True),
+    'username': fields.String(required=True),
+    'email': fields.String(required=True),
+    'about_me': fields.String(description='Информация о пользователе')
+})
+
+create_account_model = api.model('CreateAccount', {
+    'username': fields.String(required=True, description='Имя пользователя (3-20 символов)'),
+    'email': fields.String(required=True, description= ''' Валидный email-адрес. Требования:
+        - Должен содержать @
+        - Локальная часть (до @) может включать: 
+          буквы, цифры, . ! # $ % & ' * + - / = ? ^ _ ` { | } ~
+        - Доменная часть (после @) должна содержать:
+          минимум одну точку, буквы/цифры и дефисы между частями
+        Примеры: 
+        - user@example.com 
+        - john.doe123@sub.domain.com'''),
+    'password': fields.String(required=True, description='Пароль (минимум 6 символов)')
+})
 
 # Пример модифицированного метода
 @api.route('/accounts')
