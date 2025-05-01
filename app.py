@@ -4,6 +4,10 @@ import sqlite3
 import re
 from werkzeug.security import generate_password_hash, check_password_hash
 import logging
+from time import sleep
+from spyne import Application, rpc, ServiceBase, Unicode, Integer, ComplexModel
+from spyne.protocol.soap import Soap11
+from spyne.server.wsgi import WsgiApplication
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
 
 # ... (остальной импорт из предыдущего кода) ...
@@ -33,6 +37,7 @@ api = Api(
         "defaultModelsExpandDepth": -1  # Скрыть модели схем
     }
 )
+
 # Модели для Swagger
 account_model = api.model('Account', {
     'id': fields.Integer(readonly=True),
@@ -43,7 +48,7 @@ account_model = api.model('Account', {
 
 create_account_model = api.model('CreateAccount', {
     'username': fields.String(required=True, description='Имя пользователя (3-20 символов)'),
-    'email': fields.String(required=True, description=''' Валидный email-адрес. Требования:
+    'email': fields.String(required=True, description= ''' Валидный email-адрес. Требования:
         - Должен содержать @
         - Локальная часть (до @) может включать: 
           буквы, цифры, . ! # $ % & ' * + - / = ? ^ _ ` { | } ~
@@ -368,7 +373,58 @@ class AccountResource(Resource):
                 ''', (user_id,))
                 conn.commit()
                 return {'message': 'Информация удалена'}
-        
+
+class SoapUser(ComplexModel):
+    __namespace__ = 'soap.users'
+    id = Integer
+    username = Unicode
+    email = Unicode
+    about_me = Unicode
+
+class SoapAccountService(ServiceBase):
+    @rpc(Integer, _returns=SoapUser)
+    def get_user_by_id(ctx, user_id):
+        """Получить пользователя по ID через SOAP"""
+        try:
+            with sqlite3.connect(app.config['DATABASE']) as conn:
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
+                cursor.execute('''
+                    SELECT id, username, email, about_me 
+                    FROM accounts 
+                    WHERE id = ?
+                ''', (user_id,))
+                
+                user = cursor.fetchone()
+                if not user:
+                    raise Fault(faultcode='Client', 
+                              faultstring='User not found')
+                
+                return SoapUser(
+                    id=user['id'],
+                    username=user['username'],
+                    email=user['email'],
+                    about_me=user['about_me'] or ''
+                )
+                
+        except sqlite3.Error as e:
+            raise Fault(faultcode='Server', 
+                      faultstring='Database error')
+        except Exception as e:
+            raise Fault(faultcode='Server', 
+                      faultstring='Internal server error')
+
+# Добавляем SOAP endpoint
+soap_app = Application(
+    [SoapAccountService],
+    tns='soap.users',
+    in_protocol=Soap11(validator='lxml'),
+    out_protocol=Soap11()
+)
+
+app.wsgi_app = DispatcherMiddleware(app.wsgi_app, {
+    '/soap': WsgiApplication(soap_app)
+})      
    
 # Инициализация базы данных
 if __name__ == '__main__':
