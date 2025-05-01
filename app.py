@@ -51,7 +51,7 @@ parser.add_argument('password', type=str, required=True, help='Пароль об
 def get_db():
     try:
         return psycopg2.connect(
-            os.environ.get('postgresql://db_analitick_veb_user:qtUD994hJSlRfZ79F95fZMDajBKOuVuo@dpg-d09ln50gjchc7398l9bg-a.oregon-postgres.render.com/db_analitick_veb'),
+            os.environ.get('DATABASE_URL'),
             sslmode='require'
         )
     except psycopg2.OperationalError as e:
