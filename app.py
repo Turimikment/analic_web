@@ -167,6 +167,11 @@ class AccountsResource(Resource):
                 error_msg += 'Email уже зарегистрирован'
             api.abort(409, error_msg)
 
+    @app.route('/api-docs')
+    def api_docs():
+        return render_template('swagger_guide.html')
+    
+    
     @app.route('/view-db')
     def view_database():
         """Просмотр содержимого базы данных"""
