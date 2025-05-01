@@ -6,3 +6,5 @@ gunicorn==21.2.0
 python-dotenv==1.0.1
 Werkzeug>=2.0.0
 psycopg2-binary>=2.9.3
+spyne>=2.13.16
+lxml>=4.9.1
