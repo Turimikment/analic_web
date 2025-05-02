@@ -120,13 +120,11 @@ swagger_config = {
     "static_url_path": "/flasgger_static",
     "swagger_ui": True,
     "specs_route": "/apidocs/",
-    "components": {  # <-- Добавляем раздел components
-        "schemas": {
-            "Account": account_model,
-            "CreateAccount": create_account_model,
-            "UpdateUsername": update_username_model,
-            "AboutMe": about_me_model
-        }
+    "definitions": {  # Используйте "definitions" вместо "components"
+        "Account": account_model,
+        "CreateAccount": create_account_model,
+        "UpdateUsername": update_username_model,
+        "AboutMe": about_me_model
     }
 }
 
