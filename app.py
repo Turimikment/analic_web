@@ -12,12 +12,15 @@ from werkzeug.middleware.dispatcher import DispatcherMiddleware
 
 app = Flask(__name__)
 
+app.config['DATABASE'] = 'accounts.db'
+app.config['SECRET_KEY'] = 'supersecretkey'
+
 @app.route('/')
 def home():
     return render_template('index.html')
 
-app.config['DATABASE'] = 'accounts.db'
-app.config['SECRET_KEY'] = 'supersecretkey'
+
+    
 
 # Схемы данных Swagger
 account_model = {
@@ -154,6 +157,54 @@ def validate_email(email):
     """Проверяет валидность email адреса"""
     pattern = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
     return re.match(pattern, email) is not None
+
+@app.route('/profile/<int:user_id>')
+def user_profile(user_id):
+    """Страница профиля пользователя"""
+    try:
+        with sqlite3.connect(app.config['DATABASE']) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute('''
+                SELECT username, email, about_me 
+                FROM accounts 
+                WHERE id = ?
+            ''', (user_id,))
+            user = cursor.fetchone()
+            
+            if not user:
+                abort(404)
+            
+            return render_template('profile.html', user=dict(user))
+            
+    except sqlite3.Error as e:
+        abort(500, description="Ошибка базы данных")
+@app.route('/view-db')
+def view_database():
+    """Просмотр содержимого базы данных"""
+    try:
+        with sqlite3.connect(app.config['DATABASE']) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            
+        # Получаем данные из таблицы accounts
+            cursor.execute('''
+                SELECT id, username, email, about_me
+                FROM accounts
+                ''')
+            accounts = cursor.fetchall()
+            
+            # Получаем список всех таблиц в БД
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+            tables = [row['name'] for row in cursor.fetchall()]
+            
+        return render_template('view_db.html',
+                         accounts=accounts,
+                         tables=tables)
+    
+    except Exception as e:
+        return render_template('error.html', error=str(e))
+
 
 @app.route('/accounts', methods=['GET'])
 @swag_from({
@@ -379,31 +430,7 @@ def update_about_me(user_id):
 
 # ... (остальные маршруты и SOAP-часть остаются без изменений) ...
  
-    @app.route('/view-db')
-    def view_database():
-        """Просмотр содержимого базы данных"""
-        try:
-            with sqlite3.connect(app.config['DATABASE']) as conn:
-                conn.row_factory = sqlite3.Row
-                cursor = conn.cursor()
-            
-            # Получаем данные из таблицы accounts
-                cursor.execute('''
-                    SELECT id, username, email, about_me
-                    FROM accounts
-                ''')
-                accounts = cursor.fetchall()
-            
-            # Получаем список всех таблиц в БД
-                cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
-                tables = [row['name'] for row in cursor.fetchall()]
-            
-            return render_template('view_db.html',
-                             accounts=accounts,
-                             tables=tables)
-    
-        except Exception as e:
-            return render_template('error.html', error=str(e))
+ 
 # Инициализация базы данных
 if __name__ == '__main__':
     init_db()
