@@ -377,6 +377,29 @@ def update_about_me(user_id):
     except sqlite3.Error as e:
         return jsonify({'error': 'Ошибка базы данных'}), 500
 
+
+@app.route('/view-db')
+    def view_database():
+        """Просмотр содержимого базы данных"""
+        try:
+            with sqlite3.connect(app.config['DATABASE']) as conn:
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
+            
+            # Получаем данные из таблицы accounts
+                cursor.execute('''
+                    SELECT id, username, email, about_me
+                    FROM accounts
+                ''')
+                accounts = cursor.fetchall()
+            
+            # Получаем список всех таблиц в БД
+                cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+                tables = [row['name'] for row in cursor.fetchall()]
+            
+            return render_template('view_db.html',
+                             accounts=accounts,
+                             tables=tables)
 # ... (остальные маршруты и SOAP-часть остаются без изменений) ...
 
 # Инициализация базы данных
