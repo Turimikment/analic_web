@@ -17,7 +17,8 @@ def home():
     return render_template('index.html')
 
 
-    @app.route('/view-db')
+
+@app.route('/view-db')
     def view_database():
         """Просмотр содержимого базы данных"""
         try:
@@ -42,6 +43,7 @@ def home():
     
         except Exception as e:
             return render_template('error.html', error=str(e))
+
 
 app.config['DATABASE'] = 'accounts.db'
 app.config['SECRET_KEY'] = 'supersecretkey'
