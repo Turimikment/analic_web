@@ -16,35 +16,6 @@ app = Flask(__name__)
 def home():
     return render_template('index.html')
 
-
-
-@app.route('/view-db')
-    def view_database():
-        """Просмотр содержимого базы данных"""
-        try:
-            with sqlite3.connect(app.config['DATABASE']) as conn:
-                conn.row_factory = sqlite3.Row
-                cursor = conn.cursor()
-            
-            # Получаем данные из таблицы accounts
-                cursor.execute('''
-                    SELECT id, username, email, about_me
-                    FROM accounts
-                ''')
-                accounts = cursor.fetchall()
-            
-            # Получаем список всех таблиц в БД
-                cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
-                tables = [row['name'] for row in cursor.fetchall()]
-            
-            return render_template('view_db.html',
-                             accounts=accounts,
-                             tables=tables)
-    
-        except Exception as e:
-            return render_template('error.html', error=str(e))
-
-
 app.config['DATABASE'] = 'accounts.db'
 app.config['SECRET_KEY'] = 'supersecretkey'
 
@@ -407,7 +378,32 @@ def update_about_me(user_id):
         return jsonify({'error': 'Ошибка базы данных'}), 500
 
 # ... (остальные маршруты и SOAP-часть остаются без изменений) ...
-
+ 
+    @app.route('/view-db')
+    def view_database():
+        """Просмотр содержимого базы данных"""
+        try:
+            with sqlite3.connect(app.config['DATABASE']) as conn:
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
+            
+            # Получаем данные из таблицы accounts
+                cursor.execute('''
+                    SELECT id, username, email, about_me
+                    FROM accounts
+                ''')
+                accounts = cursor.fetchall()
+            
+            # Получаем список всех таблиц в БД
+                cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+                tables = [row['name'] for row in cursor.fetchall()]
+            
+            return render_template('view_db.html',
+                             accounts=accounts,
+                             tables=tables)
+    
+        except Exception as e:
+            return render_template('error.html', error=str(e))
 # Инициализация базы данных
 if __name__ == '__main__':
     init_db()
