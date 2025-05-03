@@ -428,8 +428,57 @@ def update_about_me(user_id):
     except sqlite3.Error as e:
         return jsonify({'error': 'Ошибка базы данных'}), 500
 
-# ... (остальные маршруты и SOAP-часть остаются без изменений) ...
- 
+class SoapUser(ComplexModel):
+    __namespace__ = 'soap.users'
+    id = Integer
+    username = Unicode
+    email = Unicode
+    about_me = Unicode
+
+class SoapAccountService(ServiceBase):
+    @rpc(Integer, _returns=SoapUser)
+    def get_user_by_id(ctx, user_id):
+        """Получить пользователя по ID через SOAP"""
+        try:
+            with sqlite3.connect(app.config['DATABASE']) as conn:
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
+                cursor.execute('''
+                    SELECT id, username, email, about_me 
+                    FROM accounts 
+                    WHERE id = ?
+                ''', (user_id,))
+                
+                user = cursor.fetchone()
+                if not user:
+                    raise Fault(faultcode='Client', 
+                              faultstring='User not found')
+                
+                return SoapUser(
+                    id=user['id'],
+                    username=user['username'],
+                    email=user['email'],
+                    about_me=user['about_me'] or ''
+                )
+                
+        except sqlite3.Error as e:
+            raise Fault(faultcode='Server', 
+                      faultstring='Database error')
+        except Exception as e:
+            raise Fault(faultcode='Server', 
+                      faultstring='Internal server error')
+
+# Добавляем SOAP endpoint
+soap_app = Application(
+    [SoapAccountService],
+    tns='soap.users',
+    in_protocol=Soap11(validator='lxml'),
+    out_protocol=Soap11()
+)
+
+app.wsgi_app = DispatcherMiddleware(app.wsgi_app, {
+    '/soap': WsgiApplication(soap_app)
+})      
  
 # Инициализация базы данных
 if __name__ == '__main__':
