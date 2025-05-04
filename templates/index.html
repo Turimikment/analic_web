@@ -89,64 +89,87 @@
     </a>
 </div>
 
-<style>
-    @keyframes shine {
-        0% { transform: translateX(-100%) rotate(45deg); }
-        100% { transform: translateX(100%) rotate(45deg); }
-    }
-</style>
-    <div class="section">
-        <h2>REST API методы 🍃</h2>
-        
-        <div class="method rest">
-            <span class="badge get">GET</span>
-            <strong>/api/accounts</strong> - Получить список всех зайцев
-        </div>
+    <!-- Добавить перед разделом учебных материалов -->
+<div class="section" style="text-align: center; margin: 40px 0;">
+    <div style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
+        <!-- Кнопка Просмотр БД -->
+        <a href="/view-db" 
+           style="
+               display: inline-block;
+               padding: 20px 40px;
+               background: linear-gradient(145deg, #4CAF50, #2E7D32);
+               color: white !important;
+               border-radius: 30px;
+               text-decoration: none;
+               font-size: 1.4em;
+               transition: all 0.4s;
+               border: 3px solid #388E3C;
+               box-shadow: 0 8px 15px rgba(76,175,80,0.3);
+               position: relative;
+               overflow: hidden;
+               min-width: 280px;
+           "
+           onmouseover="this.style.transform='rotate(2deg) scale(1.05)'"
+           onmouseout="this.style.transform='none'">
+           
+           <span style="display: block; margin-bottom: 8px;">📊</span>
+           Просмотр базы данных
+           
+           <div style="
+               position: absolute;
+               top: -50%;
+               left: -50%;
+               width: 200%;
+               height: 200%;
+               background: linear-gradient(45deg, 
+                   transparent 25%,
+                   rgba(255,255,255,0.2) 50%,
+                   transparent 75%
+               );
+               animation: shine 3s infinite;
+           "></div>
+        </a>
 
-        <div class="method rest">
-            <span class="badge post">POST</span>
-            <strong>/api/accounts</strong> - Создать нового зайца
-            <br><em>Пример тела запроса:</em> 
-            <code>{"username": "BugsBunny", "email": "bugs@warner.com", "password": "carrot123"}</code>
-        </div>
-
-        <div class="method rest">
-            <span class="badge get">GET</span>
-            <strong>/api/accounts/{id}</strong> - Получить зайца по ID
-        </div>
-
-        <div class="method rest">
-            <span class="badge put">PUT</span>
-            <strong>/api/accounts/{id}/username</strong> - Изменить имя зайца
-        </div>
+        <!-- Кнопка WSDL -->
+        <a href="/soap?wsdl" 
+           style="
+               display: inline-block;
+               padding: 20px 40px;
+               background: linear-gradient(145deg, #9C27B0, #6A1B9A);
+               color: white !important;
+               border-radius: 30px;
+               text-decoration: none;
+               font-size: 1.4em;
+               transition: all 0.4s;
+               border: 3px solid #7B1FA2;
+               box-shadow: 0 8px 15px rgba(156,39,176,0.3);
+               position: relative;
+               overflow: hidden;
+               min-width: 280px;
+           "
+           onmouseover="this.style.transform='rotate(-2deg) scale(1.05)'"
+           onmouseout="this.style.transform='none'">
+           
+           <span style="display: block; margin-bottom: 8px;">🧩</span>
+           WSDL для SOAP
+           
+           <div style="
+               position: absolute;
+               top: -50%;
+               left: -50%;
+               width: 200%;
+               height: 200%;
+               background: linear-gradient(45deg, 
+                   transparent 25%,
+                   rgba(255,255,255,0.2) 50%,
+                   transparent 75%
+               );
+               animation: shine 3s infinite;
+           "></div>
+        </a>
     </div>
+</div>
 
-    <div class="section">
-        <h2>SOAP API методы ☁️</h2>
-        
-        <div class="method soap">
-            <span class="badge soap-badge">SOAP</span>
-            <strong>/soap/service</strong> - Основной SOAP endpoint
-            <br><em>Метод:</em> get_user_by_id
-            <br><em>Пример запроса:</em>
-            <pre>
-&lt;soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"&gt;
-   &lt;soap:Body&gt;
-      &lt;get_user_by_id xmlns="soap.users"&gt;
-         &lt;user_id&gt;1&lt;/user_id&gt;
-      &lt;/get_user_by_id&gt;
-   &lt;/soap:Body&gt;
-&lt;/soap:Envelope&gt;</pre>
-        </div>
-    </div>
-
-    <div class="section">
-        <h2>📚 Учебные материалы</h2>
-        <ul>
-            <li><a href="/view-db" class="db-link">Просмотр базы данных</a></li>
-            <li><a href="/soap?wsdl" target="_blank">WSDL для SOAP сервиса</a></li>
-        </ul>
-    </div>
 
     <div class="section" style="text-align: center;">
         <img src="https://i.imgur.com/7G7WzBq.png" alt="Зайчик с планшетом" style="width: 200px;">
