@@ -300,7 +300,7 @@ def create_account():
             error_msg += 'Email уже зарегистрирован'
         return jsonify({'error': error_msg}), 409
 
-@app.route('/accounts/<int:user_id>', methods=['POST'])
+@app.route('/accounts/<int:user_id>', methods=['PUT'])
 @swag_from({
     'tags': ['Accounts'],
     'parameters': [
