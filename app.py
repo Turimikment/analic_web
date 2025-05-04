@@ -229,8 +229,8 @@ class AccountResource(Resource):
     @api.response(400, 'Некорректные данные')
     @api.response(404, 'Пользователь не найден')
     @api.response(409, 'Имя пользователя уже занято')
-    def post(self, user_id):
-        """Обновить имя пользователя"""
+    def put(self, user_id):
+        """Обновить кличку зайца"""
         data = api.payload
         new_username = data.get('new_username', '').strip()
         
