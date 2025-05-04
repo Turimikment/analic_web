@@ -18,7 +18,9 @@ app.config['SECRET_KEY'] = 'supersecretkey'
 @app.route('/')
 def home():
     return render_template('index.html')
-
+@app.route('/soap-interface')
+def soap_interface():
+    return render_template('soap.html')
 
     
 
