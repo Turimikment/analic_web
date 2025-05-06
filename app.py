@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, jsonify, abort
 from flasgger import Swagger, swag_from
-import sqlite3
+import psycopg2
+from psycopg2 import sql, errors
 import re
 from werkzeug.security import generate_password_hash, check_password_hash
 import logging
@@ -9,20 +10,21 @@ from spyne import Application, rpc, ServiceBase, Unicode, Integer, ComplexModel
 from spyne.protocol.soap import Soap11
 from spyne.server.wsgi import WsgiApplication
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
+import os
+from urllib.parse import urlparse
 
 app = Flask(__name__)
 
-app.config['DATABASE'] = 'accounts.db'
-app.config['SECRET_KEY'] = 'supersecretkey'
+app.config['DATABASE_URL'] = os.environ.get('DATABASE_URL')
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'supersecretkey')
 
 @app.route('/')
 def home():
     return render_template('index.html')
+
 @app.route('/soap-interface')
 def soap_interface():
     return render_template('soap.html')
-
-    
 
 # Схемы данных Swagger
 account_model = {
@@ -125,7 +127,7 @@ swagger_config = {
     "static_url_path": "/flasgger_static",
     "swagger_ui": True,
     "specs_route": "/apidocs/",
-    "definitions": {  # Используйте "definitions" вместо "components"
+    "definitions": {
         "Account": account_model,
         "CreateAccount": create_account_model,
         "UpdateUsername": update_username_model,
@@ -133,26 +135,53 @@ swagger_config = {
     }
 }
 
-Swagger(app, config=swagger_config)  # Передаем конфигурацию
+Swagger(app, config=swagger_config)
 
 def get_db():
     """Возвращает соединение с базой данных"""
-    conn = sqlite3.connect(app.config['DATABASE'])
-    conn.row_factory = sqlite3.Row
+    conn = psycopg2.connect(app.config['DATABASE_URL'])
     return conn
 
 def init_db():
-    with sqlite3.connect('accounts.db') as conn:
-        cursor = conn.cursor()
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS accounts (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                username TEXT NOT NULL UNIQUE,
-                email TEXT NOT NULL UNIQUE,
-                password_hash TEXT NOT NULL,
-                about_me TEXT DEFAULT ''  
-            )
-        ''')
+    """Инициализация базы данных"""
+    parsed_url = urlparse(app.config['DATABASE_URL'])
+    db_name = parsed_url.path[1:]
+    db_user = parsed_url.username
+    db_pass = parsed_url.password
+    db_host = parsed_url.hostname
+    db_port = parsed_url.port
+
+    # Подключаемся к postgres для создания БД
+    admin_conn = psycopg2.connect(
+        dbname='postgres',
+        user=db_user,
+        password=db_pass,
+        host=db_host,
+        port=db_port
+    )
+    admin_conn.autocommit = True
+    admin_cursor = admin_conn.cursor()
+    
+    # Создаем БД если не существует
+    admin_cursor.execute(f"SELECT 1 FROM pg_database WHERE datname = '{db_name}'")
+    if not admin_cursor.fetchone():
+        admin_cursor.execute(f"CREATE DATABASE {db_name}")
+    
+    admin_cursor.close()
+    admin_conn.close()
+
+    # Создаем таблицы
+    with get_db() as conn:
+        with conn.cursor() as cursor:
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS accounts (
+                    id SERIAL PRIMARY KEY,
+                    username VARCHAR(20) NOT NULL UNIQUE,
+                    email VARCHAR(255) NOT NULL UNIQUE,
+                    password_hash VARCHAR(255) NOT NULL,
+                    about_me TEXT DEFAULT ''
+                )
+            ''')
         conn.commit()
 
 def validate_email(email):
@@ -164,49 +193,52 @@ def validate_email(email):
 def user_profile(user_id):
     """Страница профиля пользователя"""
     try:
-        with sqlite3.connect(app.config['DATABASE']) as conn:
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
-            cursor.execute('''
-                SELECT username, email, about_me 
-                FROM accounts 
-                WHERE id = ?
-            ''', (user_id,))
-            user = cursor.fetchone()
-            
-            if not user:
-                abort(404)
-            
-            return render_template('profile.html', user=dict(user))
-            
-    except sqlite3.Error as e:
+        with get_db() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute('''
+                    SELECT username, email, about_me 
+                    FROM accounts 
+                    WHERE id = %s
+                ''', (user_id,))
+                user = cursor.fetchone()
+                
+                if not user:
+                    abort(404)
+                
+                return render_template('profile.html', user={
+                    'username': user[0],
+                    'email': user[1],
+                    'about_me': user[2]
+                })
+                
+    except psycopg2.Error as e:
         abort(500, description="Ошибка базы данных")
+
 @app.route('/view-db')
 def view_database():
     """Просмотр содержимого базы данных"""
     try:
-        with sqlite3.connect(app.config['DATABASE']) as conn:
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
-            
-        # Получаем данные из таблицы accounts
-            cursor.execute('''
-                SELECT id, username, email, about_me
-                FROM accounts
+        with get_db() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute('''
+                    SELECT id, username, email, about_me
+                    FROM accounts
                 ''')
-            accounts = cursor.fetchall()
-            
-            # Получаем список всех таблиц в БД
-            cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
-            tables = [row['name'] for row in cursor.fetchall()]
-            
-        return render_template('view_db.html',
-                         accounts=accounts,
-                         tables=tables)
+                accounts = cursor.fetchall()
+                
+                cursor.execute("""
+                    SELECT table_name 
+                    FROM information_schema.tables 
+                    WHERE table_schema = 'public'
+                """)
+                tables = [row[0] for row in cursor.fetchall()]
+                
+            return render_template('view_db.html',
+                             accounts=accounts,
+                             tables=tables)
     
     except Exception as e:
         return render_template('error.html', error=str(e))
-
 
 @app.route('/accounts', methods=['GET'])
 @swag_from({
@@ -223,13 +255,20 @@ def view_database():
     }
 })
 def get_accounts():
-    """Получить всех зайцев"""
+    """Получить всех пользователей"""
     try:
         with get_db() as conn:
-            cursor = conn.cursor()
-            cursor.execute('SELECT id, username, email, about_me FROM accounts')
-            return jsonify([dict(row) for row in cursor.fetchall()]), 200
-    except sqlite3.Error as e:
+            with conn.cursor() as cursor:
+                cursor.execute('SELECT id, username, email, about_me FROM accounts')
+                results = cursor.fetchall()
+                accounts = [{
+                    'id': row[0],
+                    'username': row[1],
+                    'email': row[2],
+                    'about_me': row[3]
+                } for row in results]
+                return jsonify(accounts), 200
+    except psycopg2.Error as e:
         return jsonify({'error': 'Ошибка базы данных'}), 500
 
 @app.route('/accounts', methods=['POST'])
@@ -253,11 +292,10 @@ def get_accounts():
     }
 })
 def create_account():
-    """Создать нового зайца"""
+    """Создать нового пользователя"""
     data = request.get_json()
     errors = {}
     
-    # Валидация данных
     username = data.get('username', '')
     email = data.get('email', '')
     password = data.get('password', '')
@@ -276,31 +314,34 @@ def create_account():
     
     try:
         with get_db() as conn:
-            cursor = conn.cursor()
-            password_hash = generate_password_hash(password)
-            
-            cursor.execute('''
-                INSERT INTO accounts (username, email, password_hash)
-                VALUES (?, ?, ?)
-            ''', (username, email, password_hash))
-            
-            conn.commit()
-            
-            new_user = {
-                'id': cursor.lastrowid,
-                'username': username,
-                'email': email,
-                'about_me': ''
-            }
-            return jsonify(new_user), 201
-            
-    except sqlite3.IntegrityError as e:
+            with conn.cursor() as cursor:
+                password_hash = generate_password_hash(password)
+                
+                cursor.execute('''
+                    INSERT INTO accounts (username, email, password_hash)
+                    VALUES (%s, %s, %s)
+                    RETURNING id, username, email, about_me
+                ''', (username, email, password_hash))
+                
+                new_user = cursor.fetchone()
+                conn.commit()
+                
+                return jsonify({
+                    'id': new_user[0],
+                    'username': new_user[1],
+                    'email': new_user[2],
+                    'about_me': new_user[3]
+                }), 201
+                
+    except errors.UniqueViolation as e:
         error_msg = 'Ошибка уникальности: '
         if 'username' in str(e):
             error_msg += 'Имя пользователя уже существует'
         elif 'email' in str(e):
             error_msg += 'Email уже зарегистрирован'
         return jsonify({'error': error_msg}), 409
+    except psycopg2.Error as e:
+        return jsonify({'error': 'Ошибка базы данных'}), 500
 
 @app.route('/accounts/<int:user_id>', methods=['PUT'])
 @swag_from({
@@ -330,7 +371,7 @@ def create_account():
     }
 })
 def update_username(user_id):
-    """Обновить кличку зайца"""
+    """Обновить имя пользователя"""
     data = request.get_json()
     new_username = data.get('new_username', '').strip()
     
@@ -339,39 +380,31 @@ def update_username(user_id):
     
     try:
         with get_db() as conn:
-            cursor = conn.cursor()
-            
-            # Проверка существования пользователя
-            cursor.execute('SELECT id FROM accounts WHERE id = ?', (user_id,))
-            if not cursor.fetchone():
-                return jsonify({'error': 'Пользователь не найден'}), 404
-            
-            # Проверка уникальности имени
-            cursor.execute('SELECT id FROM accounts WHERE username = ? AND id != ?', 
-                         (new_username, user_id))
-            if cursor.fetchone():
-                return jsonify({'error': 'Имя пользователя уже занято'}), 409
-            
-            # Обновление данных
-            cursor.execute('''
-                UPDATE accounts 
-                SET username = ?
-                WHERE id = ?
-            ''', (new_username, user_id))
-            
-            conn.commit()
-            
-            # Получение обновленных данных
-            cursor.execute('''
-                SELECT id, username, email, about_me 
-                FROM accounts 
-                WHERE id = ?
-            ''', (user_id,))
-            
-            user = cursor.fetchone()
-            return jsonify(dict(user)), 200
-            
-    except sqlite3.Error as e:
+            with conn.cursor() as cursor:
+                cursor.execute('SELECT id FROM accounts WHERE id = %s', (user_id,))
+                if not cursor.fetchone():
+                    return jsonify({'error': 'Пользователь не найден'}), 404
+                
+                cursor.execute('''
+                    UPDATE accounts 
+                    SET username = %s
+                    WHERE id = %s
+                    RETURNING id, username, email, about_me
+                ''', (new_username, user_id))
+                
+                updated_user = cursor.fetchone()
+                conn.commit()
+                
+                return jsonify({
+                    'id': updated_user[0],
+                    'username': updated_user[1],
+                    'email': updated_user[2],
+                    'about_me': updated_user[3]
+                }), 200
+                
+    except errors.UniqueViolation as e:
+        return jsonify({'error': 'Имя пользователя уже занято'}), 409
+    except psycopg2.Error as e:
         return jsonify({'error': 'Ошибка базы данных'}), 500
 
 @app.route('/accounts/<int:user_id>/about', methods=['PUT'])
@@ -411,23 +444,28 @@ def update_about_me(user_id):
     
     try:
         with get_db() as conn:
-            cursor = conn.cursor()
-            cursor.execute('''
-                UPDATE accounts 
-                SET about_me = ?
-                WHERE id = ?
-            ''', (about_me, user_id))
-            
-            if cursor.rowcount == 0:
-                return jsonify({'error': 'Пользователь не найден'}), 404
-            
-            conn.commit()
-            
-            cursor.execute('SELECT * FROM accounts WHERE id = ?', (user_id,))
-            user = cursor.fetchone()
-            return jsonify(dict(user)), 200
-            
-    except sqlite3.Error as e:
+            with conn.cursor() as cursor:
+                cursor.execute('''
+                    UPDATE accounts 
+                    SET about_me = %s
+                    WHERE id = %s
+                    RETURNING id, username, email, about_me
+                ''', (about_me, user_id))
+                
+                updated_user = cursor.fetchone()
+                if not updated_user:
+                    return jsonify({'error': 'Пользователь не найден'}), 404
+                
+                conn.commit()
+                
+                return jsonify({
+                    'id': updated_user[0],
+                    'username': updated_user[1],
+                    'email': updated_user[2],
+                    'about_me': updated_user[3]
+                }), 200
+                
+    except psycopg2.Error as e:
         return jsonify({'error': 'Ошибка базы данных'}), 500
 
 class SoapUser(ComplexModel):
@@ -442,35 +480,34 @@ class SoapAccountService(ServiceBase):
     def get_user_by_id(ctx, user_id):
         """Получить пользователя по ID через SOAP"""
         try:
-            with sqlite3.connect(app.config['DATABASE']) as conn:
-                conn.row_factory = sqlite3.Row
-                cursor = conn.cursor()
-                cursor.execute('''
-                    SELECT id, username, email, about_me 
-                    FROM accounts 
-                    WHERE id = ?
-                ''', (user_id,))
-                
-                user = cursor.fetchone()
-                if not user:
-                    raise Fault(faultcode='Client', 
-                              faultstring='User not found')
-                
-                return SoapUser(
-                    id=user['id'],
-                    username=user['username'],
-                    email=user['email'],
-                    about_me=user['about_me'] or ''
-                )
-                
-        except sqlite3.Error as e:
+            with get_db() as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute('''
+                        SELECT id, username, email, about_me 
+                        FROM accounts 
+                        WHERE id = %s
+                    ''', (user_id,))
+                    
+                    user = cursor.fetchone()
+                    if not user:
+                        raise Fault(faultcode='Client', 
+                                  faultstring='User not found')
+                    
+                    return SoapUser(
+                        id=user[0],
+                        username=user[1],
+                        email=user[2],
+                        about_me=user[3] or ''
+                    )
+                    
+        except psycopg2.Error as e:
             raise Fault(faultcode='Server', 
                       faultstring='Database error')
         except Exception as e:
             raise Fault(faultcode='Server', 
                       faultstring='Internal server error')
 
-# Добавляем SOAP endpoint
+# Настройка SOAP endpoint
 soap_app = Application(
     [SoapAccountService],
     tns='soap.users',
@@ -480,9 +517,8 @@ soap_app = Application(
 
 app.wsgi_app = DispatcherMiddleware(app.wsgi_app, {
     '/soap': WsgiApplication(soap_app)
-})      
- 
-# Инициализация базы данных
+})
+
 if __name__ == '__main__':
     init_db()
-    app.run()
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
