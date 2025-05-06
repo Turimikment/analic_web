@@ -6,6 +6,7 @@ import re
 from werkzeug.security import generate_password_hash, check_password_hash
 import logging
 from time import sleep
+from psycopg2.extras import DictCursor
 from spyne import Application, rpc, ServiceBase, Unicode, Integer, ComplexModel
 from spyne.protocol.soap import Soap11
 from spyne.server.wsgi import WsgiApplication
