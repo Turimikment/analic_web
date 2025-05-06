@@ -219,26 +219,29 @@ def view_database():
     """Просмотр содержимого базы данных"""
     try:
         with get_db() as conn:
-            with conn.cursor() as cursor:
+            with conn.cursor(cursor_factory=DictCursor) as cursor:
+                # Получаем данные пользователей
                 cursor.execute('''
                     SELECT id, username, email, about_me
                     FROM accounts
                 ''')
                 accounts = cursor.fetchall()
-                
-                cursor.execute("""
+
+                # Получаем список таблиц
+                cursor.execute('''
                     SELECT table_name 
                     FROM information_schema.tables 
                     WHERE table_schema = 'public'
-                """)
-                tables = [row[0] for row in cursor.fetchall()]
-                
-            return render_template('view_db.html',
-                             accounts=accounts,
-                             tables=tables)
-    
+                ''')
+                tables = [row['table_name'] for row in cursor.fetchall()]
+
+        return render_template('view_db.html',
+                            accounts=accounts,
+                            tables=tables)
+
     except Exception as e:
-        return render_template('error.html', error=str(e))
+        app.logger.error(f"Ошибка при доступе к БД: {str(e)}")
+        return render_template('error.html', error=str(e)), 500
 
 @app.route('/accounts', methods=['GET'])
 @swag_from({
