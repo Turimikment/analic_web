@@ -673,9 +673,12 @@ class SoapAccountService(ServiceBase):
                     return SoapResponse(
                         # ... остальные поля
                         user=SoapUser(
-                            creation_method=new_user[4]
+                        id=updated_user[0],
+                        username=updated_user[1],
+                        email=updated_user[2],
+                        about_me=updated_user[3] or '',
+                        creation_method=updated_user[4]
                         )
-                    )
                     )
         except errors.UniqueViolation as e:
             raise Fault(faultcode='Client', faultstring='Duplicate username or email')
