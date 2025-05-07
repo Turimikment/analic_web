@@ -340,25 +340,25 @@ def create_account():
         return jsonify(errors), 400
         try:
             with get_db() as conn:
-            with conn.cursor() as cursor:
-                password_hash = generate_password_hash(password)
+                with conn.cursor() as cursor:
+                    password_hash = generate_password_hash(password)
                 
-                cursor.execute('''
-                    INSERT INTO accounts (username, email, password_hash, creation_method)
-                    VALUES (%s, %s, %s, %s)
-                    RETURNING id, username, email, about_me, creation_method
-                ''', (username, email, password_hash, 'rest'))
+                    cursor.execute('''
+                        INSERT INTO accounts (username, email, password_hash, creation_method)
+                        VALUES (%s, %s, %s, %s)
+                        RETURNING id, username, email, about_me, creation_method
+                    ''', (username, email, password_hash, 'rest'))
                 
-                new_user = cursor.fetchone()
-                conn.commit()
+                    new_user = cursor.fetchone()
+                    conn.commit()
                 
-                return jsonify({
-                    'id': new_user[0],
-                    'username': new_user[1],
-                    'email': new_user[2],
-                    'about_me': new_user[3],
-                    'creation_method': new_user[4]
-                }), 201
+                    return jsonify({
+                        'id': new_user[0],
+                        'username': new_user[1],
+                        'email': new_user[2],
+                        'about_me': new_user[3],
+                        'creation_method': new_user[4]
+                    }), 201
     # ... обработка ошибок
                 
     except errors.UniqueViolation as e:
