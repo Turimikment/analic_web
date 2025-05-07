@@ -95,62 +95,16 @@
         100% { transform: translateX(100%) rotate(45deg); }
     }
 </style>
-    <div class="section">
-        <h2>REST API методы 🍃</h2>
-        
-        <div class="method rest">
-            <span class="badge get">GET</span>
-            <strong>/api/accounts</strong> - Получить список всех зайцев
-        </div>
 
-        <div class="method rest">
-            <span class="badge post">POST</span>
-            <strong>/api/accounts</strong> - Создать нового зайца
-            <br><em>Пример тела запроса:</em> 
-            <code>{"username": "BugsBunny", "email": "bugs@warner.com", "password": "carrot123"}</code>
-        </div>
-
-        <div class="method rest">
-            <span class="badge get">GET</span>
-            <strong>/api/accounts/{id}</strong> - Получить зайца по ID
-        </div>
-
-        <div class="method rest">
-            <span class="badge put">PUT</span>
-            <strong>/api/accounts/{id}/username</strong> - Изменить имя зайца
-        </div>
-    </div>
 
     <div class="section">
-        <h2>SOAP API методы ☁️</h2>
-        
-        <div class="method soap">
-            <span class="badge soap-badge">SOAP</span>
-            <strong>/soap/service</strong> - Основной SOAP endpoint
-            <br><em>Метод:</em> get_user_by_id
-            <br><em>Пример запроса:</em>
-            <pre>
-&lt;soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"&gt;
-   &lt;soap:Body&gt;
-      &lt;get_user_by_id xmlns="soap.users"&gt;
-         &lt;user_id&gt;1&lt;/user_id&gt;
-      &lt;/get_user_by_id&gt;
-   &lt;/soap:Body&gt;
-&lt;/soap:Envelope&gt;</pre>
-        </div>
-    </div>
-
-    <div class="section">
-        <h2>📚 Учебные материалы</h2>
+ 
         <ul>
             <li><a href="/view-db" class="db-link">Просмотр базы данных</a></li>
             <li><a href="/soap?wsdl" target="_blank">WSDL для SOAP сервиса</a></li>
         </ul>
     </div>
 
-    <div class="section" style="text-align: center;">
-        <img src="https://i.imgur.com/7G7WzBq.png" alt="Зайчик с планшетом" style="width: 200px;">
-        <p>🐰 Учись, экспериментируй, становись экспертом API! 🥕</p>
     </div>
 </body>
-</html> добавь кнопки Просмотр базы данных и WSDL для SOAP по аналогии с кнопкой Попробуй rest api
+</html> 
