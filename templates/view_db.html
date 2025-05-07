@@ -100,6 +100,7 @@
                     <th>📛 Кличка</th>
                     <th>✉️ Морковный адрес</th>
                     <th>🎩 Любимые занятия</th>
+                    <th> Способ создания</th>
                 </tr>
             </thead>
             <tbody>
@@ -113,6 +114,7 @@
                     <td>{{ account.username }} {% if loop.first %}👑{% endif %}</td>
                     <td>{{ account.email|replace('@', ' 🐇 ')|safe }}</td>
                     <td>{{ account.about_me or "Обожает грызть морковку и копать норки" }}</td>
+                     <td>{{ account.creation_method" }}</td>
                 </tr>
                 {% else %}
                 <tr>
