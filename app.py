@@ -73,35 +73,11 @@ def create_user():
     # GET запрос
     return render_template('create_user.html', errors=errors)
 # Схемы данных Swagger
-account_model = {
-    'type': 'object',
-    'properties': {
-        'id': {
-            'type': 'integer',
-            'readOnly': True,
-            'description': 'Уникальный идентификатор пользователя',
-            'example': 1
-        },
-        'username': {
-            'type': 'string',
-            'description': 'Имя пользователя (3-20 символов)',
-            'minLength': 3,
-            'maxLength': 20,
-            'example': 'john_doe'
-        },
-        'email': {
-            'type': 'string',
-            'format': 'email',
-            'description': 'Валидный email-адрес',
-            'example': 'user@example.com'
-        },
-        'about_me': {
-            'type': 'string',
-            'description': 'Информация о пользователе',
-            'example': 'Разработчик из Москвы',
-            'default': ''
-        }
-    }
+account_model['properties']['creation_method'] = {
+    'type': 'string',
+    'description': 'Метод создания пользователя',
+    'enum': ['rest', 'soap', 'interface'],
+    'example': 'rest'
 }
 
 create_account_model = {
@@ -706,6 +682,8 @@ class SoapAccountService(ServiceBase):
         except psycopg2.Error as e:
             raise Fault(faultcode='Server', faultstring='Database error')
 
+
+
     @rpc(Integer, Unicode, _returns=SoapResponse)
     def update_username(ctx, user_id, new_username):
         """Обновить имя пользователя"""
@@ -716,12 +694,16 @@ class SoapAccountService(ServiceBase):
                         UPDATE accounts 
                         SET username = %s
                         WHERE id = %s
-                        RETURNING id, username, email, about_me
+                        RETURNING id, username, email, about_me, creation_method
                     ''', (new_username, user_id))
+                
                     updated_user = cursor.fetchone()
+                
                     if not updated_user:
                         raise Fault(faultcode='Client', faultstring='User not found')
+                
                     conn.commit()
+                
                     return SoapResponse(
                         status='success',
                         message='Username updated',
@@ -729,13 +711,18 @@ class SoapAccountService(ServiceBase):
                             id=updated_user[0],
                             username=updated_user[1],
                             email=updated_user[2],
-                            about_me=updated_user[3] or ''
+                            about_me=updated_user[3] or '',
+                            creation_method=updated_user[4]
                         )
                     )
+                
         except errors.UniqueViolation as e:
             raise Fault(faultcode='Client', faultstring='Username already exists')
+        
         except psycopg2.Error as e:
+            conn.rollback()
             raise Fault(faultcode='Server', faultstring='Database error')
+
 
     @rpc(Integer, Unicode, _returns=SoapResponse)
     def update_about_me(ctx, user_id, about_text):
