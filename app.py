@@ -72,12 +72,43 @@ def create_user():
 
     # GET запрос
     return render_template('create_user.html', errors=errors)
+
 # Схемы данных Swagger
-account_model['properties']['creation_method'] = {
-    'type': 'string',
-    'description': 'Метод создания пользователя',
-    'enum': ['rest', 'soap', 'interface'],
-    'example': 'rest'
+account_model = {
+    'type': 'object',
+    'properties': {
+        'id': {
+            'type': 'integer',
+            'readOnly': True,
+            'description': 'Уникальный идентификатор пользователя',
+            'example': 1
+        },
+        'username': {
+            'type': 'string',
+            'description': 'Имя пользователя (3-20 символов)',
+            'minLength': 3,
+            'maxLength': 20,
+            'example': 'john_doe'
+        },
+        'email': {
+            'type': 'string',
+            'format': 'email',
+            'description': 'Валидный email-адрес',
+            'example': 'user@example.com'
+        },
+        'about_me': {
+            'type': 'string',
+            'description': 'Информация о пользователе',
+            'example': 'Разработчик из Москвы',
+            'default': ''
+        },
+        'creation_method' : {
+        'type': 'string',
+        'description': 'Метод создания пользователя',
+        'enum': ['rest', 'soap', 'interface'],
+        'example': 'rest'
+        }
+    }
 }
 
 create_account_model = {
