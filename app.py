@@ -668,7 +668,8 @@ class SoapAccountService(ServiceBase):
                         about_me=user[3] or ''
                         creation_method = user[4]                        
                     )
-                    ) for row in cursor.fetchall()]
+                    ) 
+                    for row in cursor.fetchall()]
         except psycopg2.Error as e:
             raise Fault(faultcode='Server', faultstring='Database error')
 
