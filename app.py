@@ -617,7 +617,7 @@ class SoapAccountService(ServiceBase):
                         id=user[0],
                         username=user[1],
                         email=user[2],
-                        about_me=user[3] or ''
+                        about_me=user[3] or '',
                         creation_method = user[4]                        
                     )
         except psycopg2.Error as e:
