@@ -667,7 +667,7 @@ class SoapAccountService(ServiceBase):
                         email=user[2],
                         about_me=user[3] or ''
                         creation_method = user[4]                        
-                    )
+                        )
                     ) 
                     for row in cursor.fetchall()]
         except psycopg2.Error as e:
