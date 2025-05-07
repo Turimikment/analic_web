@@ -550,6 +550,7 @@ def delete_account(user_id):
                 
     except psycopg2.Error as e:
         return jsonify({'error': 'Ошибка базы данных'}), 500
+# ... (предыдущий код остается без изменений)
 
 class SoapUser(ComplexModel):
     __namespace__ = 'soap.users'
@@ -558,10 +559,23 @@ class SoapUser(ComplexModel):
     email = Unicode
     about_me = Unicode
 
+class SoapUserRequest(ComplexModel):
+    __namespace__ = 'soap.users'
+    username = Unicode
+    email = Unicode
+    password = Unicode
+    about_me = Unicode(default='')
+
+class SoapResponse(ComplexModel):
+    __namespace__ = 'soap.users'
+    status = Unicode
+    message = Unicode
+    user = SoapUser.customize(min_occurs=0)
+
 class SoapAccountService(ServiceBase):
     @rpc(Integer, _returns=SoapUser)
     def get_user_by_id(ctx, user_id):
-        """Получить пользователя по ID через SOAP"""
+        """Получить пользователя по ID"""
         try:
             with get_db() as conn:
                 with conn.cursor() as cursor:
@@ -570,26 +584,174 @@ class SoapAccountService(ServiceBase):
                         FROM accounts 
                         WHERE id = %s
                     ''', (user_id,))
-                    
                     user = cursor.fetchone()
                     if not user:
-                        raise Fault(faultcode='Client', 
-                                  faultstring='User not found')
-                    
+                        raise Fault(faultcode='Client', faultstring='User not found')
                     return SoapUser(
                         id=user[0],
                         username=user[1],
                         email=user[2],
                         about_me=user[3] or ''
                     )
-                    
         except psycopg2.Error as e:
-            raise Fault(faultcode='Server', 
-                      faultstring='Database error')
-        except Exception as e:
-            raise Fault(faultcode='Server', 
-                      faultstring='Internal server error')
-    
+            raise Fault(faultcode='Server', faultstring='Database error')
+
+    @rpc(_returns=Array(SoapUser))
+    def get_all_users(ctx):
+        """Получить всех пользователей"""
+        try:
+            with get_db() as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute('SELECT id, username, email, about_me FROM accounts')
+                    return [SoapUser(
+                        id=row[0],
+                        username=row[1],
+                        email=row[2],
+                        about_me=row[3] or ''
+                    ) for row in cursor.fetchall()]
+        except psycopg2.Error as e:
+            raise Fault(faultcode='Server', faultstring='Database error')
+
+    @rpc(SoapUserRequest, _returns=SoapResponse)
+    def create_user(ctx, user_data):
+        """Создать нового пользователя"""
+        try:
+            with get_db() as conn:
+                with conn.cursor() as cursor:
+                    password_hash = generate_password_hash(user_data.password)
+                    cursor.execute('''
+                        INSERT INTO accounts (username, email, password_hash, about_me)
+                        VALUES (%s, %s, %s, %s)
+                        RETURNING id, username, email, about_me
+                    ''', (
+                        user_data.username,
+                        user_data.email,
+                        password_hash,
+                        user_data.about_me
+                    ))
+                    new_user = cursor.fetchone()
+                    conn.commit()
+                    return SoapResponse(
+                        status='success',
+                        message='User created',
+                        user=SoapUser(
+                            id=new_user[0],
+                            username=new_user[1],
+                            email=new_user[2],
+                            about_me=new_user[3] or ''
+                        )
+                    )
+        except errors.UniqueViolation as e:
+            raise Fault(faultcode='Client', faultstring='Duplicate username or email')
+        except psycopg2.Error as e:
+            raise Fault(faultcode='Server', faultstring='Database error')
+
+    @rpc(Integer, Unicode, _returns=SoapResponse)
+    def update_username(ctx, user_id, new_username):
+        """Обновить имя пользователя"""
+        try:
+            with get_db() as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute('''
+                        UPDATE accounts 
+                        SET username = %s
+                        WHERE id = %s
+                        RETURNING id, username, email, about_me
+                    ''', (new_username, user_id))
+                    updated_user = cursor.fetchone()
+                    if not updated_user:
+                        raise Fault(faultcode='Client', faultstring='User not found')
+                    conn.commit()
+                    return SoapResponse(
+                        status='success',
+                        message='Username updated',
+                        user=SoapUser(
+                            id=updated_user[0],
+                            username=updated_user[1],
+                            email=updated_user[2],
+                            about_me=updated_user[3] or ''
+                        )
+                    )
+        except errors.UniqueViolation as e:
+            raise Fault(faultcode='Client', faultstring='Username already exists')
+        except psycopg2.Error as e:
+            raise Fault(faultcode='Server', faultstring='Database error')
+
+    @rpc(Integer, Unicode, _returns=SoapResponse)
+    def update_about_me(ctx, user_id, about_text):
+        """Обновить информацию 'О себе'"""
+        try:
+            with get_db() as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute('''
+                        UPDATE accounts 
+                        SET about_me = %s
+                        WHERE id = %s
+                        RETURNING id, username, email, about_me
+                    ''', (about_text, user_id))
+                    updated_user = cursor.fetchone()
+                    if not updated_user:
+                        raise Fault(faultcode='Client', faultstring='User not found')
+                    conn.commit()
+                    return SoapResponse(
+                        status='success',
+                        message='About me updated',
+                        user=SoapUser(
+                            id=updated_user[0],
+                            username=updated_user[1],
+                            email=updated_user[2],
+                            about_me=updated_user[3] or ''
+                        )
+                    )
+        except psycopg2.Error as e:
+            raise Fault(faultcode='Server', faultstring='Database error')
+
+    @rpc(Integer, _returns=SoapResponse)
+    def delete_about_me(ctx, user_id):
+        """Удалить информацию 'О себе'"""
+        try:
+            with get_db() as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute('''
+                        UPDATE accounts 
+                        SET about_me = ''
+                        WHERE id = %s
+                        RETURNING id, username, email, about_me
+                    ''', (user_id,))
+                    updated_user = cursor.fetchone()
+                    if not updated_user:
+                        raise Fault(faultcode='Client', faultstring='User not found')
+                    conn.commit()
+                    return SoapResponse(
+                        status='success',
+                        message='About me cleared',
+                        user=SoapUser(
+                            id=updated_user[0],
+                            username=updated_user[1],
+                            email=updated_user[2],
+                            about_me=updated_user[3] or ''
+                        )
+                    )
+        except psycopg2.Error as e:
+            raise Fault(faultcode='Server', faultstring='Database error')
+
+    @rpc(Integer, _returns=SoapResponse)
+    def delete_user(ctx, user_id):
+        """Удалить пользователя"""
+        try:
+            with get_db() as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute('DELETE FROM accounts WHERE id = %s RETURNING id', (user_id,))
+                    if cursor.rowcount == 0:
+                        raise Fault(faultcode='Client', faultstring='User not found')
+                    conn.commit()
+                    return SoapResponse(
+                        status='success',
+                        message='User deleted',
+                        user=None
+                    )
+        except psycopg2.Error as e:
+            raise Fault(faultcode='Server', faultstring='Database error')
 
 # Настройка SOAP endpoint
 soap_app = Application(
@@ -602,6 +764,8 @@ soap_app = Application(
 app.wsgi_app = DispatcherMiddleware(app.wsgi_app, {
     '/soap': WsgiApplication(soap_app)
 })
+
+# ... (остальной код остается без изменений)
 
 if __name__ == '__main__':
     init_db()
