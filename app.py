@@ -471,6 +471,85 @@ def update_about_me(user_id):
                 
     except psycopg2.Error as e:
         return jsonify({'error': 'Ошибка базы данных'}), 500
+@app.route('/accounts/<int:user_id>/about', methods=['DELETE'])
+@swag_from({
+    'tags': ['Accounts'],
+    'parameters': [
+        {
+            'name': 'user_id',
+            'in': 'path',
+            'type': 'integer',
+            'required': True
+        }
+    ],
+    'responses': {
+        200: {
+            'description': 'Информация "О себе" успешно удалена',
+            'schema': account_model
+        },
+        404: {'description': 'Пользователь не найден'},
+        500: {'description': 'Ошибка базы данных'}
+    }
+})
+def delete_about_me(user_id):
+    """Удалить информацию 'О себе' пользователя"""
+    try:
+        with get_db() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute('''
+                    UPDATE accounts 
+                    SET about_me = ''
+                    WHERE id = %s
+                    RETURNING id, username, email, about_me
+                ''', (user_id,))
+                
+                updated_user = cursor.fetchone()
+                if not updated_user:
+                    return jsonify({'error': 'Пользователь не найден'}), 404
+                
+                conn.commit()
+                
+                return jsonify({
+                    'id': updated_user[0],
+                    'username': updated_user[1],
+                    'email': updated_user[2],
+                    'about_me': updated_user[3]
+                }), 200
+                
+    except psycopg2.Error as e:
+        return jsonify({'error': 'Ошибка базы данных'}), 500
+
+@app.route('/accounts/<int:user_id>', methods=['DELETE'])
+@swag_from({
+    'tags': ['Accounts'],
+    'parameters': [
+        {
+            'name': 'user_id',
+            'in': 'path',
+            'type': 'integer',
+            'required': True
+        }
+    ],
+    'responses': {
+        200: {'description': 'Пользователь успешно удален'},
+        404: {'description': 'Пользователь не найден'},
+        500: {'description': 'Ошибка базы данных'}
+    }
+})
+def delete_account(user_id):
+    """Удалить пользователя по ID"""
+    try:
+        with get_db() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute('DELETE FROM accounts WHERE id = %s', (user_id,))
+                if cursor.rowcount == 0:
+                    return jsonify({'error': 'Пользователь не найден'}), 404
+                
+                conn.commit()
+                return jsonify({'message': 'Пользователь успешно удален'}), 200
+                
+    except psycopg2.Error as e:
+        return jsonify({'error': 'Ошибка базы данных'}), 500
 
 class SoapUser(ComplexModel):
     __namespace__ = 'soap.users'
@@ -510,6 +589,7 @@ class SoapAccountService(ServiceBase):
         except Exception as e:
             raise Fault(faultcode='Server', 
                       faultstring='Internal server error')
+    
 
 # Настройка SOAP endpoint
 soap_app = Application(
