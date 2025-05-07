@@ -28,15 +28,23 @@ def soap_interface():
     return render_template('soap.html')
 @app.route('/create-user', methods=['GET', 'POST'])
 def create_user():
-    form_errors = {}  # Переименованная переменная
+    form_errors = {}
     
     if request.method == 'POST':
         username = request.form.get('username', '').strip()
         email = request.form.get('email', '').strip()
         password = request.form.get('password', '')
 
-        # Валидация...
+        # Валидация
+        if len(username) < 3 or len(username) > 20:
+            form_errors['username'] = 'Имя пользователя должно быть от 3 до 20 символов'
         
+        if not validate_email(email):
+            form_errors['email'] = 'Некорректный формат email'
+        
+        if len(password) < 6:
+            form_errors['password'] = 'Пароль должен быть не менее 6 символов'
+
         if form_errors:
             return render_template('create_user.html', errors=form_errors)
 
@@ -44,31 +52,28 @@ def create_user():
             with get_db() as conn:
                 with conn.cursor() as cursor:
                     password_hash = generate_password_hash(password)
-                    
                     cursor.execute('''
-                        INSERT INTO accounts 
-                            (username, email, password_hash, creation_method)
+                        INSERT INTO accounts (username, email, password_hash, creation_method)
                         VALUES (%s, %s, %s, %s)
                         RETURNING id
                     ''', (username, email, password_hash, 'interface'))
-                    
                     user_id = cursor.fetchone()[0]
                     conn.commit()
-                    
                     return redirect(url_for('user_profile', user_id=user_id))
 
         except errors.UniqueViolation as e:
             if 'username' in str(e):
-                form_errors['username'] = 'Имя пользователя занято'
+                form_errors['username'] = 'Имя пользователя уже занято'
             elif 'email' in str(e):
-                form_errors['email'] = 'Email уже существует'
+                form_errors['email'] = 'Этот email уже зарегистрирован'
             return render_template('create_user.html', errors=form_errors)
         
         except psycopg2.Error as e:
-            form_errors['database'] = f'Ошибка БД: {str(e)}'
+            form_errors['database'] = f'Ошибка базы данных: {str(e)}'
             return render_template('create_user.html', errors=form_errors)
 
-    return render_template('create_user.html')
+    # GET запрос - передаем пустой словарь errors
+    return render_template('create_user.html', errors={})
 # Схемы данных Swagger
 account_model = {
     'type': 'object',
