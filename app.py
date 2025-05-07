@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, abort
+from flask import Flask, render_template, request, jsonify, abort, redirect, url_for
 from flasgger import Swagger, swag_from
 import psycopg2
 from psycopg2 import sql, errors
@@ -26,7 +26,52 @@ def home():
 @app.route('/soap-interface')
 def soap_interface():
     return render_template('soap.html')
+@app.route('/create-user', methods=['GET', 'POST'])
+def create_user():
+    errors = {}
+    if request.method == 'POST':
+        username = request.form.get('username', '').strip()
+        email = request.form.get('email', '').strip()
+        password = request.form.get('password', '')
 
+        # Валидация данных
+        if len(username) < 3 or len(username) > 20:
+            errors['username'] = 'Имя пользователя должно быть от 3 до 20 символов'
+        
+        if not validate_email(email):
+            errors['email'] = 'Некорректный формат email'
+        
+        if len(password) < 6:
+            errors['password'] = 'Пароль должен быть не менее 6 символов'
+
+        if not errors:
+            try:
+                with get_db() as conn:
+                    with conn.cursor() as cursor:
+                        password_hash = generate_password_hash(password)
+                        cursor.execute('''
+                            INSERT INTO accounts (username, email, password_hash)
+                            VALUES (%s, %s, %s)
+                            RETURNING id
+                        ''', (username, email, password_hash))
+                        user_id = cursor.fetchone()[0]
+                        conn.commit()
+                        return redirect(url_for('user_profile', user_id=user_id))
+            except errors.UniqueViolation as e:
+                if 'username' in str(e):
+                    errors['username'] = 'Это имя пользователя уже занято'
+                elif 'email' in str(e):
+                    errors['email'] = 'Этот email уже зарегистрирован'
+            except Exception as e:
+                errors['database'] = 'Ошибка базы данных: ' + str(e)
+
+        return render_template('create_user.html', 
+                            errors=errors,
+                            username=username,
+                            email=email)
+
+    # GET запрос
+    return render_template('create_user.html', errors=errors)
 # Схемы данных Swagger
 account_model = {
     'type': 'object',
