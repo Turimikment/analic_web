@@ -369,39 +369,43 @@ def create_account():
     
     if errors:
         return jsonify(errors), 400
-        try:
-            with get_db() as conn:
-                with conn.cursor() as cursor:
-                    password_hash = generate_password_hash(password)
+    
+    try:
+        with get_db() as conn:
+            with conn.cursor() as cursor:
+                password_hash = generate_password_hash(password)
                 
-                    cursor.execute('''
-                        INSERT INTO accounts (username, email, password_hash, creation_method)
-                        VALUES (%s, %s, %s, %s)
-                        RETURNING id, username, email, about_me, creation_method
-                    ''', (username, email, password_hash, 'rest'))
+                cursor.execute('''
+                    INSERT INTO accounts (username, email, password_hash, creation_method)
+                    VALUES (%s, %s, %s, %s)
+                    RETURNING id, username, email, about_me, creation_method
+                ''', (username, email, password_hash, 'rest'))
                 
-                    new_user = cursor.fetchone()
-                    conn.commit()
+                new_user = cursor.fetchone()
+                conn.commit()
                 
-                    return jsonify({
-                        'id': new_user[0],
-                        'username': new_user[1],
-                        'email': new_user[2],
-                        'about_me': new_user[3],
-                        'creation_method': new_user[4]
-                    }), 201
-    # ... обработка ошибок
-                
-        except errors.UniqueViolation as e:
-            error_msg = 'Ошибка уникальности: '
-            if 'username' in str(e):
-                error_msg += 'Имя пользователя уже существует'
-            elif 'email' in str(e):
-                error_msg += 'Email уже зарегистрирован'
-            return jsonify({'error': error_msg}), 409
-        except psycopg2.Error as e:
-            return jsonify({'error': 'Ошибка базы данных'}), 500
+                return jsonify({
+                    'id': new_user[0],
+                    'username': new_user[1],
+                    'email': new_user[2],
+                    'about_me': new_user[3],
+                    'creation_method': new_user[4]
+                }), 201
 
+    except errors.UniqueViolation as e:
+        error_msg = 'Ошибка уникальности: '
+        if 'username' in str(e):
+            error_msg += 'Имя пользователя уже существует'
+        elif 'email' in str(e):
+            error_msg += 'Email уже зарегистрирован'
+        return jsonify({'error': error_msg}), 409
+    
+    except psycopg2.Error as e:
+        return jsonify({'error': 'Ошибка базы данных'}), 500
+    
+    except Exception as e:
+        return jsonify({'error': 'Неизвестная ошибка'}), 500
+        
 @app.route('/accounts/<int:user_id>', methods=['PUT'])
 @swag_from({
     'tags': ['Accounts'],
