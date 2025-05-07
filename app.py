@@ -50,10 +50,10 @@ def create_user():
                     with conn.cursor() as cursor:
                         password_hash = generate_password_hash(password)
                         cursor.execute('''
-                            INSERT INTO accounts (username, email, password_hash)
-                            VALUES (%s, %s, %s)
+                            INSERT INTO accounts (username, email, password_hash,creation_method)
+                            VALUES (%s, %s, %s,%f)
                             RETURNING id
-                        ''', (username, email, password_hash))
+                        ''', (username, email, password_hash,'interface'))
                         user_id = cursor.fetchone()[0]
                         conn.commit()
                         return redirect(url_for('user_profile', user_id=user_id))
@@ -217,18 +217,19 @@ def init_db():
     admin_conn.close()
 
     # Создаем таблицы
-    with get_db() as conn:
-        with conn.cursor() as cursor:
-            cursor.execute('''
-                CREATE TABLE IF NOT EXISTS accounts (
-                    id SERIAL PRIMARY KEY,
-                    username VARCHAR(20) NOT NULL UNIQUE,
-                    email VARCHAR(255) NOT NULL UNIQUE,
-                    password_hash VARCHAR(255) NOT NULL,
-                    about_me TEXT DEFAULT ''
-                )
-            ''')
-        conn.commit()
+with get_db() as conn:
+    with conn.cursor() as cursor:
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS accounts (
+                id SERIAL PRIMARY KEY,
+                username VARCHAR(20) NOT NULL UNIQUE,
+                email VARCHAR(255) NOT NULL UNIQUE,
+                password_hash VARCHAR(255) NOT NULL,
+                about_me TEXT DEFAULT '',
+                creation_method VARCHAR(10) NOT NULL DEFAULT 'interface'
+            )
+        ''')
+    conn.commit()
 
 def validate_email(email):
     """Проверяет валидность email адреса"""
@@ -268,7 +269,7 @@ def view_database():
             with conn.cursor(cursor_factory=DictCursor) as cursor:
                 # Получаем данные пользователей
                 cursor.execute('''
-                    SELECT id, username, email, about_me
+                    SELECT id, username, email, about_me, creation_method
                     FROM accounts
                 ''')
                 accounts = cursor.fetchall()
@@ -308,14 +309,15 @@ def get_accounts():
     try:
         with get_db() as conn:
             with conn.cursor() as cursor:
-                cursor.execute('SELECT id, username, email, about_me FROM accounts')
+                cursor.execute('SELECT id, username, email, about_me,creation_method FROM accounts')
                 results = cursor.fetchall()
                 accounts = [{
-                    'id': row[0],
-                    'username': row[1],
-                    'email': row[2],
-                    'about_me': row[3]
-                } for row in results]
+                        'id': row[0],
+                        'username': row[1],
+                        'email': row[2],
+                        'about_me': row[3],
+                        'creation_method': row[4]
+} for row in results]
                 return jsonify(accounts), 200
     except psycopg2.Error as e:
         return jsonify({'error': 'Ошибка базы данных'}), 500
@@ -361,16 +363,16 @@ def create_account():
     if errors:
         return jsonify(errors), 400
     
-    try:
+       try:
         with get_db() as conn:
             with conn.cursor() as cursor:
                 password_hash = generate_password_hash(password)
                 
                 cursor.execute('''
-                    INSERT INTO accounts (username, email, password_hash)
-                    VALUES (%s, %s, %s)
-                    RETURNING id, username, email, about_me
-                ''', (username, email, password_hash))
+                    INSERT INTO accounts (username, email, password_hash, creation_method)
+                    VALUES (%s, %s, %s, %s)
+                    RETURNING id, username, email, about_me, creation_method
+                ''', (username, email, password_hash, 'rest'))
                 
                 new_user = cursor.fetchone()
                 conn.commit()
@@ -379,8 +381,10 @@ def create_account():
                     'id': new_user[0],
                     'username': new_user[1],
                     'email': new_user[2],
-                    'about_me': new_user[3]
+                    'about_me': new_user[3],
+                    'creation_method': new_user[4]
                 }), 201
+    # ... обработка ошибок
                 
     except errors.UniqueViolation as e:
         error_msg = 'Ошибка уникальности: '
@@ -603,6 +607,8 @@ class SoapUser(ComplexModel):
     username = Unicode
     email = Unicode
     about_me = Unicode
+    creation_method = Unicode
+
 
 class SoapUserRequest(ComplexModel):
     __namespace__ = 'soap.users'
@@ -625,7 +631,7 @@ class SoapAccountService(ServiceBase):
             with get_db() as conn:
                 with conn.cursor() as cursor:
                     cursor.execute('''
-                        SELECT id, username, email, about_me 
+                        SELECT id, username, email, about_me, creation_method
                         FROM accounts 
                         WHERE id = %s
                     ''', (user_id,))
@@ -637,6 +643,7 @@ class SoapAccountService(ServiceBase):
                         username=user[1],
                         email=user[2],
                         about_me=user[3] or ''
+                        creation_method = user[4]                        
                     )
         except psycopg2.Error as e:
             raise Fault(faultcode='Server', faultstring='Database error')
@@ -647,12 +654,21 @@ class SoapAccountService(ServiceBase):
         try:
             with get_db() as conn:
                 with conn.cursor() as cursor:
-                    cursor.execute('SELECT id, username, email, about_me FROM accounts')
-                    return [SoapUser(
-                        id=row[0],
-                        username=row[1],
-                        email=row[2],
-                        about_me=row[3] or ''
+                    cursor.execute('''
+                        SELECT id, username, email, about_me, creation_method
+                        FROM accounts 
+                        WHERE id = %s
+                    ''', (user_id,))
+                    user = cursor.fetchone()
+                    if not user:
+                        raise Fault(faultcode='Client', faultstring='User not found')
+                    return SoapUser(
+                        id=user[0],
+                        username=user[1],
+                        email=user[2],
+                        about_me=user[3] or ''
+                        creation_method = user[4]                        
+                    )
                     ) for row in cursor.fetchall()]
         except psycopg2.Error as e:
             raise Fault(faultcode='Server', faultstring='Database error')
@@ -665,26 +681,24 @@ class SoapAccountService(ServiceBase):
                 with conn.cursor() as cursor:
                     password_hash = generate_password_hash(user_data.password)
                     cursor.execute('''
-                        INSERT INTO accounts (username, email, password_hash, about_me)
-                        VALUES (%s, %s, %s, %s)
-                        RETURNING id, username, email, about_me
+                        INSERT INTO accounts (username, email, password_hash, about_me, creation_method)
+                        VALUES (%s, %s, %s, %s, %s)
+                        RETURNING id, username, email, about_me, creation_method
                     ''', (
                         user_data.username,
                         user_data.email,
                         password_hash,
-                        user_data.about_me
+                        user_data.about_me,
+                        'soap'
                     ))
                     new_user = cursor.fetchone()
                     conn.commit()
                     return SoapResponse(
-                        status='success',
-                        message='User created',
+                        # ... остальные поля
                         user=SoapUser(
-                            id=new_user[0],
-                            username=new_user[1],
-                            email=new_user[2],
-                            about_me=new_user[3] or ''
+                            creation_method=new_user[4]
                         )
+                    )
                     )
         except errors.UniqueViolation as e:
             raise Fault(faultcode='Client', faultstring='Duplicate username or email')
