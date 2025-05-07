@@ -275,10 +275,7 @@ def view_database():
         with get_db() as conn:
             with conn.cursor(cursor_factory=DictCursor) as cursor:
                 # Получаем данные пользователей
-                cursor.execute('''
-                    SELECT id, username, email, about_me, creation_method
-                    FROM accounts
-                ''')
+                cursor.execute('SELECT * FROM accounts')
                 accounts = cursor.fetchall()
 
                 # Получаем список таблиц
@@ -289,12 +286,14 @@ def view_database():
                 ''')
                 tables = [row['table_name'] for row in cursor.fetchall()]
 
-        return render_template('view_db.html',
-                            accounts=accounts,
-                            tables=tables)
+        return render_template(
+            'view_db.html',
+            accounts=accounts,
+            tables=tables
+        )
 
     except Exception as e:
-        app.logger.error(f"Ошибка при доступе к БД: {str(e)}")
+        app.logger.error(f"Database access error: {str(e)}")
         return render_template('error.html', error=str(e)), 500
 
 @app.route('/accounts', methods=['GET'])
