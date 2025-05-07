@@ -653,26 +653,27 @@ class SoapAccountService(ServiceBase):
         try:
             with get_db() as conn:
                 with conn.cursor() as cursor:
+                    # Исправленный SQL-запрос без WHERE
                     cursor.execute('''
                         SELECT id, username, email, about_me, creation_method
-                        FROM accounts 
-                        WHERE id = %s
-                    ''', (user_id,))
-                    user = cursor.fetchone()
-                    if not user:
-                        raise Fault(faultcode='Client', faultstring='User not found')
-                    return SoapUser(
-                        id=user[0],
-                        username=user[1],
-                        email=user[2],
-                        about_me=user[3] or '' ,
-                        creation_method = user[4]                        
+                        FROM accounts
+                    ''')
+                    
+                    # Обработка всех записей
+                    return [
+                        SoapUser(
+                            id=row[0],
+                            username=row[1],
+                            email=row[2],
+                            about_me=row[3] or '',
+                            creation_method=row[4]
                         )
-                     
-                    for row in cursor.fetchall()]
+                        for row in cursor.fetchall()
+                    ]
+                
         except psycopg2.Error as e:
             raise Fault(faultcode='Server', faultstring='Database error')
-
+    
     @rpc(SoapUserRequest, _returns=SoapResponse)
     def create_user(ctx, user_data):
         """Создать нового пользователя"""
