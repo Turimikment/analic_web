@@ -362,9 +362,8 @@ def create_account():
     
     if errors:
         return jsonify(errors), 400
-    
-       try:
-        with get_db() as conn:
+        try:
+            with get_db() as conn:
             with conn.cursor() as cursor:
                 password_hash = generate_password_hash(password)
                 
