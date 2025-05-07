@@ -95,15 +95,87 @@
         100% { transform: translateX(100%) rotate(45deg); }
     }
 </style>
+<!-- ... предыдущий код остается без изменений ... -->
 
+<div style="display: flex; flex-direction: column; align-items: center; gap: 30px; margin: 40px 0;">
+    <!-- Кнопка просмотра БД -->
+    <a href="/view-db" 
+       style="
+           display: inline-block;
+           padding: 20px 40px;
+           background: linear-gradient(145deg, #4CAF50, #2c5f2d);
+           color: white !important;
+           border-radius: 30px;
+           text-decoration: none;
+           font-size: 1.4em;
+           transition: all 0.4s;
+           border: 3px solid #388E3C;
+           box-shadow: 0 8px 15px rgba(76,175,80,0.3);
+           text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+           position: relative;
+           overflow: hidden;
+       "
+       onmouseover="this.style.transform='rotate(2deg) scale(1.05)'"
+       onmouseout="this.style.transform='none'">
+       
+       <span style="display: block; margin-bottom: 8px;">📊🥬</span>
+       Просмотр базы данных
+       
+       <div style="
+           position: absolute;
+           top: -50%;
+           left: -50%;
+           width: 200%;
+           height: 200%;
+           background: linear-gradient(45deg, 
+               transparent 25%,
+               rgba(255,255,255,0.2) 50%,
+               transparent 75%
+           );
+           animation: shine 3s infinite;
+       "></div>
+    </a>
 
-    <div class="section">
- 
-        <ul>
-            <li><a href="/view-db" class="db-link">Просмотр базы данных</a></li>
-            <li><a href="/soap?wsdl" target="_blank">WSDL для SOAP сервиса</a></li>
-        </ul>
-    </div>
+    <!-- Кнопка WSDL -->
+    <a href="/soap?wsdl" target="_blank" 
+       style="
+           display: inline-block;
+           padding: 20px 40px;
+           background: linear-gradient(145deg, #9C27B0, #6A1B9A);
+           color: white !important;
+           border-radius: 30px;
+           text-decoration: none;
+           font-size: 1.4em;
+           transition: all 0.4s;
+           border: 3px solid #7B1FA2;
+           box-shadow: 0 8px 15px rgba(156,39,176,0.3);
+           text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+           position: relative;
+           overflow: hidden;
+       "
+       onmouseover="this.style.transform='rotate(-2deg) scale(1.05)'"
+       onmouseout="this.style.transform='none'">
+       
+       <span style="display: block; margin-bottom: 8px;">🧼🫧</span>
+       WSDL для SOAP сервиса
+       
+       <div style="
+           position: absolute;
+           top: -50%;
+           left: -50%;
+           width: 200%;
+           height: 200%;
+           background: linear-gradient(45deg, 
+               transparent 25%,
+               rgba(255,255,255,0.2) 50%,
+               transparent 75%
+           );
+           animation: shine 3s infinite;
+       "></div>
+    </a>
+</div>
+
+<!-- ... остальной код остается без изменений ... -->
 
     </div>
 </body>
