@@ -100,9 +100,11 @@
     <div class="container">
         <h1>🌱 Вырастить нового зайца-программиста 🐇</h1>
 
-        {% if errors.database %}
-            <div class="error">🚨 {{ errors.database }}</div>
-        {% endif %}
+ {% if 'database' in errors %}
+<div class="alert alert-danger">
+    {{ errors.database }}
+</div>
+{% endif %}
 
         <form method="POST">
             <div class="form-group">
