@@ -361,15 +361,15 @@ def create_account():
                     }), 201
     # ... обработка ошибок
                 
-    except errors.UniqueViolation as e:
-        error_msg = 'Ошибка уникальности: '
-        if 'username' in str(e):
-            error_msg += 'Имя пользователя уже существует'
-        elif 'email' in str(e):
-            error_msg += 'Email уже зарегистрирован'
-        return jsonify({'error': error_msg}), 409
-    except psycopg2.Error as e:
-        return jsonify({'error': 'Ошибка базы данных'}), 500
+        except errors.UniqueViolation as e:
+            error_msg = 'Ошибка уникальности: '
+            if 'username' in str(e):
+                error_msg += 'Имя пользователя уже существует'
+            elif 'email' in str(e):
+                error_msg += 'Email уже зарегистрирован'
+            return jsonify({'error': error_msg}), 409
+        except psycopg2.Error as e:
+            return jsonify({'error': 'Ошибка базы данных'}), 500
 
 @app.route('/accounts/<int:user_id>', methods=['PUT'])
 @swag_from({
