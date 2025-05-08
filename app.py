@@ -29,11 +29,13 @@ def soap_interface():
 @app.route('/create-user', methods=['GET', 'POST'])
 def create_user():
     form_errors = {}
+    form_data = session.get('form_data', {})
     
     if request.method == 'POST':
         username = request.form.get('username', '').strip()
         email = request.form.get('email', '').strip()
         password = request.form.get('password', '')
+        cache_data = 'cache_data' in request.form  # Получаем состояние чекбокса
 
         # Валидация
         if len(username) < 3 or len(username) > 20:
@@ -46,7 +48,21 @@ def create_user():
             form_errors['password'] = 'Пароль должен быть не менее 6 символов'
 
         if form_errors:
-            return render_template('create_user.html', errors=form_errors)
+            # Сохраняем данные в сессии если чекбокс активен
+            if cache_data:
+                session['form_data'] = {
+                    'username': username,
+                    'email': email,
+                    'cache_checked': True
+                }
+            else:
+                session.pop('form_data', None)
+            
+            return render_template('create_user.html', 
+                errors=form_errors,
+                username=username,
+                email=email,
+                cache_checked=cache_data)
 
         try:
             with get_db() as conn:
@@ -59,6 +75,7 @@ def create_user():
                     ''', (username, email, password_hash, 'interface'))
                     user_id = cursor.fetchone()[0]
                     conn.commit()
+                    session.pop('form_data', None)  # Очищаем кэш после успешной регистрации
                     return redirect(url_for('user_profile', user_id=user_id))
 
         except errors.UniqueViolation as e:
@@ -66,14 +83,41 @@ def create_user():
                 form_errors['username'] = 'Имя пользователя уже занято'
             elif 'email' in str(e):
                 form_errors['email'] = 'Этот email уже зарегистрирован'
-            return render_template('create_user.html', errors=form_errors)
+            
+            # Сохраняем данные при ошибке БД если чекбокс активен
+            if cache_data:
+                session['form_data'] = {
+                    'username': username,
+                    'email': email,
+                    'cache_checked': True
+                }
+            return render_template('create_user.html', 
+                errors=form_errors,
+                username=username,
+                email=email,
+                cache_checked=cache_data)
         
         except psycopg2.Error as e:
             form_errors['database'] = f'Ошибка базы данных: {str(e)}'
-            return render_template('create_user.html', errors=form_errors)
+            if cache_data:
+                session['form_data'] = {
+                    'username': username,
+                    'email': email,
+                    'cache_checked': True
+                }
+            return render_template('create_user.html', 
+                errors=form_errors,
+                username=username,
+                email=email,
+                cache_checked=cache_data)
 
-    # GET запрос - передаем пустой словарь errors
-    return render_template('create_user.html', errors={})
+    # GET запрос - используем данные из сессии
+    return render_template('create_user.html',
+        errors={},
+        username=form_data.get('username', ''),
+        email=form_data.get('email', ''),
+        cache_checked=form_data.get('cache_checked', False))
+    
 # Схемы данных Swagger
 account_model = {
     'type': 'object',
