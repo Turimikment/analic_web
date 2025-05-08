@@ -133,7 +133,31 @@
                     <div class="error">⚠️ {{ errors.password }}</div>
                 {% endif %}
             </div>
+<!-- Добавляем после блока с паролем -->
+<div class="form-group">
+    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+        <input type="checkbox" name="cache_data" 
+               {% if cache_checked %}checked{% endif %}
+               style="width: auto; margin: 0; accent-color: #FF9800; transform: scale(1.3);">
+        <span>💾 Сохранить морковные данные при обновлении</span>
+    </label>
+</div>
 
+<!-- Обновляем CSS -->
+<style>
+    /* Добавляем в существующие стили */
+    input[type="checkbox"] {
+        width: auto;
+        margin: 0;
+        accent-color: #FF9800;
+        transform: scale(1.3);
+        cursor: pointer;
+    }
+    
+    .form-group label span {
+        vertical-align: middle;
+    }
+</style>
             <button type="submit">
                 🪄 Создать пушистого разработчика
             </button>
