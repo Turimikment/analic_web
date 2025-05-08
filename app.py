@@ -312,7 +312,7 @@ def view_database():
     }
 })
 def get_accounts():
-    """Получить всех пользователей"""
+    """Получить всех зайцев"""
     try:
         with get_db() as conn:
             with conn.cursor() as cursor:
@@ -350,24 +350,24 @@ def get_accounts():
     }
 })
 def create_account():
-    """Создать нового пользователя"""
+    """Создать нового зайца"""
     data = request.get_json()
-    errors = {}
+    validation_errors = {}
     
     username = data.get('username', '')
     email = data.get('email', '')
     password = data.get('password', '')
     
     if len(username) < 3 or len(username) > 20:
-        errors['username'] = 'Длина имени должна быть 3-20 символов'
+        validation_errors['username'] = 'Длина имени должна быть 3-20 символов'
     
     if not validate_email(email):
-        errors['email'] = 'Некорректный формат email'
+        validation_errors['email'] = 'Некорректный формат email'
     
     if len(password) < 6:
-        errors['password'] = 'Пароль должен быть не менее 6 символов'
+        validation_errors['password'] = 'Пароль должен быть не менее 6 символов'
     
-    if errors:
+    if validation_errors:
         return jsonify(errors), 400
     
     try:
@@ -394,10 +394,13 @@ def create_account():
 
     except errors.UniqueViolation as e:
         error_msg = 'Ошибка уникальности: '
+        # Проверка, какое поле вызвало конфликт
         if 'username' in str(e):
             error_msg += 'Имя пользователя уже существует'
         elif 'email' in str(e):
             error_msg += 'Email уже зарегистрирован'
+        else:
+            error_msg += 'Дубликат данных'
         return jsonify({'error': error_msg}), 409
     
     except psycopg2.Error as e:
@@ -434,7 +437,7 @@ def create_account():
     }
 })
 def update_username(user_id):
-    """Обновить имя пользователя"""
+    """Обновить имя изайца"""
     data = request.get_json()
     new_username = data.get('new_username', '').strip()
     
@@ -470,7 +473,7 @@ def update_username(user_id):
     except psycopg2.Error as e:
         return jsonify({'error': 'Ошибка базы данных'}), 500
 
-@app.route('/accounts/<int:user_id>/about', methods=['PUT'])
+@app.route('/accounts/about/<int:user_id>', methods=['PUT'])
 @swag_from({
     'tags': ['Accounts'],
     'parameters': [
@@ -501,7 +504,7 @@ def update_username(user_id):
     }
 })
 def update_about_me(user_id):
-    """Обновить информацию 'О себе'"""
+    """Обновить поле Любимые занятия"""
     data = request.get_json()
     about_me = data.get('about_me', '')
     
@@ -530,7 +533,7 @@ def update_about_me(user_id):
                 
     except psycopg2.Error as e:
         return jsonify({'error': 'Ошибка базы данных'}), 500
-@app.route('/accounts/<int:user_id>/about', methods=['DELETE'])
+@app.route('/accounts/about/<int:user_id>', methods=['DELETE'])
 @swag_from({
     'tags': ['Accounts'],
     'parameters': [
@@ -551,7 +554,7 @@ def update_about_me(user_id):
     }
 })
 def delete_about_me(user_id):
-    """Удалить информацию 'О себе' пользователя"""
+    """Удалить информацию из поля любитмые занятия"""
     try:
         with get_db() as conn:
             with conn.cursor() as cursor:
@@ -596,7 +599,7 @@ def delete_about_me(user_id):
     }
 })
 def delete_account(user_id):
-    """Удалить пользователя по ID"""
+    """Удалить зайца по ID"""
     try:
         with get_db() as conn:
             with conn.cursor() as cursor:
@@ -660,7 +663,7 @@ class SoapAccountService(ServiceBase):
 
     @rpc(_returns=Array(SoapUser))
     def get_all_users(ctx):
-        """Получить всех пользователей"""
+        """Получить всех зайцев"""
         try:
             with get_db() as conn:
                 with conn.cursor() as cursor:
@@ -687,7 +690,7 @@ class SoapAccountService(ServiceBase):
     
     @rpc(SoapUserRequest, _returns=SoapResponse)
     def create_user(ctx, user_data):
-        """Создать нового пользователя"""
+        """Создать нового зайца"""
         try:
             with get_db() as conn:
                 with conn.cursor() as cursor:
@@ -724,7 +727,7 @@ class SoapAccountService(ServiceBase):
 
     @rpc(Integer, Unicode, _returns=SoapResponse)
     def update_username(ctx, user_id, new_username):
-        """Обновить имя пользователя"""
+        """Обновить имя зайца"""
         try:
             with get_db() as conn:
                 with conn.cursor() as cursor:
@@ -764,7 +767,7 @@ class SoapAccountService(ServiceBase):
 
     @rpc(Integer, Unicode, _returns=SoapResponse)
     def update_about_me(ctx, user_id, about_text):
-        """Обновить информацию 'О себе'"""
+        """Обновить информацию в поле Любимые занятия"""
         try:
             with get_db() as conn:
                 with conn.cursor() as cursor:
@@ -793,7 +796,7 @@ class SoapAccountService(ServiceBase):
 
     @rpc(Integer, _returns=SoapResponse)
     def delete_about_me(ctx, user_id):
-        """Удалить информацию 'О себе'"""
+        """Удалить информацию из поля Любимые занятия'"""
         try:
             with get_db() as conn:
                 with conn.cursor() as cursor:
@@ -822,7 +825,7 @@ class SoapAccountService(ServiceBase):
 
     @rpc(Integer, _returns=SoapResponse)
     def delete_user(ctx, user_id):
-        """Удалить пользователя"""
+        """Удалить зайца"""
         try:
             with get_db() as conn:
                 with conn.cursor() as cursor:
