@@ -113,7 +113,7 @@
                     </td>
                     <td>{{ account.username }} {% if loop.first %}👑{% endif %}</td>
                     <td>{{ account.email|replace('@', ' 🐇 ')|safe }}</td>
-                    <td>{{ account.about_me or "Обожает грызть морковку и копать норки" }}</td>
+                    <td>{{ account.about_me or "" }}</td>
                      <td>{{ account.id}}</td>
                 </tr>
                 {% else %}
