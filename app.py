@@ -394,10 +394,13 @@ def create_account():
 
     except errors.UniqueViolation as e:
         error_msg = 'Ошибка уникальности: '
+        # Проверка, какое поле вызвало конфликт
         if 'username' in str(e):
             error_msg += 'Имя пользователя уже существует'
         elif 'email' in str(e):
             error_msg += 'Email уже зарегистрирован'
+        else:
+            error_msg += 'Дубликат данных'
         return jsonify({'error': error_msg}), 409
     
     except psycopg2.Error as e:
