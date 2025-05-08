@@ -352,22 +352,22 @@ def get_accounts():
 def create_account():
     """Создать нового зайца"""
     data = request.get_json()
-    errors = {}
+    validation_errors = {}
     
     username = data.get('username', '')
     email = data.get('email', '')
     password = data.get('password', '')
     
     if len(username) < 3 or len(username) > 20:
-        errors['username'] = 'Длина имени должна быть 3-20 символов'
+        validation_errors['username'] = 'Длина имени должна быть 3-20 символов'
     
     if not validate_email(email):
-        errors['email'] = 'Некорректный формат email'
+        validation_errors['email'] = 'Некорректный формат email'
     
     if len(password) < 6:
-        errors['password'] = 'Пароль должен быть не менее 6 символов'
+        validation_errors['password'] = 'Пароль должен быть не менее 6 символов'
     
-    if errors:
+    if validation_errors:
         return jsonify(errors), 400
     
     try:
