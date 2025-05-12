@@ -199,10 +199,58 @@
     {% endif %}
         <div style="text-align: center; margin-top: 30px;">
             <a href="/">🏠 Вернуться в норку</a>
-        </div>
+
+        <!-- Добавить в конец контейнера перед закрывающим </div> -->
+{% if selected_table %}
+<div class="sql-query-box">
+    <div class="sql-title">🐇 Использованный SQL-запрос:</div>
+    <pre class="sql-code">{{ sql_query }}</pre>
+</div>
+{% endif %}
+
+<!-- Добавить в стили -->
+<style>
+    .sql-query-box {
+        margin: 30px 0;
+        padding: 20px;
+        background: #FFF8E1;
+        border: 2px dashed #FFB74D;
+        border-radius: 15px;
+        position: relative;
+    }
+    
+    .sql-title {
+        font-family: 'Comic Sans MS', cursive;
+        color: #E64A19;
+        margin-bottom: 10px;
+        font-size: 1.1em;
+    }
+    
+    .sql-code {
+        background: #FFF3E0;
+        padding: 15px;
+        border-radius: 10px;
+        border: 1px solid #FFCC80;
+        font-family: 'Courier New', monospace;
+        white-space: pre-wrap;
+        word-break: break-all;
+        margin: 0;
+    }
+    
+    .sql-code::before {
+        content: '🥕';
+        position: absolute;
+        right: -15px;
+        top: -25px;
+        font-size: 40px;
+        transform: rotate(15deg);
+        opacity: 0.3;
+    }
+</style>
+</div>
         
-            <p>⚠️ Внимание! Данные защищены морковным шифрованием 🥕🔒</p>
-        </div>
+<p>⚠️ Внимание! Данные защищены морковным шифрованием 🥕🔒</p>
+</div>
     </div>
 </body>
 </html>
