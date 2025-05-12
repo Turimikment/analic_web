@@ -166,47 +166,30 @@
         </table>
 
         {% elif selected_table == 'user_holidays' %}
-        <h2>📌 Таблица "Участие в праздниках" 🎟️</h2>
-        <table>
-        <thead>
-            <tr>
-                <th>🐇 Пользователь</th>
-                <th>🎉 Праздник</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for relation in data %}
-            <tr>
-                <td>
-                    <a href="{{ url_for('user_profile', user_id=relation.user_id) }}" 
-                    class="profile-link">
-                        🕵️♂️ {{ relation.user_name|default('Удалённый пользователь') }}
-                    </a>
-                </td>
-                <td>
-                    <a href="/view-db?table=holidays" class="profile-link">
-                        🎪 {{ relation.holiday_title|default('Удалённый праздник') }}
-                    </a>
-                </td>
-            </tr>
-            {% else %}
-            <tr>
-                <td colspan="4">📅 Никто ещё не записался на праздники!</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<h2>📌 Таблица "Участие в праздниках" 🎟️</h2>
+<table>
+    <thead>
+        <tr>
+            <th>🔑 ID связи</th>
+            <th>🐇 Пользователь</th>
+            <th>🎉 Праздник</th>
+            <th>📅 Дата записи</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for relation in data %}
+        <tr>
+            <td class="relation-id">{{ relation.id }}</td>
+            <td>{{ relation.user_name }}</td>
+            <td>{{ relation.holiday_title }}</td>
+            <td>{{ relation.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
     {% endif %}
         <div style="text-align: center; margin-top: 30px;">
             <a href="/">🏠 Вернуться в норку</a>
-
-        <!-- Добавить в конец контейнера перед закрывающим </div> -->
-{% if selected_table %}
-<div class="sql-query-box">
-    <div class="sql-title">🐇 Использованный SQL-запрос:</div>
-    <pre class="sql-code">{{ sql_query }}</pre>
-</div>
-{% endif %}
 
 <!-- Добавить в стили -->
 <style>
@@ -247,6 +230,16 @@
         opacity: 0.3;
     }
 </style>
+
+            <!-- Добавить в конец контейнера перед закрывающим </div> -->
+{% if selected_table %}
+<div class="sql-query-box">
+    <div class="sql-title">🐇 Использованный SQL-запрос:</div>
+    <pre class="sql-code">{{ sql_query }}</pre>
+</div>
+{% endif %}
+
+
 </div>
         
 <p>⚠️ Внимание! Данные защищены морковным шифрованием 🥕🔒</p>
