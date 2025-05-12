@@ -377,11 +377,11 @@ with get_db() as conn:
 
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS user_holidays (
-                id SERIAL PRIMARY KEY,  # Новый уникальный идентификатор
+                id SERIAL PRIMARY KEY,  
                 user_id INTEGER REFERENCES accounts(id) ON DELETE CASCADE,
                 holiday_id INTEGER REFERENCES holidays(id) ON DELETE CASCADE,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,  # Опционально: дата создания
-                UNIQUE (user_id, holiday_id)  # Сохраняем уникальность связи
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,  
+                UNIQUE (user_id, holiday_id)  
             )
         ''')
     conn.commit()
