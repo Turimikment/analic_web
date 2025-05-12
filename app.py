@@ -236,6 +236,26 @@ swagger_config = {
         "AboutMe": about_me_model
     }
 }
+# ====== Добавить в раздел моделей Swagger ======
+holiday_model = {
+    'type': 'object',
+    'properties': {
+        'id': {'type': 'integer', 'readOnly': True},
+        'start_time': {
+            'type': 'string', 
+            'format': 'date-time',
+            'example': '2024-03-15T18:00:00Z'
+        },
+        'location': {
+            'type': 'string',
+            'example': 'Морковный луг №5'
+        },
+        'title': {
+            'type': 'string',
+            'example': 'Фестиваль весенней моркови'
+        }
+    }
+}
 
 Swagger(app, config=swagger_config)
 
@@ -283,6 +303,22 @@ with get_db() as conn:
                 password_hash VARCHAR(255) NOT NULL,
                 about_me TEXT DEFAULT '',
                 creation_method VARCHAR(10) NOT NULL DEFAULT 'interface'
+            )
+        ''')
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS holidays (
+                id SERIAL PRIMARY KEY,
+                start_time TIMESTAMP NOT NULL,
+                location VARCHAR(255) NOT NULL,
+                title VARCHAR(100) NOT NULL
+            )
+        ''')
+
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS user_holidays (
+                user_id INTEGER REFERENCES accounts(id) ON DELETE CASCADE,
+                holiday_id INTEGER REFERENCES holidays(id) ON DELETE CASCADE,
+                PRIMARY KEY (user_id, holiday_id)
             )
         ''')
     conn.commit()
@@ -661,6 +697,159 @@ def delete_account(user_id):
     except psycopg2.Error as e:
         return jsonify({'error': 'Ошибка базы данных'}), 500
 # ... (предыдущий код остается без изменений)
+# ====== Эндпоинты для работы с праздниками ======
+@app.route('/holidays', methods=['POST'])
+@swag_from({
+    'tags': ['Holidays'],
+    'parameters': [{
+        'name': 'body',
+        'in': 'body',
+        'required': True,
+        'schema': {
+            'type': 'object',
+            'required': ['start_time', 'location', 'title'],
+            'properties': {
+                'start_time': {'$ref': '#/definitions/Holiday/properties/start_time'},
+                'location': {'$ref': '#/definitions/Holiday/properties/location'},
+                'title': {'$ref': '#/definitions/Holiday/properties/title'}
+            }
+        }
+    }],
+    'responses': {
+        201: {'description': 'Праздник создан', 'schema': holiday_model},
+        400: {'description': 'Некорректные данные'}
+    }
+})
+def create_holiday():
+    """Создать новый праздник"""
+    data = request.get_json()
+    
+    if not all(key in data for key in ['start_time', 'location', 'title']):
+        return jsonify({'error': 'Missing required fields'}), 400
+    
+    try:
+        with get_db() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute('''
+                    INSERT INTO holidays (start_time, location, title)
+                    VALUES (%s, %s, %s)
+                    RETURNING id, start_time, location, title
+                ''', (data['start_time'], data['location'], data['title']))
+                
+                new_holiday = cursor.fetchone()
+                conn.commit()
+                
+                return jsonify({
+                    'id': new_holiday[0],
+                    'start_time': new_holiday[1],
+                    'location': new_holiday[2],
+                    'title': new_holiday[3]
+                }), 201
+                
+    except psycopg2.Error as e:
+        return jsonify({'error': 'Database error'}), 500
+
+@app.route('/holidays/<int:holiday_id>/attend', methods=['POST'])
+@swag_from({
+    'tags': ['Holidays'],
+    'parameters': [
+        {
+            'name': 'holiday_id',
+            'in': 'path',
+            'type': 'integer',
+            'required': True
+        },
+        {
+            'name': 'body',
+            'in': 'body',
+            'required': True,
+            'schema': {
+                'type': 'object',
+                'required': ['user_id'],
+                'properties': {
+                    'user_id': {
+                        'type': 'integer',
+                        'example': 1
+                    }
+                }
+            }
+        }
+    ],
+    'responses': {
+        200: {'description': 'Пользователь записан'},
+        404: {'description': 'Пользователь или праздник не найден'},
+        409: {'description': 'Пользователь уже записан'}
+    }
+})
+def add_user_to_holiday(holiday_id):
+    """Записать пользователя на праздник"""
+    data = request.get_json()
+    user_id = data.get('user_id')
+    
+    try:
+        with get_db() as conn:
+            with conn.cursor() as cursor:
+                # Проверка существования пользователя и праздника
+                cursor.execute('SELECT 1 FROM accounts WHERE id = %s', (user_id,))
+                if not cursor.fetchone():
+                    return jsonify({'error': 'User not found'}), 404
+                    
+                cursor.execute('SELECT 1 FROM holidays WHERE id = %s', (holiday_id,))
+                if not cursor.fetchone():
+                    return jsonify({'error': 'Holiday not found'}), 404
+                
+                # Проверка существующей записи
+                cursor.execute('''
+                    SELECT 1 FROM user_holidays 
+                    WHERE user_id = %s AND holiday_id = %s
+                ''', (user_id, holiday_id))
+                if cursor.fetchone():
+                    return jsonify({'error': 'User already registered'}), 409
+                
+                # Добавление записи
+                cursor.execute('''
+                    INSERT INTO user_holidays (user_id, holiday_id)
+                    VALUES (%s, %s)
+                ''', (user_id, holiday_id))
+                
+                conn.commit()
+                return jsonify({'message': 'User added to holiday'}), 200
+                
+    except psycopg2.Error as e:
+        return jsonify({'error': 'Database error'}), 500
+
+@app.route('/holidays/<int:holiday_id>', methods=['DELETE'])
+@swag_from({
+    'tags': ['Holidays'],
+    'parameters': [{
+        'name': 'holiday_id',
+        'in': 'path',
+        'type': 'integer',
+        'required': True
+    }],
+    'responses': {
+        200: {'description': 'Праздник удален'},
+        404: {'description': 'Праздник не найден'}
+    }
+})
+def delete_holiday(holiday_id):
+    """Удалить праздник"""
+    try:
+        with get_db() as conn:
+            with conn.cursor() as cursor:
+                # Каскадное удаление через ON DELETE CASCADE
+                cursor.execute('DELETE FROM holidays WHERE id = %s', (holiday_id,))
+                if cursor.rowcount == 0:
+                    return jsonify({'error': 'Holiday not found'}), 404
+                
+                conn.commit()
+                return jsonify({'message': 'Holiday deleted'}), 200
+                
+    except psycopg2.Error as e:
+        return jsonify({'error': 'Database error'}), 500
+
+# ====== Обновить Swagger definitions ======
+swagger_config['definitions']['Holiday'] = holiday_model
 
 class SoapUser(ComplexModel):
     __namespace__ = 'soap.users'
