@@ -833,7 +833,7 @@ def create_holiday():
         return jsonify({'error': 'Праздник с таким названием уже существует'}), 409
     except psycopg2.Error as e:
         return jsonify({'error': 'Ошибка базы данных'}), 500
- @app.route('/holidays/<int:holiday_id>/attend', methods=['POST'])
+@app.route('/holidays/<int:holiday_id>/attend', methods=['POST'])
 @swag_from({
     'tags': ['Holidays'],
     'summary': 'Запись пользователя на праздник',
