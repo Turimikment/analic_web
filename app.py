@@ -850,7 +850,115 @@ def delete_holiday(holiday_id):
 
 # ====== Обновить Swagger definitions ======
 swagger_config['definitions']['Holiday'] = holiday_model
-
+# ====== Добавить в Swagger-определения ======
+@app.route('/holidays/<int:holiday_id>/attendees', methods=['GET'])
+@swag_from({
+    'tags': ['Holidays'],
+    'parameters': [
+        {
+            'name': 'holiday_id',
+            'in': 'path',
+            'type': 'integer',
+            'required': True,
+            'description': 'ID праздника'
+        }
+    ],
+    'responses': {
+        200: {
+            'description': 'Список участников праздника',
+            'schema': {
+                'type': 'array',
+                'items': account_model
+            }
+        },
+        404: {'description': 'Праздник не найден'}
+    }
+})
+def get_holiday_attendees(holiday_id):
+    """Получить список зайцев, идущих на праздник"""
+    try:
+        with get_db() as conn:
+            with conn.cursor() as cursor:
+                # Проверка существования праздника
+                cursor.execute('SELECT 1 FROM holidays WHERE id = %s', (holiday_id,))
+                if not cursor.fetchone():
+                    return jsonify({'error': 'Holiday not found'}), 404
+                
+                # Получение участников
+                cursor.execute('''
+                    SELECT a.id, a.username, a.email, a.about_me, a.creation_method 
+                    FROM accounts a
+                    JOIN user_holidays uh ON a.id = uh.user_id
+                    WHERE uh.holiday_id = %s
+                ''', (holiday_id,))
+                
+                attendees = [{
+                    'id': row[0],
+                    'username': row[1],
+                    'email': row[2],
+                    'about_me': row[3],
+                    'creation_method': row[4]
+                } for row in cursor.fetchall()]
+                
+                return jsonify(attendees), 200
+                
+    except psycopg2.Error as e:
+        return jsonify({'error': 'Database error'}), 500
+# ====== Добавить в раздел Swagger-эндпоинтов ======
+@app.route('/users/<int:user_id>/holidays', methods=['GET'])
+@swag_from({
+    'tags': ['Holidays'],
+    'parameters': [
+        {
+            'name': 'user_id',
+            'in': 'path',
+            'type': 'integer',
+            'required': True,
+            'description': 'ID пользователя'
+        }
+    ],
+    'responses': {
+        200: {
+            'description': 'Список праздников пользователя',
+            'schema': {
+                'type': 'array',
+                'items': holiday_model
+            }
+        },
+        404: {'description': 'Пользователь не найден'}
+    }
+})
+def get_user_holidays(user_id):
+    """Получить список праздников, на которые записан заяц"""
+    try:
+        with get_db() as conn:
+            with conn.cursor() as cursor:
+                # Проверка существования пользователя
+                cursor.execute('SELECT 1 FROM accounts WHERE id = %s', (user_id,))
+                if not cursor.fetchone():
+                    return jsonify({'error': 'User not found'}), 404
+                
+                # Получение праздников пользователя
+                cursor.execute('''
+                    SELECT h.id, h.start_time, h.location, h.title 
+                    FROM holidays h
+                    JOIN user_holidays uh ON h.id = uh.holiday_id
+                    WHERE uh.user_id = %s
+                    ORDER BY h.start_time
+                ''', (user_id,))
+                
+                holidays = [{
+                    'id': row[0],
+                    'start_time': row[1].isoformat(),
+                    'location': row[2],
+                    'title': row[3]
+                } for row in cursor.fetchall()]
+                
+                return jsonify(holidays), 200
+                
+    except psycopg2.Error as e:
+        return jsonify({'error': 'Database error'}), 500
+    
 class SoapUser(ComplexModel):
     __namespace__ = 'soap.users'
     id = Integer
