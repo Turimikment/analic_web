@@ -23,6 +23,23 @@
             font-size: 2.5em;
             text-shadow: 2px 2px #FFE0B2;
         }
+        .table-selector {
+            margin: 20px 0;
+            text-align: center;
+        }
+        .table-selector select {
+            padding: 10px 20px;
+            border-radius: 25px;
+            border: 2px solid #FFB74D;
+            background: #FFF8E1;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .table-selector select:hover {
+            transform: rotate(-2deg) scale(1.05);
+            box-shadow: 0 5px 15px rgba(255, 87, 34, 0.3);
+        }
         table {
             width: 100%; 
             border-collapse: collapse; 
@@ -45,19 +62,13 @@
             transform: scale(1.02);
             transition: 0.3s;
         }
-        .tables-list {
-            margin: 20px 0;
-            padding: 15px;
-            background: #FFF3E0;
-            border-radius: 15px;
-            border: 2px solid #FFCC80;
+        .holiday-time {
+            font-family: monospace;
+            color: #6D4C41;
         }
-        .profile-link {
+        .relation-id {
+            font-weight: bold;
             color: #E64A19;
-            text-decoration: none;
-        }
-        .profile-link:hover {
-            text-decoration: underline wavy #FF9800;
         }
         a[href="/"] {
             display: inline-block;
@@ -73,61 +84,123 @@
             transform: rotate(-3deg) scale(1.1);
             background: #F57C00;
         }
-        .bunny-emoji {
-            font-size: 1.5em;
-            vertical-align: middle;
-        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>🐇 Секретная морковная база данных 🥕</h1>
         
-        <div class="tables-list">
-            <h3>📚 Заячьи хранилища:</h3>
-            <ul>
-                {% for table in tables %}
-                    <li>🗄️ {{ table }} {% if table == 'accounts' %}(Участники клуба){% endif %}</li>
-                {% endfor %}
-            </ul>
+        <div class="table-selector">
+            <select onchange="window.location.href = '/view-db?table=' + this.value">
+                <option value="">Выберите таблицу</option>
+                <option value="accounts" {% if selected_table == 'accounts' %}selected{% endif %}>
+                    🗄️ Аккаунты
+                </option>
+                <option value="holidays" {% if selected_table == 'holidays' %}selected{% endif %}>
+                    🎉 Праздники
+                </option>
+                <option value="user_holidays" {% if selected_table == 'user_holidays' %}selected{% endif %}>
+                    📌 Участие в праздниках
+                </option>
+            </select>
         </div>
 
+        {% if selected_table == 'accounts' %}
         <h2>🥕 Таблица "Морковные аккаунты" 🐰</h2>
         <table>
             <thead>
                 <tr>
-                    <th>🎯 Номер ушка</th>
+                    <th>🎯 ID</th>
                     <th>📛 Кличка</th>
                     <th>✉️ Морковный адрес</th>
                     <th>🎩 Любимые занятия</th>
-                    <th> Способ создания</th>
+                    <th>🔧 Способ создания</th>
                 </tr>
             </thead>
             <tbody>
-                {% for account in accounts %}
+                {% for account in data %}
                 <tr>
+                    <td class="relation-id">{{ account.id }}</td>
                     <td>
                         <a href="{{ url_for('user_profile', user_id=account.id) }}" class="profile-link">
                             🕵️♂️ {{ account.username }}
                         </a>
                     </td>
-                    <td>{{ account.username }} {% if loop.first %}👑{% endif %}</td>
                     <td>{{ account.email|replace('@', ' 🐇 ')|safe }}</td>
-                    <td>{{ account.about_me or "" }}</td>
-                     <td>{{ account.id}}</td>
+                    <td>{{ account.about_me or "—" }}</td>
+                    <td>{{ account.creation_method }}</td>
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="4">🕳️ Все зайцы на перерыве... попробуйте позже!</td>
+                    <td colspan="5">🕳️ Все зайцы на перерыве... попробуйте позже!</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
-        
-        <a href="/">🏠 Вернуться в норку</a>
-        
+
+        {% elif selected_table == 'holidays' %}
+        <h2>🎪 Таблица "Заячьи праздники" 🎉</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>🎯 ID</th>
+                    <th>⏰ Время начала</th>
+                    <th>📍 Место</th>
+                    <th>🎈 Название</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for holiday in data %}
+                <tr>
+                    <td class="relation-id">{{ holiday.id }}</td>
+                    <td class="holiday-time">{{ holiday.start_time }}</td>
+                    <td>{{ holiday.location }}</td>
+                    <td>{{ holiday.title }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="4">🎭 Праздники ещё не запланированы!</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        {% elif selected_table == 'user_holidays' %}
+        <h2>📌 Таблица "Участие в праздниках" 🎟️</h2>
+        <table>
+        <thead>
+            <tr>
+                <th>🐇 Пользователь</th>
+                <th>🎉 Праздник</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for relation in data %}
+            <tr>
+                <td>
+                    <a href="{{ url_for('user_profile', user_id=relation.user_id) }}" 
+                    class="profile-link">
+                        🕵️♂️ {{ relation.user_name|default('Удалённый пользователь') }}
+                    </a>
+                </td>
+                <td>
+                    <a href="/view-db?table=holidays" class="profile-link">
+                        🎪 {{ relation.holiday_title|default('Удалённый праздник') }}
+                    </a>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="4">📅 Никто ещё не записался на праздники!</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
         <div style="text-align: center; margin-top: 30px;">
-            <img src="https://i.imgur.com/5Rmc8Yp.png" alt="Зайчик-администратор" style="width: 150px;">
+            <a href="/">🏠 Вернуться в норку</a>
+        </div>
+        
             <p>⚠️ Внимание! Данные защищены морковным шифрованием 🥕🔒</p>
         </div>
     </div>
