@@ -377,7 +377,14 @@ def view_database():
                     cursor.execute('SELECT * FROM holidays ORDER BY start_time')
                     data = cursor.fetchall()
                 elif selected_table == 'user_holidays':
-                    cursor.execute('SELECT * FROM user_holidays')
+                    cursor.execute('''
+                    SELECT uh.user_id, uh.holiday_id, 
+                    a.username AS user_name,
+                    h.title AS holiday_title
+                    FROM user_holidays uh
+                    LEFT JOIN accounts a ON uh.user_id = a.id
+                    LEFT JOIN holidays h ON uh.holiday_id = h.id
+                    ''')
                     data = cursor.fetchall()
                 else:
                     data = []
