@@ -358,6 +358,7 @@ def view_database():
     """Просмотр содержимого базы данных"""
     try:
         selected_table = request.args.get('table', 'accounts')
+        sql_query = ""
         
         with get_db() as conn:
             with conn.cursor(cursor_factory=DictCursor) as cursor:
@@ -369,37 +370,49 @@ def view_database():
                 ''')
                 tables = [row['table_name'] for row in cursor.fetchall()]
                 
-                # Получаем данные для выбранной таблицы
+                # Формируем SQL-запросы
                 if selected_table == 'accounts':
-                    cursor.execute('SELECT * FROM accounts')
+                    sql_query = "SELECT * FROM accounts;"
+                    cursor.execute(sql_query)
                     data = cursor.fetchall()
+                    
                 elif selected_table == 'holidays':
-                    cursor.execute('SELECT * FROM holidays ORDER BY start_time')
+                    sql_query = "SELECT * FROM holidays ORDER BY start_time;"
+                    cursor.execute(sql_query)
                     data = cursor.fetchall()
+                    
                 elif selected_table == 'user_holidays':
-                    cursor.execute('''
-                    SELECT uh.user_id, uh.holiday_id, 
-                    a.username AS user_name,
-                    h.title AS holiday_title
-                    FROM user_holidays uh
-                    LEFT JOIN accounts a ON uh.user_id = a.id
-                    LEFT JOIN holidays h ON uh.holiday_id = h.id
-                    ''')
+                    sql_query = '''
+                        SELECT 
+                            uh.user_id, 
+                            uh.holiday_id, 
+                            a.username AS user_name,
+                            h.title AS holiday_title,
+                            h.start_time AS holiday_start,
+                            h.location AS holiday_location
+                        FROM user_holidays uh
+                        LEFT JOIN accounts a ON uh.user_id = a.id
+                        LEFT JOIN holidays h ON uh.holiday_id = h.id;
+                    '''
+                    cursor.execute(sql_query)
                     data = cursor.fetchall()
+                    
                 else:
                     data = []
+                    sql_query = ""
 
         return render_template(
             'view_db.html',
             tables=tables,
             selected_table=selected_table,
-            data=data
+            data=data,
+            sql_query=sql_query.strip()  # Передаем запрос в шаблон
         )
 
     except Exception as e:
         app.logger.error(f"Database access error: {str(e)}")
         return render_template('error.html', error=str(e)), 500
-
+    
 @app.route('/accounts', methods=['GET'])
 @swag_from({
     'tags': ['Accounts'],
