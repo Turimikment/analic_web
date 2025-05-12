@@ -172,8 +172,6 @@
             <tr>
                 <th>🐇 Пользователь</th>
                 <th>🎉 Праздник</th>
-                <th>⏰ Дата начала</th>
-                <th>📍 Место</th>
             </tr>
         </thead>
         <tbody>
@@ -189,12 +187,6 @@
                     <a href="/view-db?table=holidays" class="profile-link">
                         🎪 {{ relation.holiday_title|default('Удалённый праздник') }}
                     </a>
-                </td>
-                <td class="holiday-time">
-                    {{ relation.start_time|default('—') }}
-                </td>
-                <td>
-                    {{ relation.location|default('—') }}
                 </td>
             </tr>
             {% else %}
