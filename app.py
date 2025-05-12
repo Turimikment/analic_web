@@ -833,6 +833,7 @@ def create_holiday():
         return jsonify({'error': 'Праздник с таким названием уже существует'}), 409
     except psycopg2.Error as e:
         return jsonify({'error': 'Ошибка базы данных'}), 500
+    
 @app.route('/holidays/<int:holiday_id>/attend', methods=['POST'])
 @swag_from({
     'tags': ['Holidays'],
@@ -900,6 +901,58 @@ def create_holiday():
         }
     }
 })
+def add_user_to_holiday(holiday_id):
+    """Добавляет пользователя к празднику"""
+    data = request.get_json()
+    user_id = data.get('user_id')
+
+    try:
+        with get_db() as conn:
+            with conn.cursor() as cursor:
+                # Проверка существования пользователя
+                cursor.execute('SELECT id FROM accounts WHERE id = %s', (user_id,))
+                if not cursor.fetchone():
+                    return jsonify({'error': 'Пользователь не найден'}), 404
+
+                # Проверка существования праздника
+                cursor.execute('SELECT id FROM holidays WHERE id = %s', (holiday_id,))
+                if not cursor.fetchone():
+                    return jsonify({'error': 'Праздник не найден'}), 404
+
+                # Проверка существующей записи
+                cursor.execute('''
+                    SELECT id FROM user_holidays 
+                    WHERE user_id = %s AND holiday_id = %s
+                ''', (user_id, holiday_id))
+                if cursor.fetchone():
+                    return jsonify({'error': 'Пользователь уже записан на этот праздник'}), 409
+
+                # Создание новой записи
+                cursor.execute('''
+                    INSERT INTO user_holidays (user_id, holiday_id)
+                    VALUES (%s, %s)
+                    RETURNING id, user_id, holiday_id, created_at
+                ''', (user_id, holiday_id))
+                
+                new_entry = cursor.fetchone()
+                conn.commit()
+
+                return jsonify({
+                    'id': new_entry[0],
+                    'user_id': new_entry[1],
+                    'holiday_id': new_entry[2],
+                    'created_at': new_entry[3].isoformat()
+                }), 201
+
+    except psycopg2.Error as e:
+        conn.rollback()
+        app.logger.error(f'Database error: {str(e)}')
+        return jsonify({'error': 'Внутренняя ошибка сервера'}), 500
+    except Exception as e:
+        conn.rollback()
+        app.logger.error(f'Unexpected error: {str(e)}')
+        return jsonify({'error': 'Неизвестная ошибка'}), 500
+    
 def add_user_to_holiday(holiday_id):
     """Добавляет пользователя к празднику"""
     data = request.get_json()
