@@ -239,24 +239,84 @@ swagger_config = {
 # ====== Добавить в раздел моделей Swagger ======
 holiday_model = {
     'type': 'object',
+    'required': ['start_time', 'location', 'title'],
+    'description': 'Модель представления праздника/мероприятия',
+    'x-examples': {
+        'basic': {
+            'value': {
+                'id': 1,
+                'start_time': '2024-03-20T15:00:00Z',
+                'location': 'Морковное поле №7',
+                'title': 'Фестиваль весенней моркови'
+            }
+        },
+        'error': {
+            'summary': 'Пример ошибки валидации',
+            'value': {
+                'title': 'Фе',
+                'location': '',
+                'start_time': 'invalid-date'
+            }
+        }
+    },
     'properties': {
-        'id': {'type': 'integer', 'readOnly': True},
+        'id': {
+            'type': 'integer',
+            'format': 'int64',
+            'readOnly': True,
+            'description': 'Автогенерируемый уникальный идентификатор',
+            'example': 42
+        },
         'start_time': {
-            'type': 'string', 
+            'type': 'string',
             'format': 'date-time',
-            'example': '2024-03-15T18:00:00Z'
+            'description': 'Дата и время начала праздника в формате ISO 8601',
+            'pattern': r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$',
+            'example': '2024-09-15T18:30:00Z',
+            'x-format-hint': 'YYYY-MM-DDTHH:MM:SSZ'
         },
         'location': {
             'type': 'string',
-            'example': 'Морковный луг №5'
+            'minLength': 3,
+            'maxLength': 255,
+            'description': 'Физическое место проведения мероприятия',
+            'examples': {
+                'field': {'value': 'Морковное поле №5'},
+                'forest': {'value': 'Лесная поляна'},
+                'city': {'value': 'Центральная площадь города'}
+            },
+            'x-geo': {
+                'type': 'object',
+                'properties': {
+                    'latitude': {'type': 'number'},
+                    'longitude': {'type': 'number'}
+                }
+            }
         },
         'title': {
             'type': 'string',
-            'example': 'Фестиваль весенней моркови'
+            'minLength': 3,
+            'maxLength': 100,
+            'description': 'Уникальное название праздника',
+            'pattern': r'^[a-zA-Zа-яА-ЯёЁ0-9\s\-!?()]+$',
+            'examples': [
+                'Фестиваль осеннего урожая',
+                'Новогодний карнавал кроликов',
+                'Чемпионат по скоростному поеданию моркови'
+            ],
+            'x-unique': True,
+            'x-validation-rules': [
+                'Должно содержать только буквы, цифры и специальные символы: -!?()',
+                'Не может повторяться в системе'
+            ]
         }
+    },
+    'x-response-codes': {
+        '201': 'Успешное создание праздника',
+        '400': 'Некорректные данные в запросе',
+        '409': 'Конфликт: название праздника уже существует'
     }
 }
-
 Swagger(app, config=swagger_config)
 
 def get_db():
@@ -310,15 +370,18 @@ with get_db() as conn:
                 id SERIAL PRIMARY KEY,
                 start_time TIMESTAMP NOT NULL,
                 location VARCHAR(255) NOT NULL,
-                title VARCHAR(100) NOT NULL
+                title VARCHAR(100) NOT NULL UNIQUE  -- Добавляем уникальное ограничение
             )
         ''')
 
+
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS user_holidays (
+                id SERIAL PRIMARY KEY,  # Новый уникальный идентификатор
                 user_id INTEGER REFERENCES accounts(id) ON DELETE CASCADE,
                 holiday_id INTEGER REFERENCES holidays(id) ON DELETE CASCADE,
-                PRIMARY KEY (user_id, holiday_id)
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,  # Опционально: дата создания
+                UNIQUE (user_id, holiday_id)  # Сохраняем уникальность связи
             )
         ''')
     conn.commit()
@@ -732,36 +795,24 @@ def delete_account(user_id):
 # ====== Эндпоинты для работы с праздниками ======
 @app.route('/holidays', methods=['POST'])
 @swag_from({
-    'tags': ['Holidays'],
-    'parameters': [{
-        'name': 'body',
-        'in': 'body',
-        'required': True,
-        'schema': {
-            'type': 'object',
-            'required': ['start_time', 'location', 'title'],
-            'properties': {
-                'start_time': {'$ref': '#/definitions/Holiday/properties/start_time'},
-                'location': {'$ref': '#/definitions/Holiday/properties/location'},
-                'title': {'$ref': '#/definitions/Holiday/properties/title'}
-            }
-        }
-    }],
+    # ... остальные параметры Swagger ...
     'responses': {
         201: {'description': 'Праздник создан', 'schema': holiday_model},
-        400: {'description': 'Некорректные данные'}
+        409: {'description': 'Праздник с таким названием уже существует'}
     }
 })
 def create_holiday():
-    """Создать новый праздник"""
     data = request.get_json()
-    
-    if not all(key in data for key in ['start_time', 'location', 'title']):
-        return jsonify({'error': 'Missing required fields'}), 400
     
     try:
         with get_db() as conn:
             with conn.cursor() as cursor:
+                # Проверка уникальности названия
+                cursor.execute('SELECT 1 FROM holidays WHERE title = %s', (data['title'],))
+                if cursor.fetchone():
+                    return jsonify({'error': 'Праздник с таким названием уже существует'}), 409
+                
+                # Создание праздника
                 cursor.execute('''
                     INSERT INTO holidays (start_time, location, title)
                     VALUES (%s, %s, %s)
@@ -778,78 +829,129 @@ def create_holiday():
                     'title': new_holiday[3]
                 }), 201
                 
+    except errors.UniqueViolation:
+        return jsonify({'error': 'Праздник с таким названием уже существует'}), 409
     except psycopg2.Error as e:
-        return jsonify({'error': 'Database error'}), 500
-
-@app.route('/holidays/<int:holiday_id>/attend', methods=['POST'])
+        return jsonify({'error': 'Ошибка базы данных'}), 500
+ @app.route('/holidays/<int:holiday_id>/attend', methods=['POST'])
 @swag_from({
     'tags': ['Holidays'],
+    'summary': 'Запись пользователя на праздник',
+    'description': 'Создает связь между пользователем и праздником',
     'parameters': [
         {
             'name': 'holiday_id',
             'in': 'path',
-            'type': 'integer',
-            'required': True
-        },
-        {
-            'name': 'body',
-            'in': 'body',
             'required': True,
-            'schema': {
-                'type': 'object',
-                'required': ['user_id'],
-                'properties': {
-                    'user_id': {
-                        'type': 'integer',
-                        'example': 1
+            'schema': {'type': 'integer'},
+            'description': 'ID праздника'
+        }
+    ],
+    'requestBody': {
+        'required': True,
+        'content': {
+            'application/json': {
+                'schema': {
+                    'type': 'object',
+                    'required': ['user_id'],
+                    'properties': {
+                        'user_id': {
+                            'type': 'integer',
+                            'example': 1,
+                            'description': 'ID пользователя'
+                        }
                     }
                 }
             }
         }
-    ],
+    },
     'responses': {
-        200: {'description': 'Пользователь записан'},
-        404: {'description': 'Пользователь или праздник не найден'},
-        409: {'description': 'Пользователь уже записан'}
+        201: {
+            'description': 'Успешная запись',
+            'content': {
+                'application/json': {
+                    'schema': {'$ref': '#/definitions/UserHoliday'}
+                }
+            }
+        },
+        404: {
+            'description': 'Не найдено',
+            'content': {
+                'application/json': {
+                    'example': {'error': 'Пользователь или праздник не найден'}
+                }
+            }
+        },
+        409: {
+            'description': 'Конфликт',
+            'content': {
+                'application/json': {
+                    'example': {'error': 'Пользователь уже записан на этот праздник'}
+                }
+            }
+        },
+        500: {
+            'description': 'Ошибка сервера',
+            'content': {
+                'application/json': {
+                    'example': {'error': 'Внутренняя ошибка сервера'}
+                }
+            }
+        }
     }
 })
 def add_user_to_holiday(holiday_id):
-    """Записать пользователя на праздник"""
+    """Добавляет пользователя к празднику"""
     data = request.get_json()
     user_id = data.get('user_id')
-    
+
     try:
         with get_db() as conn:
             with conn.cursor() as cursor:
-                # Проверка существования пользователя и праздника
-                cursor.execute('SELECT 1 FROM accounts WHERE id = %s', (user_id,))
+                # Проверка существования пользователя
+                cursor.execute('SELECT id FROM accounts WHERE id = %s', (user_id,))
                 if not cursor.fetchone():
-                    return jsonify({'error': 'User not found'}), 404
-                    
-                cursor.execute('SELECT 1 FROM holidays WHERE id = %s', (holiday_id,))
+                    return jsonify({'error': 'Пользователь не найден'}), 404
+
+                # Проверка существования праздника
+                cursor.execute('SELECT id FROM holidays WHERE id = %s', (holiday_id,))
                 if not cursor.fetchone():
-                    return jsonify({'error': 'Holiday not found'}), 404
-                
+                    return jsonify({'error': 'Праздник не найден'}), 404
+
                 # Проверка существующей записи
                 cursor.execute('''
-                    SELECT 1 FROM user_holidays 
+                    SELECT id FROM user_holidays 
                     WHERE user_id = %s AND holiday_id = %s
                 ''', (user_id, holiday_id))
                 if cursor.fetchone():
-                    return jsonify({'error': 'User already registered'}), 409
-                
-                # Добавление записи
+                    return jsonify({'error': 'Пользователь уже записан на этот праздник'}), 409
+
+                # Создание новой записи
                 cursor.execute('''
                     INSERT INTO user_holidays (user_id, holiday_id)
                     VALUES (%s, %s)
+                    RETURNING id, user_id, holiday_id, created_at
                 ''', (user_id, holiday_id))
                 
+                new_entry = cursor.fetchone()
                 conn.commit()
-                return jsonify({'message': 'User added to holiday'}), 200
-                
-    except psycopg2.Error as e:
-        return jsonify({'error': 'Database error'}), 500
 
+                return jsonify({
+                    'id': new_entry[0],
+                    'user_id': new_entry[1],
+                    'holiday_id': new_entry[2],
+                    'created_at': new_entry[3].isoformat()
+                }), 201
+
+    except psycopg2.Error as e:
+        conn.rollback()
+        app.logger.error(f'Database error: {str(e)}')
+        return jsonify({'error': 'Внутренняя ошибка сервера'}), 500
+    except Exception as e:
+        conn.rollback()
+        app.logger.error(f'Unexpected error: {str(e)}')
+        return jsonify({'error': 'Неизвестная ошибка'}), 500
+       
 @app.route('/holidays/<int:holiday_id>', methods=['DELETE'])
 @swag_from({
     'tags': ['Holidays'],
