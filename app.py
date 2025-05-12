@@ -357,12 +357,10 @@ def user_profile(user_id):
 def view_database():
     """Просмотр содержимого базы данных"""
     try:
+        selected_table = request.args.get('table', 'accounts')
+        
         with get_db() as conn:
             with conn.cursor(cursor_factory=DictCursor) as cursor:
-                # Получаем данные пользователей
-                cursor.execute('SELECT * FROM accounts')
-                accounts = cursor.fetchall()
-
                 # Получаем список таблиц
                 cursor.execute('''
                     SELECT table_name 
@@ -370,11 +368,25 @@ def view_database():
                     WHERE table_schema = 'public'
                 ''')
                 tables = [row['table_name'] for row in cursor.fetchall()]
+                
+                # Получаем данные для выбранной таблицы
+                if selected_table == 'accounts':
+                    cursor.execute('SELECT * FROM accounts')
+                    data = cursor.fetchall()
+                elif selected_table == 'holidays':
+                    cursor.execute('SELECT * FROM holidays ORDER BY start_time')
+                    data = cursor.fetchall()
+                elif selected_table == 'user_holidays':
+                    cursor.execute('SELECT * FROM user_holidays')
+                    data = cursor.fetchall()
+                else:
+                    data = []
 
         return render_template(
             'view_db.html',
-            accounts=accounts,
-            tables=tables
+            tables=tables,
+            selected_table=selected_table,
+            data=data
         )
 
     except Exception as e:
