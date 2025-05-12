@@ -108,13 +108,13 @@
                 <tr>
                     <td>
                         <a href="{{ url_for('user_profile', user_id=account.id) }}" class="profile-link">
-                            🕵️♂️ {{ account.username }}
+                             {{ account.id }}
                         </a>
                     </td>
                     <td>{{ account.username }} {% if loop.first %}👑{% endif %}</td>
                     <td>{{ account.email|replace('@', ' 🐇 ')|safe }}</td>
                     <td>{{ account.about_me or "" }}</td>
-                     <td>{{ account.id}}</td>
+                     <td>{{ account.creation_method}}</td>
                 </tr>
                 {% else %}
                 <tr>
