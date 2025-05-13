@@ -913,174 +913,116 @@ def create_holiday():
 @app.route('/holidays/<int:holiday_id>/attend', methods=['POST'])
 @swag_from({
     'tags': ['Holidays'],
-    'summary': 'Запись пользователя на праздник',
-    'description': 'Создает связь между пользователем и праздником',
     'parameters': [
         {
             'name': 'holiday_id',
             'in': 'path',
             'required': True,
-            'schema': {'type': 'integer'},
+            'type': 'integer',
             'description': 'ID праздника'
-        }
-    ],
-    'requestBody': {
-        'required': True,
-        'content': {
-            'application/json': {
-                'schema': {
-                    'type': 'object',
-                    'required': ['user_id'],
-                    'properties': {
-                        'user_id': {
-                            'type': 'integer',
-                            'example': 1,
-                            'description': 'ID пользователя'
-                        }
+        },
+        {
+            'name': 'body',
+            'in': 'body',
+            'required': True,
+            'schema': {
+                'type': 'object',
+                'properties': {
+                    'user_id': {
+                        'type': 'integer',
+                        'description': 'ID пользователя'
                     }
                 }
             }
         }
-    },
+    ],
     'responses': {
         201: {
             'description': 'Успешная запись',
-            'content': {
-                'application/json': {
-                    'schema': {'$ref': '#/definitions/UserHoliday'}
+            'schema': {
+                'type': 'object',
+                'properties': {
+                    'message': {'type': 'string'},
+                    'holiday': {'$ref': '#/definitions/Holiday'},
+                    'user': {'$ref': '#/definitions/Account'}
                 }
             }
         },
-        404: {
-            'description': 'Не найдено',
-            'content': {
-                'application/json': {
-                    'example': {'error': 'Пользователь или праздник не найден'}
-                }
-            }
-        },
-        409: {
-            'description': 'Конфликт',
-            'content': {
-                'application/json': {
-                    'example': {'error': 'Пользователь уже записан на этот праздник'}
-                }
-            }
-        },
-        500: {
-            'description': 'Ошибка сервера',
-            'content': {
-                'application/json': {
-                    'example': {'error': 'Внутренняя ошибка сервера'}
+        400: {
+            'description': 'Некорректный запрос',
+            'schema': {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string'}
                 }
             }
         }
     }
 })
 def add_user_to_holiday(holiday_id):
-    """Добавляет пользователя к празднику"""
+    """Записать пользователя на праздник"""
     data = request.get_json()
-    user_id = data.get('user_id')
-
-    try:
-        with get_db() as conn:
-            with conn.cursor() as cursor:
-                # Проверка существования пользователя
-                cursor.execute('SELECT id FROM accounts WHERE id = %s', (user_id,))
-                if not cursor.fetchone():
-                    return jsonify({'error': 'Пользователь не найден'}), 404
-
-                # Проверка существования праздника
-                cursor.execute('SELECT id FROM holidays WHERE id = %s', (holiday_id,))
-                if not cursor.fetchone():
-                    return jsonify({'error': 'Праздник не найден'}), 404
-
-                # Проверка существующей записи
-                cursor.execute('''
-                    SELECT id FROM user_holidays 
-                    WHERE user_id = %s AND holiday_id = %s
-                ''', (user_id, holiday_id))
-                if cursor.fetchone():
-                    return jsonify({'error': 'Пользователь уже записан на этот праздник'}), 409
-
-                # Создание новой записи
-                cursor.execute('''
-                    INSERT INTO user_holidays (user_id, holiday_id)
-                    VALUES (%s, %s)
-                    RETURNING id, user_id, holiday_id, created_at
-                ''', (user_id, holiday_id))
-                
-                new_entry = cursor.fetchone()
-                conn.commit()
-
-                return jsonify({
-                    'id': new_entry[0],
-                    'user_id': new_entry[1],
-                    'holiday_id': new_entry[2],
-                    'created_at': new_entry[3].isoformat()
-                }), 201
-
-    except psycopg2.Error as e:
-        conn.rollback()
-        app.logger.error(f'Database error: {str(e)}')
-        return jsonify({'error': 'Внутренняя ошибка сервера'}), 500
-    except Exception as e:
-        conn.rollback()
-        app.logger.error(f'Unexpected error: {str(e)}')
-        return jsonify({'error': 'Неизвестная ошибка'}), 500
     
-def add_user_to_holiday(holiday_id):
-    """Добавляет пользователя к празднику"""
-    data = request.get_json()
-    user_id = data.get('user_id')
+    # Проверка наличия user_id в теле запроса
+    if not data or 'user_id' not in data:
+        return jsonify({'error': 'Необходимо указать user_id в теле запроса'}), 400
+    
+    user_id = data['user_id']
 
     try:
         with get_db() as conn:
             with conn.cursor() as cursor:
                 # Проверка существования пользователя
-                cursor.execute('SELECT id FROM accounts WHERE id = %s', (user_id,))
-                if not cursor.fetchone():
+                cursor.execute('SELECT username FROM accounts WHERE id = %s', (user_id,))
+                user = cursor.fetchone()
+                if not user:
                     return jsonify({'error': 'Пользователь не найден'}), 404
 
                 # Проверка существования праздника
-                cursor.execute('SELECT id FROM holidays WHERE id = %s', (holiday_id,))
-                if not cursor.fetchone():
+                cursor.execute('SELECT title FROM holidays WHERE id = %s', (holiday_id,))
+                holiday = cursor.fetchone()
+                if not holiday:
                     return jsonify({'error': 'Праздник не найден'}), 404
 
                 # Проверка существующей записи
                 cursor.execute('''
-                    SELECT id FROM user_holidays 
+                    SELECT 1 FROM user_holidays 
                     WHERE user_id = %s AND holiday_id = %s
                 ''', (user_id, holiday_id))
                 if cursor.fetchone():
-                    return jsonify({'error': 'Пользователь уже записан на этот праздник'}), 409
+                    return jsonify({
+                        'error': 'Пользователь уже записан на этот праздник'
+                    }), 409
 
                 # Создание новой записи
                 cursor.execute('''
                     INSERT INTO user_holidays (user_id, holiday_id)
                     VALUES (%s, %s)
-                    RETURNING id, user_id, holiday_id, created_at
+                    RETURNING id, created_at
                 ''', (user_id, holiday_id))
                 
                 new_entry = cursor.fetchone()
                 conn.commit()
 
                 return jsonify({
-                    'id': new_entry[0],
-                    'user_id': new_entry[1],
-                    'holiday_id': new_entry[2],
-                    'created_at': new_entry[3].isoformat()
+                    'message': 'Пользователь успешно записан на праздник',
+                    'holiday': {
+                        'id': holiday_id,
+                        'title': holiday[0]
+                    },
+                    'user': {
+                        'id': user_id,
+                        'username': user[0]
+                    },
+                    'attendance_id': new_entry[0],
+                    'created_at': new_entry[1].isoformat()
                 }), 201
 
     except psycopg2.Error as e:
         conn.rollback()
         app.logger.error(f'Database error: {str(e)}')
-        return jsonify({'error': 'Внутренняя ошибка сервера'}), 500
-    except Exception as e:
-        conn.rollback()
-        app.logger.error(f'Unexpected error: {str(e)}')
-        return jsonify({'error': 'Неизвестная ошибка'}), 500
-       
+        return jsonify({'error': 'Ошибка базы данных'}), 500
+        
 @app.route('/holidays/<int:holiday_id>', methods=['DELETE'])
 @swag_from({
     'tags': ['Holidays'],
