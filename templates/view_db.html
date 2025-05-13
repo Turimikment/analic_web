@@ -165,14 +165,16 @@
             </tbody>
         </table>
 
-        {% elif selected_table == 'user_holidays' %}
+{% elif selected_table == 'user_holidays' %}
 <h2>📌 Таблица "Участие в праздниках" 🎟️</h2>
 <table>
     <thead>
         <tr>
             <th>🔑 ID связи</th>
-            <th>🐇 Пользователь</th>
-            <th>🎉 Праздник</th>
+            <th>👤 ID пользователя</th>
+            <th>🐇 Имя пользователя</th>
+            <th>🎉 ID праздника</th>
+            <th>🎈 Название праздника</th>
             <th>📅 Дата записи</th>
         </tr>
     </thead>
@@ -180,14 +182,30 @@
         {% for relation in data %}
         <tr>
             <td class="relation-id">{{ relation.id }}</td>
-            <td>{{ relation.user_name }}</td>
-            <td>{{ relation.holiday_title }}</td>
-            <td>{{ relation.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
+            <td>{{ relation.user_id }}</td>
+            <td>{{ relation.user_name or "Неизвестный" }}</td>
+            <td>{{ relation.holiday_id }}</td>
+            <td>{{ relation.holiday_title or "Удалённый праздник" }}</td>
+            <td>
+                {% if relation.created_at %}
+                    {% if relation.created_at is string %}
+                        {{ relation.created_at }}
+                    {% else %}
+                        {{ relation.created_at.strftime('%d.%m.%Y %H:%M') }}
+                    {% endif %}
+                {% else %}
+                    —
+                {% endif %}
+            </td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="6">🎭 Никто ещё не записался на праздники!</td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
-    {% endif %}
+{% endif %}
         <div style="text-align: center; margin-top: 30px;">
             <a href="/">🏠 Вернуться в норку</a>
 
