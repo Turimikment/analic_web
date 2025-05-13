@@ -792,17 +792,76 @@ def delete_account(user_id):
     except psycopg2.Error as e:
         return jsonify({'error': 'Ошибка базы данных'}), 500
 # ... (предыдущий код остается без изменений)
-# ====== Эндпоинты для работы с праздниками ======
 @app.route('/holidays', methods=['POST'])
 @swag_from({
-    # ... остальные параметры Swagger ...
+    'tags': ['Holidays'],
+    'description': 'Создать новый праздник/мероприятие',
+    'parameters': [
+        {
+            'name': 'body',
+            'in': 'body',
+            'required': True,
+            'schema': holiday_model
+        }
+    ],
     'responses': {
-        201: {'description': 'Праздник создан', 'schema': holiday_model},
-        409: {'description': 'Праздник с таким названием уже существует'}
+        201: {
+            'description': 'Праздник успешно создан',
+            'schema': holiday_model
+        },
+        400: {
+            'description': 'Некорректные данные',
+            'examples': {
+                'missing_field': {'error': 'Отсутствует обязательное поле: title'},
+                'validation_error': {'error': 'Некорректный формат даты'}
+            }
+        },
+        409: {
+            'description': 'Конфликт данных',
+            'examples': {
+                'duplicate_title': {'error': 'Праздник с таким названием уже существует'}
+            }
+        },
+        500: {
+            'description': 'Ошибка сервера',
+            'examples': {
+                'database_error': {'error': 'Ошибка базы данных'}
+            }
+        }
     }
 })
 def create_holiday():
+    """Создать новый праздник"""
     data = request.get_json()
+    
+    # Валидация обязательных полей
+    required_fields = ['start_time', 'location', 'title']
+    missing_fields = [field for field in required_fields if field not in data]
+    if missing_fields:
+        return jsonify({
+            'error': f'Отсутствуют обязательные поля: {", ".join(missing_fields)}'
+        }), 400
+    
+    # Дополнительная валидация
+    errors = {}
+    
+    # Проверка длины названия
+    if len(data['title']) < 3 or len(data['title']) > 100:
+        errors['title'] = 'Название должно быть от 3 до 100 символов'
+    
+    # Проверка длины локации
+    if len(data['location']) < 3 or len(data['location']) > 255:
+        errors['location'] = 'Локация должна быть от 3 до 255 символов'
+    
+    # Проверка формата даты (упрощенная)
+    try:
+        from datetime import datetime
+        datetime.fromisoformat(data['start_time'].replace('Z', '+00:00'))
+    except ValueError:
+        errors['start_time'] = 'Некорректный формат даты. Используйте ISO 8601 (например: 2024-03-20T15:00:00Z)'
+    
+    if errors:
+        return jsonify({'errors': errors}), 400
     
     try:
         with get_db() as conn:
@@ -810,30 +869,47 @@ def create_holiday():
                 # Проверка уникальности названия
                 cursor.execute('SELECT 1 FROM holidays WHERE title = %s', (data['title'],))
                 if cursor.fetchone():
-                    return jsonify({'error': 'Праздник с таким названием уже существует'}), 409
+                    return jsonify({
+                        'error': 'Праздник с таким названием уже существует'
+                    }), 409
                 
                 # Создание праздника
                 cursor.execute('''
                     INSERT INTO holidays (start_time, location, title)
                     VALUES (%s, %s, %s)
                     RETURNING id, start_time, location, title
-                ''', (data['start_time'], data['location'], data['title']))
+                ''', (
+                    data['start_time'],
+                    data['location'],
+                    data['title']
+                ))
                 
                 new_holiday = cursor.fetchone()
                 conn.commit()
                 
                 return jsonify({
                     'id': new_holiday[0],
-                    'start_time': new_holiday[1],
+                    'start_time': new_holiday[1].isoformat() if isinstance(new_holiday[1], datetime) else new_holiday[1],
                     'location': new_holiday[2],
                     'title': new_holiday[3]
                 }), 201
                 
     except errors.UniqueViolation:
-        return jsonify({'error': 'Праздник с таким названием уже существует'}), 409
+        return jsonify({
+            'error': 'Праздник с таким названием уже существует'
+        }), 409
+        
     except psycopg2.Error as e:
-        return jsonify({'error': 'Ошибка базы данных'}), 500
-    
+        app.logger.error(f'Database error: {str(e)}')
+        return jsonify({
+            'error': 'Ошибка базы данных при создании праздника'
+        }), 500
+        
+    except Exception as e:
+        app.logger.error(f'Unexpected error: {str(e)}')
+        return jsonify({
+            'error': 'Неизвестная ошибка при создании праздника'
+        }), 500    
 @app.route('/holidays/<int:holiday_id>/attend', methods=['POST'])
 @swag_from({
     'tags': ['Holidays'],
