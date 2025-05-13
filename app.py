@@ -421,7 +421,6 @@ def view_database():
     """Просмотр содержимого базы данных"""
     try:
         selected_table = request.args.get('table', 'accounts')
-        sql_query = ""
         
         with get_db() as conn:
             with conn.cursor(cursor_factory=DictCursor) as cursor:
@@ -447,15 +446,16 @@ def view_database():
                 elif selected_table == 'user_holidays':
                     sql_query = '''
                         SELECT 
-                            uh.user_id, 
-                            uh.holiday_id, 
+                            uh.id,
+                            uh.user_id,
+                            uh.holiday_id,
                             a.username AS user_name,
                             h.title AS holiday_title,
-                            h.start_time AS holiday_start,
-                            h.location AS holiday_location
+                            uh.created_at
                         FROM user_holidays uh
                         LEFT JOIN accounts a ON uh.user_id = a.id
-                        LEFT JOIN holidays h ON uh.holiday_id = h.id;
+                        LEFT JOIN holidays h ON uh.holiday_id = h.id
+                        ORDER BY uh.created_at DESC;
                     '''
                     cursor.execute(sql_query)
                     data = cursor.fetchall()
@@ -469,13 +469,13 @@ def view_database():
             tables=tables,
             selected_table=selected_table,
             data=data,
-            sql_query=sql_query.strip()  # Передаем запрос в шаблон
+            sql_query=sql_query.strip()
         )
 
     except Exception as e:
         app.logger.error(f"Database access error: {str(e)}")
         return render_template('error.html', error=str(e)), 500
-    
+        
 @app.route('/accounts', methods=['GET'])
 @swag_from({
     'tags': ['Accounts'],
