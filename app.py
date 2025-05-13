@@ -611,7 +611,7 @@ def create_account():
             'schema': account_model
         },
         400: {'description': 'Некорректные данные'},
-        404: {'description': 'Пользователь не найден'},
+        404: {'description': 'Заяц не найден'},
         409: {'description': 'Имя пользователя уже занято'}
     }
 })
@@ -628,7 +628,7 @@ def update_username(user_id):
             with conn.cursor() as cursor:
                 cursor.execute('SELECT id FROM accounts WHERE id = %s', (user_id,))
                 if not cursor.fetchone():
-                    return jsonify({'error': 'Пользователь не найден'}), 404
+                    return jsonify({'error': 'Заяц не найден'}), 404
                 
                 cursor.execute('''
                     UPDATE accounts 
@@ -679,7 +679,7 @@ def update_username(user_id):
             'description': 'Обновленные данные пользователя',
             'schema': account_model
         },
-        404: {'description': 'Пользователь не найден'}
+        404: {'description': 'Заяц не найден'}
     }
 })
 def update_about_me(user_id):
@@ -699,7 +699,7 @@ def update_about_me(user_id):
                 
                 updated_user = cursor.fetchone()
                 if not updated_user:
-                    return jsonify({'error': 'Пользователь не найден'}), 404
+                    return jsonify({'error': 'Заяц не найден'}), 404
                 
                 conn.commit()
                 
@@ -728,7 +728,7 @@ def update_about_me(user_id):
             'description': 'Информация "О себе" успешно удалена',
             'schema': account_model
         },
-        404: {'description': 'Пользователь не найден'},
+        404: {'description': 'Заяц не найден'},
         500: {'description': 'Ошибка базы данных'}
     }
 })
@@ -746,7 +746,7 @@ def delete_about_me(user_id):
                 
                 updated_user = cursor.fetchone()
                 if not updated_user:
-                    return jsonify({'error': 'Пользователь не найден'}), 404
+                    return jsonify({'error': 'Заяц не найден'}), 404
                 
                 conn.commit()
                 
@@ -772,8 +772,8 @@ def delete_about_me(user_id):
         }
     ],
     'responses': {
-        200: {'description': 'Пользователь успешно удален'},
-        404: {'description': 'Пользователь не найден'},
+        200: {'description': 'Заяц успешно удален'},
+        404: {'description': 'Заяц не найден'},
         500: {'description': 'Ошибка базы данных'}
     }
 })
@@ -784,10 +784,10 @@ def delete_account(user_id):
             with conn.cursor() as cursor:
                 cursor.execute('DELETE FROM accounts WHERE id = %s', (user_id,))
                 if cursor.rowcount == 0:
-                    return jsonify({'error': 'Пользователь не найден'}), 404
+                    return jsonify({'error': 'Заяц не найден'}), 404
                 
                 conn.commit()
-                return jsonify({'message': 'Пользователь успешно удален'}), 200
+                return jsonify({'message': 'Заяц успешно удален'}), 200
                 
     except psycopg2.Error as e:
         return jsonify({'error': 'Ошибка базы данных'}), 500
@@ -960,7 +960,7 @@ def create_holiday():
     }
 })
 def add_user_to_holiday(holiday_id):
-    """Записать пользователя на праздник"""
+    """Записать зайца на праздник"""
     data = request.get_json()
     
     # Проверка наличия user_id в теле запроса
@@ -976,7 +976,7 @@ def add_user_to_holiday(holiday_id):
                 cursor.execute('SELECT username FROM accounts WHERE id = %s', (user_id,))
                 user = cursor.fetchone()
                 if not user:
-                    return jsonify({'error': 'Пользователь не найден'}), 404
+                    return jsonify({'error': 'Заяц не найден'}), 404
 
                 # Проверка существования праздника
                 cursor.execute('SELECT title FROM holidays WHERE id = %s', (holiday_id,))
@@ -991,7 +991,7 @@ def add_user_to_holiday(holiday_id):
                 ''', (user_id, holiday_id))
                 if cursor.fetchone():
                     return jsonify({
-                        'error': 'Пользователь уже записан на этот праздник'
+                        'error': 'Заяц уже записан на этот праздник'
                     }), 409
 
                 # Создание новой записи
@@ -1005,7 +1005,7 @@ def add_user_to_holiday(holiday_id):
                 conn.commit()
 
                 return jsonify({
-                    'message': 'Пользователь успешно записан на праздник',
+                    'message': 'Заяц успешно записан на праздник',
                     'holiday': {
                         'id': holiday_id,
                         'title': holiday[0]
@@ -1130,7 +1130,7 @@ def get_holiday_attendees(holiday_id):
                 'items': holiday_model
             }
         },
-        404: {'description': 'Пользователь не найден'}
+        404: {'description': 'Заяц не найден'}
     }
 })
 def get_user_holidays(user_id):
