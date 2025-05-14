@@ -2,216 +2,46 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Учебный портал для зайцев - REST/SOAP API</title>
+    <title>Система управления пользователями</title>
     <style>
         body {
-            font-family: 'Verdana';
+            font-family: Arial, sans-serif;
             max-width: 800px;
-            margin: 0 auto;
+            margin: 40px auto;
             padding: 20px;
-            background-color: #f0f8ff;
+            background: #f8f9fa;
+        }
+        .nav-container {
+            display: grid;
+            gap: 15px;
+            margin-top: 30px;
+        }
+        .nav-button {
+            padding: 15px 25px;
+            background: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            text-align: center;
+            transition: background 0.3s;
+        }
+        .nav-button:hover {
+            background: #0056b3;
         }
         h1 {
-            color: #2c5f2d;
+            color: #2b2d42;
             text-align: center;
-            text-shadow: 2px 2px 4px #a8dba8;
+            margin-bottom: 30px;
         }
-        .section {
-            background: white;
-            border-radius: 15px;
-            padding: 20px;
-            margin: 20px 0;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        .method {
-            padding: 10px;
-            margin: 10px 0;
-            border-left: 4px solid #2c5f2d;
-            background: #f9fff9;
-        }
-        .rest { border-color: #4CAF50; }
-        .soap { border-color: #2196F3; }
-        .badge {
-            display: inline-block;
-            padding: 3px 8px;
-            border-radius: 3px;
-            color: white;
-            font-weight: bold;
-        }
-        .get { background: #4CAF50; }
-        .post { background: #FF9800; }
-        .put { background: #2196F3; }
-        .soap-badge { background: #9C27B0; }
     </style>
 </head>
 <body>
-    <h1>🌱 Морковный университет: API для зайцев 🐇</h1>
-<!-- В секции body, после заголовка h1 -->
-<!-- Добавить после заголовка h1 -->
-<div style="text-align: center; margin: 40px 0;">
-    <a href="/apidocs/" 
-       style="
-           display: inline-block;
-           padding: 25px 50px;
-           background: linear-gradient(145deg, #FF9800, #FF5722);
-           color: white !important;
-           border-radius: 35px;
-           text-decoration: none;
-           font-size: 1.8em;
-           transition: all 0.4s;
-           border: 3px solid #F57C00;
-           box-shadow: 0 8px 15px rgba(255, 87, 34, 0.3);
-           text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
-           position: relative;
-           overflow: hidden;
-       "
-       onmouseover="this.style.transform='rotate(-2deg) scale(1.05)'"
-       onmouseout="this.style.transform='none'">
-       
-       <span style="display: block; margin-bottom: 10px;">🐇🥕</span>
-       ПОПРОБУЙ REST API!
-       
-       <!-- Анимированная подсветка -->
-       <div style="
-           position: absolute;
-           top: -50%;
-           left: -50%;
-           width: 200%;
-           height: 200%;
-           background: linear-gradient(45deg, 
-               transparent 25%,
-               rgba(255,255,255,0.2) 50%,
-               transparent 75%
-           );
-           animation: shine 3s infinite;
-       "></div>
-    </a>
-</div>
-
-<style>
-    @keyframes shine {
-        0% { transform: translateX(-100%) rotate(45deg); }
-        100% { transform: translateX(100%) rotate(45deg); }
-    }
-</style>
-<!-- ... предыдущий код остается без изменений ... -->
-
-<div style="display: flex; flex-direction: column; align-items: center; gap: 30px; margin: 40px 0;">
-    <!-- Кнопка просмотра БД -->
-    <a href="/view-db" 
-       style="
-           display: inline-block;
-           padding: 20px 40px;
-           background: linear-gradient(145deg, #4CAF50, #2c5f2d);
-           color: white !important;
-           border-radius: 30px;
-           text-decoration: none;
-           font-size: 1.4em;
-           transition: all 0.4s;
-           border: 3px solid #388E3C;
-           box-shadow: 0 8px 15px rgba(76,175,80,0.3);
-           text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
-           position: relative;
-           overflow: hidden;
-       "
-       onmouseover="this.style.transform='rotate(2deg) scale(1.05)'"
-       onmouseout="this.style.transform='none'">
-       
-       <span style="display: block; margin-bottom: 8px;">📊🥬</span>
-       Просмотр базы данных
-       
-       <div style="
-           position: absolute;
-           top: -50%;
-           left: -50%;
-           width: 200%;
-           height: 200%;
-           background: linear-gradient(45deg, 
-               transparent 25%,
-               rgba(255,255,255,0.2) 50%,
-               transparent 75%
-           );
-           animation: shine 3s infinite;
-       "></div>
-    </a>
-
-    <!-- Кнопка WSDL -->
-    <a href="/soap?wsdl" target="_blank" 
-       style="
-           display: inline-block;
-           padding: 20px 40px;
-           background: linear-gradient(145deg, #9C27B0, #6A1B9A);
-           color: white !important;
-           border-radius: 30px;
-           text-decoration: none;
-           font-size: 1.4em;
-           transition: all 0.4s;
-           border: 3px solid #7B1FA2;
-           box-shadow: 0 8px 15px rgba(156,39,176,0.3);
-           text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
-           position: relative;
-           overflow: hidden;
-       "
-       onmouseover="this.style.transform='rotate(-2deg) scale(1.05)'"
-       onmouseout="this.style.transform='none'">
-       
-       <span style="display: block; margin-bottom: 8px;">🧼🫧</span>
-       WSDL для SOAP сервиса
-       
-       <div style="
-           position: absolute;
-           top: -50%;
-           left: -50%;
-           width: 200%;
-           height: 200%;
-           background: linear-gradient(45deg, 
-               transparent 25%,
-               rgba(255,255,255,0.2) 50%,
-               transparent 75%
-           );
-           animation: shine 3s infinite;
-       "></div>
-    </a>
-
-  <a href="/create-user" 
-       style="
-           display: inline-block;
-           padding: 20px 40px;
-           background: linear-gradient(145deg, #00BCD4, #0097A7);
-           color: white !important;
-           border-radius: 30px;
-           text-decoration: none;
-           font-size: 1.4em;
-           transition: all 0.4s;
-           border: 3px solid #00838F;
-           box-shadow: 0 8px 15px rgba(0,188,212,0.3);
-           text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
-           position: relative;
-           overflow: hidden;
-       "
-       onmouseover="this.style.transform='rotate(2deg) scale(1.05)'"
-       onmouseout="this.style.transform='none'">
-       
-       <span style="display: block; margin-bottom: 8px;">🐇👤</span>
-       Создать нового пользователя
-       
-       <div style="
-           position: absolute;
-           top: -50%;
-           left: -50%;
-           width: 200%;
-           height: 200%;
-           background: linear-gradient(45deg, 
-               transparent 25%,
-               rgba(255,255,255,0.2) 50%,
-               transparent 75%
-           );
-           animation: shine 3s infinite;
-       "></div>
-    </a>
-
-</div>
+    <h1>Система управления пользователями</h1>
+    <div class="nav-container">
+        <a href="/apidocs/" class="nav-button">Документация API</a>
+        <a href="/view-db" class="nav-button">Просмотр базы данных</a>
+        <a href="/create-user" class="nav-button">Создать пользователя</a>
+        <a href="/soap-interface" class="nav-button">SOAP-сервис</a>
     </div>
 </body>
-</html> 
+</html>
