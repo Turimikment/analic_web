@@ -1,249 +1,103 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8">
-    <title>Морковный архив данных 🥕</title>
+    <title>База данных</title>
     <style>
-        body { 
-            font-family: 'Courier New', monospace;
-            margin: 20px;
-            background: #FFF3E0;
-        }
-        .container { 
-            max-width: 1200px; 
-            margin: 0 auto;
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
             padding: 20px;
+            background: #f8f9fa;
+        }
+        .db-container {
             background: white;
-            border-radius: 20px;
-            box-shadow: 0 0 15px rgba(255, 152, 0, 0.2);
-        }
-        h1 {
-            color: #FF9800;
-            text-align: center;
-            font-size: 2.5em;
-            text-shadow: 2px 2px #FFE0B2;
-        }
-        .table-selector {
-            margin: 20px 0;
-            text-align: center;
-        }
-        .table-selector select {
-            padding: 10px 20px;
-            border-radius: 25px;
-            border: 2px solid #FFB74D;
-            background: #FFF8E1;
-            font-size: 1.1em;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        .table-selector select:hover {
-            transform: rotate(-2deg) scale(1.05);
-            box-shadow: 0 5px 15px rgba(255, 87, 34, 0.3);
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         table {
-            width: 100%; 
-            border-collapse: collapse; 
+            width: 100%;
+            border-collapse: collapse;
             margin: 20px 0;
-            background: #FFF8E1;
-            border: 3px dashed #FFB74D;
         }
-        th, td { 
-            padding: 12px; 
-            text-align: left; 
-            border-bottom: 2px dotted #FFCC80; 
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid #dee2e6;
         }
-        th { 
-            background-color: #FFE0B2; 
-            font-family: 'Comic Sans MS', cursive;
-            color: #BF360C;
+        th {
+            background: #e9ecef;
+            color: #495057;
         }
-        tr:hover { 
-            background-color: #FFF3E0; 
-            transform: scale(1.02);
-            transition: 0.3s;
+        select {
+            padding: 8px 16px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            margin-bottom: 20px;
         }
-        .holiday-time {
+        .sql-query {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
             font-family: monospace;
-            color: #6D4C41;
-        }
-        .relation-id {
-            font-weight: bold;
-            color: #E64A19;
-        }
-        a[href="/"] {
-            display: inline-block;
-            padding: 10px 20px;
-            background: #FF9800;
-            color: white!important;
-            border-radius: 25px;
-            text-decoration: none;
-            margin-top: 20px;
-            transition: 0.3s;
-        }
-        a[href="/"]:hover {
-            transform: rotate(-3deg) scale(1.1);
-            background: #F57C00;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🐇 Секретная морковная база данных 🥕</h1>
+    <div class="db-container">
+        <h1>Просмотр базы данных</h1>
         
-        <div class="table-selector">
-            <select onchange="window.location.href = '/view-db?table=' + this.value">
-                <option value="">Выберите таблицу</option>
-                <option value="accounts" {% if selected_table == 'accounts' %}selected{% endif %}>
-                    🗄️ Аккаунты
-                </option>
-                <option value="holidays" {% if selected_table == 'holidays' %}selected{% endif %}>
-                    🎉 Праздники
-                </option>
-                <option value="user_holidays" {% if selected_table == 'user_holidays' %}selected{% endif %}>
-                    📌 Участие в праздниках
-                </option>
-            </select>
+        <select onchange="window.location.href = '/view-db?table=' + this.value">
+            <option value="accounts" {% if selected_table == 'accounts' %}selected{% endif %}>
+                Учетные записи
+            </option>
+            <option value="holidays" {% if selected_table == 'holidays' %}selected{% endif %}>
+                Мероприятия
+            </option>
+        </select>
+
+        <table>
+            {% if selected_table == 'accounts' %}
+                <tr>
+                    <th>ID</th>
+                    <th>Логин</th>
+                    <th>Email</th>
+                    <th>Информация</th>
+                    <th>Метод регистрации</th>
+                </tr>
+                {% for user in data %}
+                <tr>
+                    <td>{{ user.id }}</td>
+                    <td>{{ user.username }}</td>
+                    <td>{{ user.email }}</td>
+                    <td>{{ user.about_me or "-" }}</td>
+                    <td>{{ user.creation_method }}</td>
+                </tr>
+                {% endfor %}
+            
+            {% elif selected_table == 'holidays' %}
+                <tr>
+                    <th>ID</th>
+                    <th>Дата</th>
+                    <th>Место</th>
+                    <th>Название</th>
+                </tr>
+                {% for event in data %}
+                <tr>
+                    <td>{{ event.id }}</td>
+                    <td>{{ event.start_time }}</td>
+                    <td>{{ event.location }}</td>
+                    <td>{{ event.title }}</td>
+                </tr>
+                {% endfor %}
+            {% endif %}
+        </table>
+
+        <div class="sql-query">
+            <h3>Выполненный запрос:</h3>
+            <code>{{ sql_query }}</code>
         </div>
-
-        {% if selected_table == 'accounts' %}
-        <h2>🥕 Таблица "Морковные аккаунты" 🐰</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>🎯 ID</th>
-                    <th>📛 Кличка</th>
-                    <th>✉️ Морковный адрес</th>
-                    <th>🎩 Любимые занятия</th>
-                    <th>🔧 Способ создания</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for account in data %}
-                <tr>
-                    <td class="relation-id">{{ account.id }}</td>
-                    <td>
-                        <a href="{{ url_for('user_profile', user_id=account.id) }}" class="profile-link">
-                            🕵️♂️ {{ account.username }}
-                        </a>
-                    </td>
-                    <td>{{ account.email|replace('@', ' 🐇 ')|safe }}</td>
-                    <td>{{ account.about_me or "—" }}</td>
-                    <td>{{ account.creation_method }}</td>
-                </tr>
-                {% else %}
-                <tr>
-                    <td colspan="5">🕳️ Все зайцы на перерыве... попробуйте позже!</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-
-        {% elif selected_table == 'holidays' %}
-        <h2>🎪 Таблица "Заячьи праздники" 🎉</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>🎯 ID</th>
-                    <th>⏰ Время начала</th>
-                    <th>📍 Место</th>
-                    <th>🎈 Название</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for holiday in data %}
-                <tr>
-                    <td class="relation-id">{{ holiday.id }}</td>
-                    <td class="holiday-time">{{ holiday.start_time }}</td>
-                    <td>{{ holiday.location }}</td>
-                    <td>{{ holiday.title }}</td>
-                </tr>
-                {% else %}
-                <tr>
-                    <td colspan="4">🎭 Праздники ещё не запланированы!</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-
-        {% elif selected_table == 'user_holidays' %}
-<h2>📌 Таблица "Участие в праздниках" 🎟️</h2>
-<table>
-    <thead>
-        <tr>
-            <th>🔑 ID связи</th>
-            <th>🐇 Пользователь</th>
-            <th>🎉 Праздник</th>
-            <th>📅 Дата записи</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for relation in data %}
-        <tr>
-            <td class="relation-id">{{ relation.id }}</td>
-            <td>{{ relation.user_name }}</td>
-            <td>{{ relation.holiday_title }}</td>
-            <td>{{ relation.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-    {% endif %}
-        <div style="text-align: center; margin-top: 30px;">
-            <a href="/">🏠 Вернуться в норку</a>
-
-<!-- Добавить в стили -->
-<style>
-    .sql-query-box {
-        margin: 30px 0;
-        padding: 20px;
-        background: #FFF8E1;
-        border: 2px dashed #FFB74D;
-        border-radius: 15px;
-        position: relative;
-    }
-    
-    .sql-title {
-        font-family: 'Comic Sans MS', cursive;
-        color: #E64A19;
-        margin-bottom: 10px;
-        font-size: 1.1em;
-    }
-    
-    .sql-code {
-        background: #FFF3E0;
-        padding: 15px;
-        border-radius: 10px;
-        border: 1px solid #FFCC80;
-        font-family: 'Courier New', monospace;
-        white-space: pre-wrap;
-        word-break: break-all;
-        margin: 0;
-    }
-    
-    .sql-code::before {
-        content: '🥕';
-        position: absolute;
-        right: -15px;
-        top: -25px;
-        font-size: 40px;
-        transform: rotate(15deg);
-        opacity: 0.3;
-    }
-</style>
-
-            <!-- Добавить в конец контейнера перед закрывающим </div> -->
-{% if selected_table %}
-<div class="sql-query-box">
-    <div class="sql-title">🐇 Использованный SQL-запрос:</div>
-    <pre class="sql-code">{{ sql_query }}</pre>
-</div>
-{% endif %}
-
-
-</div>
-        
-<p>⚠️ Внимание! Данные защищены морковным шифрованием 🥕🔒</p>
-</div>
     </div>
 </body>
 </html>
