@@ -123,7 +123,7 @@
                     <td class="relation-id">{{ account.id }}</td>
                     <td>
                         <a href="{{ url_for('user_profile', user_id=account.id) }}" class="profile-link">
-                            {{ account.id }}
+                            {{ account.user_name }}
                         </a>
                     </td>
                   <td>{{ account.email|replace('@', ' 🐇 ')|safe }}</td>
