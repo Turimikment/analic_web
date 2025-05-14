@@ -491,7 +491,7 @@ def view_database():
     }
 })
 def get_accounts():
-    """Получить всех зайцев"""
+    """Получить всех Пользователей"""
     try:
         with get_db() as conn:
             with conn.cursor() as cursor:
@@ -529,7 +529,7 @@ def get_accounts():
     }
 })
 def create_account():
-    """Создать нового зайца"""
+    """Создать нового Пользователя"""
     data = request.get_json()
     validation_errors = {}
     
@@ -616,7 +616,7 @@ def create_account():
     }
 })
 def update_username(user_id):
-    """Обновить имя изайца"""
+    """Обновить имя иПользователя"""
     data = request.get_json()
     new_username = data.get('new_username', '').strip()
     
@@ -778,7 +778,7 @@ def delete_about_me(user_id):
     }
 })
 def delete_account(user_id):
-    """Удалить зайца по ID"""
+    """Удалить Пользователя по ID"""
     try:
         with get_db() as conn:
             with conn.cursor() as cursor:
@@ -1062,7 +1062,7 @@ swagger_config['definitions']['Holiday'] = holiday_model
     }
 })
 def get_holiday_attendees(holiday_id):
-    """Получить список зайцев, идущих на праздник"""
+    """Получить список Пользователей, идущих на праздник"""
     try:
         with get_db() as conn:
             with conn.cursor() as cursor:
@@ -1116,7 +1116,7 @@ def get_holiday_attendees(holiday_id):
     }
 })
 def get_user_holidays(user_id):
-    """Получить список праздников, на которые записан заяц"""
+    """Получить список праздников, на которые записан Пользователь"""
     try:
         with get_db() as conn:
             with conn.cursor() as cursor:
@@ -1195,7 +1195,7 @@ class SoapAccountService(ServiceBase):
 
     @rpc(_returns=Array(SoapUser))
     def get_all_users(ctx):
-        """Получить всех зайцев"""
+        """Получить всех Пользователей"""
         try:
             with get_db() as conn:
                 with conn.cursor() as cursor:
@@ -1222,7 +1222,7 @@ class SoapAccountService(ServiceBase):
     
     @rpc(SoapUserRequest, _returns=SoapResponse)
     def create_user(ctx, user_data):
-        """Создать нового зайца"""
+        """Создать нового Пользователя"""
         try:
             with get_db() as conn:
                 with conn.cursor() as cursor:
@@ -1259,7 +1259,7 @@ class SoapAccountService(ServiceBase):
 
     @rpc(Integer, Unicode, _returns=SoapResponse)
     def update_username(ctx, user_id, new_username):
-        """Обновить имя зайца"""
+        """Обновить имя Пользователя"""
         try:
             with get_db() as conn:
                 with conn.cursor() as cursor:
@@ -1357,7 +1357,7 @@ class SoapAccountService(ServiceBase):
 
     @rpc(Integer, _returns=SoapResponse)
     def delete_user(ctx, user_id):
-        """Удалить зайца"""
+        """Удалить Пользователя"""
         try:
             with get_db() as conn:
                 with conn.cursor() as cursor:
