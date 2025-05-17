@@ -126,7 +126,10 @@ def create_user():
 
 @app.route('/clear-cache', methods=['POST'])
 def clear_cache():
+    # Удаляем данные из сессии
     session.pop('form_data', None)
+    # Принудительно сохраняем изменения
+    session.modified = True
     return redirect(url_for('create_user'))   
 # Схемы данных Swagger
 account_model = {
