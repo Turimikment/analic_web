@@ -14,7 +14,7 @@ from werkzeug.middleware.dispatcher import DispatcherMiddleware
 import os
 from urllib.parse import urlparse
 
-app = Flask(__name__)
+app = Flask(__name__,static_url_path='/static')
 
 app.config['DATABASE_URL'] = os.environ.get('DATABASE_URL')
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'supersecretkey')
