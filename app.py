@@ -240,7 +240,15 @@ swagger_config = {
             {"src": "/static/swagger-custom.js", "name": "CustomButtonPlugin"}
         ]
     },
-    "static_url_path": "/static"
+    "static_url_path": "/static",
+    "swagger_ui_config": {
+        "dom_id": "#swagger-ui",
+        "plugins": [
+            {"src": "/static/swagger-custom.js", "name": "CustomButtonPlugin"}
+        ],
+        "layout": "StandaloneLayout"
+    },
+    "specs_route": "/apidocs/"
     }
 }
 # ====== Добавить в раздел моделей Swagger ======
