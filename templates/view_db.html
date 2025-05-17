@@ -121,8 +121,10 @@
                 {% for account in data %}
                 <tr>
                     <td class="relation-id">{{ account.id }}</td>
-                    <td> 
-                            {{ account.user_name }}
+                    <td>
+                        <a href="{{ url_for('user_profile', user_id=account.id) }}" class="profile-link">
+                            {{ account.username }}
+                        </a>
                     </td>
                   <td>{{ account.email|replace('@', ' 🐇 ')|safe }}</td>
                     <td>{{ account.about_me or "" }}</td>
