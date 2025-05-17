@@ -226,7 +226,7 @@ swagger_config = {
             "model_filter": lambda tag: True
         }
     ],
-    "static_url_path": "/flasgger_static",
+    "static_url_path": "/static",
     "swagger_ui": True,
     "specs_route": "/apidocs/",
     "swagger_ui_config": {
