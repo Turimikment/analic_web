@@ -120,8 +120,14 @@ def create_user():
         errors={},
         username=form_data.get('username', ''),
         email=form_data.get('email', ''),
-        cache_checked=form_data.get('cache_checked', False))
-    
+        cache_checked=form_data.get('cache_checked', False),
+    # Добавить передачу данных сессии
+        session=session)
+
+@app.route('/clear-cache', methods=['POST'])
+def clear_cache():
+    session.pop('form_data', None)
+    return redirect(url_for('create_user'))   
 # Схемы данных Swagger
 account_model = {
     'type': 'object',
