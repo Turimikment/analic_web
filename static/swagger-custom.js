@@ -1,10 +1,12 @@
+console.log('[Custom Script] swagger-custom.js loaded!');
+
 function addBackButton() {
+    console.log('[Custom Script] Creating back button...');
     const backButton = document.createElement('a');
     backButton.href = '/';
     backButton.innerHTML = '🏠 Вернуться на главную';
     backButton.id = 'custom-back-button';
     
-    // Стилизация
     Object.assign(backButton.style, {
         position: 'fixed',
         bottom: '20px',
@@ -28,17 +30,18 @@ function addBackButton() {
     });
 
     document.body.appendChild(backButton);
+    console.log('[Custom Script] Back button added!');
 }
 
-// Отслеживаем появление Swagger UI
-const observer = new MutationObserver((mutations) => {
-    if (document.querySelector('.swagger-ui')) {
-        addBackButton();
-        observer.disconnect();
-    }
-});
-
-observer.observe(document.body, {
-    childList: true,
-    subtree: true
-});
+// Проверка при загрузке и через интервал
+if (document.querySelector('.swagger-ui')) {
+    addBackButton();
+} else {
+    const observer = new MutationObserver(() => {
+        if (document.querySelector('.swagger-ui')) {
+            addBackButton();
+            observer.disconnect();
+        }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+}
