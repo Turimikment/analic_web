@@ -324,6 +324,7 @@ holiday_model = {
         '409': 'Конфликт: название праздника уже существует'
     }
 }
+app.config['SWAGGER_TEMPLATE'] = 'swagger-ui.html'
 Swagger(app, config=swagger_config)
 
 def get_db():
