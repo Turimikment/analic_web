@@ -229,18 +229,6 @@ swagger_config = {
     "static_url_path": "/flasgger_static",
     "swagger_ui": True,
     "specs_route": "/apidocs/",
-    "definitions": {
-        "Account": account_model,
-        "CreateAccount": create_account_model,
-        "UpdateUsername": update_username_model,
-        "AboutMe": about_me_model,
-    "swagger_ui_parameters": {
-        "dom_id": "#swagger-ui",
-        "plugins": [
-            {"src": "/static/swagger-custom.js", "name": "CustomButtonPlugin"}
-        ]
-    },
-    
     "swagger_ui_config": {
         "dom_id": "#swagger-ui",
         "plugins": [
@@ -248,8 +236,17 @@ swagger_config = {
         ],
         "layout": "StandaloneLayout"
     },
-    "specs_route": "/apidocs/",
-    
+        "swagger_ui_parameters": {
+        "dom_id": "#swagger-ui",
+        "plugins": [
+            {"src": "/static/swagger-custom.js", "name": "CustomButtonPlugin"}
+        ]
+    },
+    "definitions": {
+        "Account": account_model,
+        "CreateAccount": create_account_model,
+        "UpdateUsername": update_username_model,
+        "AboutMe": about_me_model
     }
 }
 # ====== Добавить в раздел моделей Swagger ======
