@@ -65,6 +65,14 @@
             border-radius: 10px;
             background: #FFF3E0;
         }
+        .cache-badge {
+            background: #FF9800;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 0.8em;
+            margin-left: 10px;
+        }
     </style>
 </head>
 <body>
@@ -91,23 +99,98 @@
             <button type="submit">Искать</button>
         </form>
 
-        <div class="results">
-            {% if results %}
-                <h3>Найдено праздников: {{ results|length }}</h3>
-                {% for holiday in results %}
-                <div class="holiday-card {% if holiday.cached %}cached-result{% endif %}">
-                    <h4>{{ holiday.title }}</h4>
-                    <p>📍 {{ holiday.location }}</p>
-                    <p>⏰ {{ holiday.start_time }}</p>
-                    {% if holiday.cached %}
-                    <small>🔄 Данные обновлены: {{ holiday.cache_time }}</small>
-                    {% endif %}
-                </div>
-                {% endfor %}
-            {% elif search_query %}
-                <p>😔 Ничего не найдено по запросу "{{ search_query }}"</p>
-            {% endif %}
-        </div>
+       <body>
+    <div class="container">
+        <h1>🔍 Поиск праздников с клиентским кэшем</h1>
+
+        <form id="searchForm" class="search-form">
+            <input type="text" id="searchInput" 
+                   placeholder="Введите название или место">
+            <div>
+                <label>
+                    <input type="checkbox" id="useCache">
+                    Использовать кэш браузера
+                </label>
+                <button type="button" onclick="clearCache()" 
+                        style="margin-left: 15px;">
+                    🗑️ Очистить кэш
+                </button>
+            </div>
+            <button type="button" onclick="performSearch()">Искать</button>
+        </form>
+
+        <div id="results" class="results"></div>
     </div>
+
+    <script>
+        const CACHE_PREFIX = 'holidaySearch_';
+        const CACHE_TTL = 15 * 60 * 1000; // 15 минут
+
+        function getCacheKey(query) {
+            return CACHE_PREFIX + query.toLowerCase().trim();
+        }
+
+        function performSearch() {
+            const query = document.getElementById('searchInput').value;
+            const useCache = document.getElementById('useCache').checked;
+            const cacheKey = getCacheKey(query);
+            
+            if(useCache) {
+                const cachedData = localStorage.getItem(cacheKey);
+                if(cachedData) {
+                    const { data, timestamp } = JSON.parse(cachedData);
+                    
+                    // Проверка срока действия кэша
+                    if(Date.now() - timestamp < CACHE_TTL) {
+                        displayResults(data, true);
+                        return;
+                    }
+                }
+            }
+
+            fetch(`/api/search-holidays?query=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(data => {
+                    // Сохраняем в кэш
+                    localStorage.setItem(cacheKey, JSON.stringify({
+                        data,
+                        timestamp: Date.now()
+                    }));
+                    displayResults(data, false);
+                });
+        }
+
+        function displayResults(results, fromCache) {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '';
+            
+            if(results.length === 0) {
+                resultsDiv.innerHTML = '<p>😔 Ничего не найдено</p>';
+                return;
+            }
+
+            resultsDiv.innerHTML = `<h3>Найдено праздников: ${results.length}</h3>`;
+            
+            results.forEach(holiday => {
+                const card = document.createElement('div');
+                card.className = 'holiday-card';
+                card.innerHTML = `
+                    <h4>${holiday.title}${fromCache ? '<span class="cache-badge">КЭШ</span>' : ''}</h4>
+                    <p>📍 ${holiday.location}</p>
+                    <p>⏰ ${holiday.start_time}</p>
+                `;
+                resultsDiv.appendChild(card);
+            });
+        }
+
+        function clearCache() {
+            Object.keys(localStorage).forEach(key => {
+                if(key.startsWith(CACHE_PREFIX)) {
+                    localStorage.removeItem(key);
+                }
+            });
+            alert('Кэш успешно очищен!');
+        }
+    </script>
 </body>
 </html>
