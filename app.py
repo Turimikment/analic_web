@@ -13,7 +13,11 @@ from spyne.server.wsgi import WsgiApplication
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
 import os
 from urllib.parse import urlparse
+from datetime import datetime
 
+# Добавить в импорты
+from flask import session
+import time
 app = Flask(__name__)
 
 app.config['DATABASE_URL'] = os.environ.get('DATABASE_URL')
@@ -384,6 +388,11 @@ with get_db() as conn:
                 UNIQUE (user_id, holiday_id)  
             )
         ''')
+        cursor.execute('''
+            CREATE INDEX IF NOT EXISTS idx_holidays_search 
+            ON holidays USING gin (to_tsvector('russian', title || ' ' || location))
+        ''')
+        conn.commit()
     conn.commit()
 
 def validate_email(email):
@@ -1402,6 +1411,61 @@ soap_app = Application(
 app.wsgi_app = DispatcherMiddleware(app.wsgi_app, {
     '/soap': WsgiApplication(soap_app)
 })
+
+holiday_cache = {}
+
+@app.route('/search-holidays')
+def search_holidays():
+    search_query = request.args.get('query', '')
+    use_cache = request.args.get('use_cache') == 'on'
+    
+    results = []
+    cache_used = False
+    cache_time = None
+    
+    if use_cache and search_query in holiday_cache:
+        # Берем из кэша
+        cache_data = holiday_cache[search_query]
+        results = cache_data['results']
+        cache_time = cache_data['timestamp']
+        cache_used = True
+    elif search_query:
+        # Выполняем поиск в БД
+        with get_db() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute('''
+                    SELECT * FROM holidays 
+                    WHERE title ILIKE %s OR location ILIKE %s
+                    ORDER BY start_time
+                ''', (f'%{search_query}%', f'%{search_query}%'))
+                
+                results = [{
+                    'id': row[0],
+                    'title': row[3],
+                    'location': row[2],
+                    'start_time': row[1].strftime('%d.%m.%Y %H:%M'),
+                    'cached': False
+                } for row in cursor.fetchall()]
+                
+                # Обновляем кэш
+                holiday_cache[search_query] = {
+                    'results': results,
+                    'timestamp': datetime.now().strftime('%H:%M:%S')
+                }
+    
+    # Добавляем информацию о кэше
+    for item in results:
+        item['cache_time'] = holiday_cache.get(search_query, {}).get('timestamp')
+        item['cached'] = cache_used
+    
+    return render_template(
+        'search_holidays.html',
+        results=results,
+        search_query=search_query,
+        use_cache=use_cache,
+        cache_used=cache_used,
+        cache_time=holiday_cache.get(search_query, {}).get('timestamp')
+    )
 
 # ... (остальной код остается без изменений)
 
