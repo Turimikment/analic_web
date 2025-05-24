@@ -1435,7 +1435,7 @@ def search_holidays():
             } for row in cursor.fetchall()]
     
     return jsonify(results)
-    )
+    
 
 # ... (остальной код остается без изменений)
 
