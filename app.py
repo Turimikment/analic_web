@@ -1413,9 +1413,11 @@ app.wsgi_app = DispatcherMiddleware(app.wsgi_app, {
 })
 
 holiday_cache = {}
-
-@app.route('/search-holidays')
-def search_holidays():
+@app.route('/search')  # Новый маршрут для интерфейса
+def search_page():
+    return render_template('search_holidays.html')
+@app.route('/api/search-holidays')
+def api_search_holidays():
     search_query = request.args.get('query', '')
     
     with get_db() as conn:
