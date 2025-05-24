@@ -148,7 +148,7 @@
                 }
             }
 
-            fetch(`/api/search-holidays?query=${encodeURIComponent(query)}`)
+            fetch(`/search-holidays?query=${encodeURIComponent(query)}`)
                 .then(response => response.json())
                 .then(data => {
                     // Сохраняем в кэш
