@@ -1418,6 +1418,7 @@ def search_page():
     return render_template('search_holidays.html')
 @app.route('/api/search-holidays')
 def api_search_holidays():
+    sleep(3)
     search_query = request.args.get('query', '')
     
     with get_db() as conn:
