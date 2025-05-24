@@ -77,30 +77,6 @@
 </head>
 <body>
     <div class="container">
-        <h1>🔍 Поиск праздников с кэшированием</h1>
-        
-        {% if cache_used %}
-        <div class="cache-indicator">
-            💾 Данные из кэша (Сохранено: {{ cache_time }})
-        </div>
-        {% endif %}
-
-        <form method="GET" class="search-form">
-            <input type="text" name="query" 
-                   placeholder="Введите название или место" 
-                   value="{{ search_query }}">
-            <div>
-                <label>
-                    <input type="checkbox" name="use_cache" 
-                           {% if use_cache %}checked{% endif %}>
-                    Использовать кэш (ускоряет поиск)
-                </label>
-            </div>
-            <button type="submit">Искать</button>
-        </form>
-
-       <body>
-    <div class="container">
         <h1>🔍 Поиск праздников с клиентским кэшем</h1>
 
         <form id="searchForm" class="search-form">
@@ -193,4 +169,4 @@
         }
     </script>
 </body>
-</html>
+</html> 
