@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Поиск праздников 🎉</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            margin: 20px;
+            background: #FFF3E0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 30px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 0 15px rgba(255, 152, 0, 0.2);
+        }
+        .cache-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #FF9800;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 15px;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        .cached-result {
+            background: #FFF8E1;
+            border-left: 4px solid #FFB74D;
+            animation: slideIn 0.5s ease-out;
+        }
+        .search-form {
+            display: grid;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        input[type="text"] {
+            padding: 12px;
+            border: 2px solid #FFB74D;
+            border-radius: 10px;
+            font-size: 16px;
+        }
+        button {
+            background: linear-gradient(145deg, #FF9800, #F57C00);
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        button:hover {
+            transform: rotate(-2deg);
+        }
+        .holiday-card {
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 10px;
+            background: #FFF3E0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Поиск праздников с кэшированием</h1>
+        
+        {% if cache_used %}
+        <div class="cache-indicator">
+            💾 Данные из кэша (Сохранено: {{ cache_time }})
+        </div>
+        {% endif %}
+
+        <form method="GET" class="search-form">
+            <input type="text" name="query" 
+                   placeholder="Введите название или место" 
+                   value="{{ search_query }}">
+            <div>
+                <label>
+                    <input type="checkbox" name="use_cache" 
+                           {% if use_cache %}checked{% endif %}>
+                    Использовать кэш (ускоряет поиск)
+                </label>
+            </div>
+            <button type="submit">Искать</button>
+        </form>
+
+        <div class="results">
+            {% if results %}
+                <h3>Найдено праздников: {{ results|length }}</h3>
+                {% for holiday in results %}
+                <div class="holiday-card {% if holiday.cached %}cached-result{% endif %}">
+                    <h4>{{ holiday.title }}</h4>
+                    <p>📍 {{ holiday.location }}</p>
+                    <p>⏰ {{ holiday.start_time }}</p>
+                    {% if holiday.cached %}
+                    <small>🔄 Данные обновлены: {{ holiday.cache_time }}</small>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            {% elif search_query %}
+                <p>😔 Ничего не найдено по запросу "{{ search_query }}"</p>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>
