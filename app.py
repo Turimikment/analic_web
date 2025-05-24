@@ -1414,57 +1414,27 @@ app.wsgi_app = DispatcherMiddleware(app.wsgi_app, {
 
 holiday_cache = {}
 
-@app.route('/search-holidays')
+@app.route('search-holidays')
 def search_holidays():
     search_query = request.args.get('query', '')
-    use_cache = request.args.get('use_cache') == 'on'
     
-    results = []
-    cache_used = False
-    cache_time = None
+    with get_db() as conn:
+        with conn.cursor() as cursor:
+            cursor.execute('''
+                SELECT id, start_time, location, title 
+                FROM holidays 
+                WHERE title ILIKE %s OR location ILIKE %s
+                ORDER BY start_time
+            ''', (f'%{search_query}%', f'%{search_query}%'))
+            
+            results = [{
+                'id': row[0],
+                'title': row[3],
+                'location': row[2],
+                'start_time': row[1].strftime('%d.%m.%Y %H:%M')
+            } for row in cursor.fetchall()]
     
-    if use_cache and search_query in holiday_cache:
-        # Берем из кэша
-        cache_data = holiday_cache[search_query]
-        results = cache_data['results']
-        cache_time = cache_data['timestamp']
-        cache_used = True
-    elif search_query:
-        # Выполняем поиск в БД
-        with get_db() as conn:
-            with conn.cursor() as cursor:
-                cursor.execute('''
-                    SELECT * FROM holidays 
-                    WHERE title ILIKE %s OR location ILIKE %s
-                    ORDER BY start_time
-                ''', (f'%{search_query}%', f'%{search_query}%'))
-                
-                results = [{
-                    'id': row[0],
-                    'title': row[3],
-                    'location': row[2],
-                    'start_time': row[1].strftime('%d.%m.%Y %H:%M'),
-                    'cached': False
-                } for row in cursor.fetchall()]
-                
-                # Обновляем кэш
-                holiday_cache[search_query] = {
-                    'results': results,
-                    'timestamp': datetime.now().strftime('%H:%M:%S')
-                }
-    
-    # Добавляем информацию о кэше
-    for item in results:
-        item['cache_time'] = holiday_cache.get(search_query, {}).get('timestamp')
-        item['cached'] = cache_used
-    
-    return render_template(
-        'search_holidays.html',
-        results=results,
-        search_query=search_query,
-        use_cache=use_cache,
-        cache_used=cache_used,
-        cache_time=holiday_cache.get(search_query, {}).get('timestamp')
+    return jsonify(results)
     )
 
 # ... (остальной код остается без изменений)
