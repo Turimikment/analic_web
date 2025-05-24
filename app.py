@@ -1414,7 +1414,7 @@ app.wsgi_app = DispatcherMiddleware(app.wsgi_app, {
 
 holiday_cache = {}
 
-@app.route('search-holidays')
+@app.route('/search-holidays')
 def search_holidays():
     search_query = request.args.get('query', '')
     
