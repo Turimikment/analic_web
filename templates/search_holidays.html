@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Поиск праздников 🎉</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            margin: 20px;
+            background: #FFF3E0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 30px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 0 15px rgba(255, 152, 0, 0.2);
+        }
+        .cache-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #FF9800;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 15px;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        .cached-result {
+            background: #FFF8E1;
+            border-left: 4px solid #FFB74D;
+            animation: slideIn 0.5s ease-out;
+        }
+        .search-form {
+            display: grid;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        input[type="text"] {
+            padding: 12px;
+            border: 2px solid #FFB74D;
+            border-radius: 10px;
+            font-size: 16px;
+        }
+        button {
+            background: linear-gradient(145deg, #FF9800, #F57C00);
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        button:hover {
+            transform: rotate(-2deg);
+        }
+        .holiday-card {
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 10px;
+            background: #FFF3E0;
+        }
+        .cache-badge {
+            background: #FF9800;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 0.8em;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Поиск праздников с клиентским кэшем</h1>
+
+        <form id="searchForm" class="search-form">
+            <input type="text" id="searchInput" 
+                   placeholder="Введите название или место">
+            <div>
+                <label>
+                    <input type="checkbox" id="useCache">
+                    Использовать кэш браузера
+                </label>
+                <button type="button" onclick="clearCache()" 
+                        style="margin-left: 15px;">
+                    🗑️ Очистить кэш
+                </button>
+            </div>
+            <button type="button" onclick="performSearch()">Искать</button>
+        </form>
+
+        <div id="results" class="results"></div>
+    </div>
+
+    <script>
+        const CACHE_PREFIX = 'holidaySearch_';
+        const CACHE_TTL = 15 * 60 * 1000; // 15 минут
+
+        function getCacheKey(query) {
+            return CACHE_PREFIX + query.toLowerCase().trim();
+        }
+
+        function performSearch() {
+            const query = document.getElementById('searchInput').value;
+            const useCache = document.getElementById('useCache').checked;
+            const cacheKey = getCacheKey(query);
+            
+            if(useCache) {
+                const cachedData = localStorage.getItem(cacheKey);
+                if(cachedData) {
+                    const { data, timestamp } = JSON.parse(cachedData);
+                    
+                    // Проверка срока действия кэша
+                    if(Date.now() - timestamp < CACHE_TTL) {
+                        displayResults(data, true);
+                        return;
+                    }
+                }
+            }
+
+            fetch(`/api/search-holidays?query=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(data => {
+                    // Сохраняем в кэш
+                    localStorage.setItem(cacheKey, JSON.stringify({
+                        data,
+                        timestamp: Date.now()
+                    }));
+                    displayResults(data, false);
+                });
+        }
+
+        function displayResults(results, fromCache) {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '';
+            
+            if(results.length === 0) {
+                resultsDiv.innerHTML = '<p>😔 Ничего не найдено</p>';
+                return;
+            }
+
+            resultsDiv.innerHTML = `<h3>Найдено праздников: ${results.length}</h3>`;
+            
+            results.forEach(holiday => {
+                const card = document.createElement('div');
+                card.className = 'holiday-card';
+                card.innerHTML = `
+                    <h4>${holiday.title}${fromCache ? '<span class="cache-badge">КЭШ</span>' : ''}</h4>
+                    <p>📍 ${holiday.location}</p>
+                    <p>⏰ ${holiday.start_time}</p>
+                `;
+                resultsDiv.appendChild(card);
+            });
+        }
+
+        function clearCache() {
+            Object.keys(localStorage).forEach(key => {
+                if(key.startsWith(CACHE_PREFIX)) {
+                    localStorage.removeItem(key);
+                }
+            });
+            alert('Кэш успешно очищен!');
+        }
+    </script>
+</body>
+</html> 
