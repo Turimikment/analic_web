@@ -1172,7 +1172,90 @@ def get_user_holidays(user_id):
                 
     except psycopg2.Error as e:
         return jsonify({'error': 'Database error'}), 500
+
+get_user_by_id_request_model = {
+    'type': 'object',
+    'required': ['id'],
+    'properties': {
+        'id': {
+            'type': 'integer',
+            'description': 'ID зайца',
+            'example': 1
+        }
+    },
+    'x-educational-purpose': 'Демонстрация нестандартного использования POST вместо GET'
+}
+
+# Добавляем в конфигурацию Swagger
+swagger_config['definitions']['GetUserByIdRequest'] = get_user_by_id_request_model
+
+@app.route('/accounts/get-by-id', methods=['POST'])
+@swag_from({
+    'tags': ['Accounts'],
+    'description': 'Получить зайца по ID (POST вместо GET в учебных целях)',
+    'parameters': [
+        {
+            'name': 'body',
+            'in': 'body',
+            'required': True,
+            'schema': {
+                '$ref': '#/definitions/GetUserByIdRequest'
+            }
+        }
+    ],
+    'responses': {
+        200: {
+            'description': 'Данные зайца',
+            'schema': account_model
+        },
+        400: {
+            'description': 'Некорректный запрос',
+            'examples': {
+                'missing_id': {'error': 'Отсутствует обязательное поле: id'},
+                'invalid_id': {'error': 'ID должен быть числом'}
+            }
+        },
+        404: {'description': 'Заяц не найден'}
+    },
+    'x-educational-note': 'Обычно для получения ресурса по ID используется GET-запрос. Этот POST-метод демонстрирует альтернативный подход.'
+})
+def get_user_by_id_post():
+    """Получить зайца по ID (используя POST вместо GET)"""
+    data = request.get_json()
     
+    # Валидация
+    if not data or 'id' not in data:
+        return jsonify({'error': 'Отсутствует обязательное поле: id'}), 400
+    
+    try:
+        user_id = int(data['id'])
+    except (TypeError, ValueError):
+        return jsonify({'error': 'ID должен быть числом'}), 400
+    
+    try:
+        with get_db() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute('''
+                    SELECT id, username, email, about_me, creation_method 
+                    FROM accounts 
+                    WHERE id = %s
+                ''', (user_id,))
+                user = cursor.fetchone()
+                
+                if not user:
+                    return jsonify({'error': 'Заяц не найден'}), 404
+                
+                return jsonify({
+                    'id': user[0],
+                    'username': user[1],
+                    'email': user[2],
+                    'about_me': user[3],
+                    'creation_method': user[4]
+                }), 200
+                
+    except psycopg2.Error as e:
+        return jsonify({'error': 'Ошибка базы данных'}), 500
+
 class SoapUser(ComplexModel):
     __namespace__ = 'soap.users'
     id = Integer
