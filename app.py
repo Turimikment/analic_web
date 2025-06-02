@@ -13,8 +13,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(db_path, "dyna
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
-with app.app_context():
-    db.create_all()
+
 # Swagger configuration
 SWAGGER_URL = '/swagger'
 API_URL = '/swagger.json'
@@ -90,7 +89,17 @@ class DynamicEndpoint(db.Model):
 
     def __repr__(self):
         return f'<DynamicEndpoint {self.endpoint_name}>'
+def init_db():
+    with app.app_context():
+        db.create_all()
+        print("Database tables created successfully")
+        # Проверка существования таблицы
+        from sqlalchemy import inspect
+        inspector = inspect(db.engine)
+        print("Existing tables:", inspector.get_table_names())
 
+# Вызываем инициализацию БД сразу после определения моделей
+init_db()
 def create_dynamic_model(table_name, fields):
     """Создает динамическую модель SQLAlchemy"""
     attributes = {
