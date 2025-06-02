@@ -140,9 +140,7 @@ def register_crud_routes(model, endpoint):
         db.session.commit()
         return jsonify({'message': 'Item deleted'})
 
-@app.before_first_request
-def create_tables():
-    """Создает таблицы при первом запросе"""
+with app.app_context():
     db.create_all()
 
 if __name__ == '__main__':
