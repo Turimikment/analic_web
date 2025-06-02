@@ -86,7 +86,7 @@
             <h3>{{ endpoint.endpoint_name }}</h3>
             <p><strong>Fields:</strong> {{ endpoint.fields_description }}</p>
             <p><strong>API URL:</strong> /api/{{ endpoint.endpoint_name }}</p>
-            <p><strong>Swagger:</strong> <a href="{{ url_for('swagger') }}" target="_blank">View in Swagger UI</a></p>
+            <p><strong>Swagger:</strong> <a href="/swagger" target="_blank">View in Swagger UI</a></p>
             
             <form method="POST" action="{{ url_for('delete_endpoint', endpoint_id=endpoint.id) }}" style="margin-top: 10px;">
                 <button type="submit" class="delete-btn">Delete Endpoint</button>
