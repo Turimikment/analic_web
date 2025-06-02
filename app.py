@@ -1,27 +1,96 @@
-from flask import Flask, request, render_template, jsonify, redirect, url_for
-from flasgger import Swagger
+from flask import Flask, render_template, request, jsonify, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
-import json
+from flask_swagger_ui import get_swaggerui_blueprint
+import os
+import uuid
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///dynamic.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///instance/dynamic_api.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key')
+
 db = SQLAlchemy(app)
 
-# Конфигурация Swagger
-app.config['SWAGGER'] = {
-    'title': 'Dynamic API Generator',
-    'uiversion': 3
-}
-swagger = Swagger(app)
+# Swagger configuration
+SWAGGER_URL = '/swagger'
+API_URL = '/swagger.json'
+swaggerui_blueprint = get_swaggerui_blueprint(
+    SWAGGER_URL,
+    API_URL,
+    config={'app_name': "Dynamic API Generator"}
+)
+app.register_blueprint(swaggerui_blueprint, url_prefix=SWAGGER_URL)
 
-# Хранилище для описаний динамических моделей
-dynamic_models = {}
+@app.route('/swagger.json')
+def swagger():
+    endpoints = DynamicEndpoint.query.all()
+    swagger_doc = {
+        "openapi": "3.0.0",
+        "info": {
+            "title": "Dynamic API",
+            "version": "1.0.0",
+            "description": "API dynamically generated from user input"
+        },
+        "paths": {}
+    }
+    
+    for endpoint in endpoints:
+        path = f"/api/{endpoint.endpoint_name}"
+        swagger_doc["paths"][path] = {
+            "get": {
+                "summary": f"Get records from {endpoint.endpoint_name}",
+                "responses": {
+                    "200": {
+                        "description": "A list of records",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": json.loads(endpoint.fields_description)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "summary": f"Add a record to {endpoint.endpoint_name}",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": json.loads(endpoint.fields_description)
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Record created successfully"
+                    }
+                }
+            }
+        }
+    
+    return jsonify(swagger_doc)
 
-def create_dynamic_model(model_name, fields):
-    """Создает динамическую модель SQLAlchemy на основе описания полей"""
-    attrs = {
-        '__tablename__': model_name.lower(),
+class DynamicEndpoint(db.Model):
+    id = db.Column(db.String(36), primary_key=True)
+    endpoint_name = db.Column(db.String(80), unique=True, nullable=False)
+    fields_description = db.Column(db.Text, nullable=False)
+    table_name = db.Column(db.String(80), unique=True, nullable=False)
+
+    def __repr__(self):
+        return f'<DynamicEndpoint {self.endpoint_name}>'
+
+def create_dynamic_model(table_name, fields):
+    """Создает динамическую модель SQLAlchemy"""
+    attributes = {
+        '__tablename__': table_name,
         'id': db.Column(db.Integer, primary_key=True)
     }
     
@@ -30,118 +99,97 @@ def create_dynamic_model(model_name, fields):
         field_type = field['type'].lower()
         
         if field_type == 'string':
-            attrs[field_name] = db.Column(db.String(100))
+            attributes[field_name] = db.Column(db.String(100))
         elif field_type == 'integer':
-            attrs[field_name] = db.Column(db.Integer)
+            attributes[field_name] = db.Column(db.Integer)
         elif field_type == 'float':
-            attrs[field_name] = db.Column(db.Float)
+            attributes[field_name] = db.Column(db.Float)
         elif field_type == 'boolean':
-            attrs[field_name] = db.Column(db.Boolean)
+            attributes[field_name] = db.Column(db.Boolean)
         else:
-            attrs[field_name] = db.Column(db.String(100))
+            attributes[field_name] = db.Column(db.String(100))
     
-    DynamicModel = type(model_name, (db.Model,), attrs)
-    return DynamicModel
+    return type(table_name, (db.Model,), attributes)
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
-        endpoint = request.form.get('endpoint').strip()
-        fields_text = request.form.get('fields').strip()
+        endpoint_name = request.form.get('endpoint_name')
+        fields_description = request.form.get('fields_description')
         
         try:
-            fields = []
-            for line in fields_text.split('\n'):
-                if line.strip():
-                    name, type_ = line.split(':')
-                    fields.append({'name': name.strip(), 'type': type_.strip()})
+            fields = json.loads(fields_description)
+            if not isinstance(fields, list):
+                raise ValueError("Fields description should be a list of objects")
             
-            # Создаем модель
-            model_name = endpoint.capitalize()
-            DynamicModel = create_dynamic_model(model_name, fields)
+            # Генерируем уникальное имя таблицы
+            table_name = f"table_{str(uuid.uuid4()).replace('-', '_')}"
             
-            # Регистрируем endpoint'ы
-            register_crud_routes(DynamicModel, endpoint)
+            # Создаем динамическую модель
+            DynamicModel = create_dynamic_model(table_name, fields)
             
-            # Сохраняем описание модели
-            dynamic_models[endpoint] = {
-                'model': model_name,
-                'fields': fields
-            }
-            
-            # Создаем таблицу в БД
+            # Создаем таблицу в базе данных
             db.create_all()
             
-            return redirect(url_for('show_endpoint', endpoint_name=endpoint))
+            # Сохраняем информацию о endpoint'е
+            new_endpoint = DynamicEndpoint(
+                id=str(uuid.uuid4()),
+                endpoint_name=endpoint_name,
+                fields_description=json.dumps({f['name']: f['type'] for f in fields}),
+                table_name=table_name
+            )
+            db.session.add(new_endpoint)
+            db.session.commit()
+            
+            # Создаем route для нового endpoint'а
+            create_endpoint_route(endpoint_name, DynamicModel)
+            
+            return redirect(url_for('index'))
+        except json.JSONDecodeError:
+            error = "Invalid JSON format for fields description"
+        except ValueError as e:
+            error = str(e)
         except Exception as e:
-            return render_template('index.html', 
-                                error=str(e),
-                                endpoint_value=request.form.get('endpoint'),
-                                fields_value=request.form.get('fields'))
+            error = f"An error occurred: {str(e)}"
+            db.session.rollback()
+        
+        return render_template('index.html', error=error)
     
-    return render_template('index.html')
+    endpoints = DynamicEndpoint.query.all()
+    return render_template('index.html', endpoints=endpoints)
 
-@app.route('/endpoint/<endpoint_name>')
-def show_endpoint(endpoint_name):
-    if endpoint_name not in dynamic_models:
-        return redirect(url_for('index'))
+def create_endpoint_route(endpoint_name, model):
+    """Динамически создает route для endpoint'а"""
     
-    endpoint_info = dynamic_models[endpoint_name]
-    example_data = {field['name']: f"example_{field['type']}" for field in endpoint_info['fields']}
+    @app.route(f'/api/{endpoint_name}', methods=['GET', 'POST'])
+    def handle_endpoint():
+        if request.method == 'GET':
+            records = model.query.all()
+            return jsonify([{c.name: getattr(r, c.name) for c in r.__table__.columns} for r in records])
+        elif request.method == 'POST':
+            data = request.get_json()
+            new_record = model(**data)
+            db.session.add(new_record)
+            db.session.commit()
+            return jsonify({"message": "Record created successfully"}), 201
     
-    return render_template('endpoint.html',
-                         endpoint_name=endpoint_name,
-                         fields=endpoint_info['fields'],
-                         example_data=example_data,
-                         swagger_url="/apidocs")
+    # Переименовываем функцию, чтобы избежать конфликтов
+    handle_endpoint.__name__ = f'handle_{endpoint_name}'
 
-def register_crud_routes(model, endpoint):
-    """Регистрирует CRUD маршруты для модели"""
+@app.route('/delete/<endpoint_id>', methods=['POST'])
+def delete_endpoint(endpoint_id):
+    endpoint = DynamicEndpoint.query.get_or_404(endpoint_id)
     
-    @app.route(f'/{endpoint}', methods=['POST'])
-    def create_item():
-        """Создание новой записи"""
-        data = request.get_json()
-        item = model(**data)
-        db.session.add(item)
-        db.session.commit()
-        return jsonify({'message': 'Item created', 'id': item.id}), 201
+    # Удаляем таблицу из базы данных
+    db.engine.execute(f"DROP TABLE IF EXISTS {endpoint.table_name}")
     
-    @app.route(f'/{endpoint}/<int:id>', methods=['GET'])
-    def read_item(id):
-        """Получение записи по ID"""
-        item = model.query.get_or_404(id)
-        return jsonify({col.name: getattr(item, col.name) for col in model.__table__.columns})
+    # Удаляем запись о endpoint'е
+    db.session.delete(endpoint)
+    db.session.commit()
     
-    @app.route(f'/{endpoint}', methods=['GET'])
-    def list_items():
-        """Получение всех записей"""
-        items = model.query.all()
-        return jsonify([
-            {col.name: getattr(item, col.name) for col in model.__table__.columns} 
-            for item in items
-        ])
-    
-    @app.route(f'/{endpoint}/<int:id>', methods=['PUT'])
-    def update_item(id):
-        """Обновление записи"""
-        item = model.query.get_or_404(id)
-        data = request.get_json()
-        for key, value in data.items():
-            setattr(item, key, value)
-        db.session.commit()
-        return jsonify({'message': 'Item updated'})
-    
-    @app.route(f'/{endpoint}/<int:id>', methods=['DELETE'])
-    def delete_item(id):
-        """Удаление записи"""
-        item = model.query.get_or_404(id)
-        db.session.delete(item)
-        db.session.commit()
-        return jsonify({'message': 'Item deleted'})
-
+    return redirect(url_for('index'))
 
 if __name__ == '__main__':
-    app.run()
     with app.app_context():
         db.create_all()
+    app.run(debug=True)
