@@ -22,8 +22,7 @@ swaggerui_blueprint = get_swaggerui_blueprint(
     SWAGGER_URL,
     API_URL,
     config={
-        'app_name': "Dynamic API Generator",
-        'docExpansion': 'none'  # Предотвращаем автоматическое разворачивание
+        'app_name': "Dynamic API Generator"
     }
 )
 app.register_blueprint(swaggerui_blueprint, url_prefix=SWAGGER_URL)
