@@ -25,7 +25,7 @@ swaggerui_blueprint = get_swaggerui_blueprint(
 )
 app.register_blueprint(swaggerui_blueprint, url_prefix=SWAGGER_URL)
 
-@app.route('/swagger.json')
+@app.route('/swagger')
 def swagger():
     endpoints = DynamicEndpoint.query.all()
     swagger_doc = {
