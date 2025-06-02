@@ -17,7 +17,7 @@ db = SQLAlchemy(app)
 
 # Swagger configuration
 SWAGGER_URL = '/swagger'
-API_URL = '/swagger'
+API_URL = '/swagger.json'
 swaggerui_blueprint = get_swaggerui_blueprint(
     SWAGGER_URL,
     API_URL,
