@@ -13,7 +13,8 @@ app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(db_path, "dyna
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
-
+with app.app_context():
+    db.create_all()
 # Swagger configuration
 SWAGGER_URL = '/swagger'
 API_URL = '/swagger.json'
@@ -192,9 +193,6 @@ def delete_endpoint(endpoint_id):
     
     return redirect(url_for('index'))
     
-with app.app_context():
-    db.create_all()
+
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
     app.run(debug=True)
