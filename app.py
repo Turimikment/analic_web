@@ -140,8 +140,8 @@ def register_crud_routes(model, endpoint):
         db.session.commit()
         return jsonify({'message': 'Item deleted'})
 
-with app.app_context():
-    db.create_all()
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run()
+    with app.app_context():
+        db.create_all()
