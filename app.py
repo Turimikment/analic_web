@@ -133,31 +133,7 @@ def create_dynamic_model(table_name, fields):
 init_db()
 
 # Универсальный обработчик для всех динамических эндпоинтов
-@app.route('/api/<endpoint_name>', methods=['GET', 'POST'])
-def handle_dynamic_endpoint(endpoint_name):
-    """Обрабатывает запросы ко всем динамическим эндпоинтам"""
-    # Находим описание эндпоинта в базе данных
-    endpoint = DynamicEndpoint.query.filter_by(endpoint_name=endpoint_name).first()
-    if not endpoint:
-        return jsonify({"error": "Endpoint not found"}), 404
-    
-    # Создаем модель на лету
-    fields = [{'name': name, 'type': typ} for name, typ in json.loads(endpoint.fields_description).items()]
-    DynamicModel = create_dynamic_model(endpoint.table_name, fields)
-    
-    if request.method == 'GET':
-        # Получение всех записей
-        records = DynamicModel.query.all()
-        return jsonify([{c.name: getattr(r, c.name) for c in r.__table__.columns} for r in records])
-    
-    elif request.method == 'POST':
-        # Создание новой записи
-        data = request.get_json()
-        new_record = DynamicModel(**data)
-        db.session.add(new_record)
-        db.session.commit()
-        return jsonify({"message": "Record created successfully"}), 201
-
+# Замените обработку POST-запроса в функции index() на этот код
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
@@ -165,9 +141,13 @@ def index():
         fields_description = request.form.get('fields_description')
         
         try:
-            fields = json.loads(fields_description)
-            if not isinstance(fields, list):
-                raise ValueError("Fields description should be a list of objects")
+            # Парсим JSON как объект (словарь)
+            fields_dict = json.loads(fields_description)
+            if not isinstance(fields_dict, dict):
+                raise ValueError("Fields description should be a JSON object")
+            
+            # Преобразуем словарь в список полей для совместимости
+            fields = [{"name": name, "type": typ} for name, typ in fields_dict.items()]
             
             # Генерируем уникальное имя таблицы
             table_name = f"table_{str(uuid.uuid4()).replace('-', '_')}"
@@ -183,7 +163,7 @@ def index():
             new_endpoint = DynamicEndpoint(
                 id=str(uuid.uuid4()),
                 endpoint_name=endpoint_name,
-                fields_description=json.dumps({f['name']: f['type'] for f in fields}),
+                fields_description=json.dumps(fields_dict),  # Сохраняем как объект
                 table_name=table_name
             )
             db.session.add(new_endpoint)
@@ -200,6 +180,10 @@ def index():
             import traceback
             traceback.print_exc()
         
+        return render_template('index.html', error=error)
+    
+    endpoints = DynamicEndpoint.query.all()
+    return render_template('index.html', endpoints=endpoints)        
         return render_template('index.html', error=error)
     
     endpoints = DynamicEndpoint.query.all()
