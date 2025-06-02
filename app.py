@@ -81,7 +81,10 @@ def swagger():
         }
     
     return jsonify(swagger_doc)
-
+@app.context_processor
+def inject_swagger_url():
+    return dict(swagger_url=SWAGGER_URL)
+    
 class DynamicEndpoint(db.Model):
     id = db.Column(db.String(36), primary_key=True)
     endpoint_name = db.Column(db.String(80), unique=True, nullable=False)
