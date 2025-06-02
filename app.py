@@ -3,13 +3,12 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_swagger_ui import get_swaggerui_blueprint
 import os
 import uuid
-import json  # Добавлен импорт json
+import json
 
 app = Flask(__name__)
-# Исправленный путь к базе данных
 base_dir = os.path.abspath(os.path.dirname(__file__))
 db_path = os.path.join(base_dir, 'instance')
-os.makedirs(db_path, exist_ok=True)  # Гарантированное создание папки
+os.makedirs(db_path, exist_ok=True)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(db_path, "dynamic_api.db")}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -93,23 +92,10 @@ class DynamicEndpoint(db.Model):
         return f'<DynamicEndpoint {self.endpoint_name}>'
 
 def init_db():
-    """Инициализация базы данных с восстановлением эндпоинтов"""
+    """Инициализация базы данных"""
     with app.app_context():
         db.create_all()
         print(f"Database initialized at: {app.config['SQLALCHEMY_DATABASE_URI']}")
-        
-        # Восстановление существующих эндпоинтов
-        endpoints = DynamicEndpoint.query.all()
-        print(f"Found {len(endpoints)} existing endpoints")
-        
-        for endpoint in endpoints:
-            try:
-                fields = [{'name': name, 'type': typ} for name, typ in json.loads(endpoint.fields_description).items()]
-                DynamicModel = create_dynamic_model(endpoint.table_name, fields)
-                create_endpoint_route(endpoint.endpoint_name, DynamicModel)
-                print(f"Restored endpoint: {endpoint.endpoint_name}")
-            except Exception as e:
-                print(f"Error restoring endpoint {endpoint.endpoint_name}: {str(e)}")
         
         # Проверка существующих таблиц
         inspector = db.inspect(db.engine)
@@ -140,8 +126,34 @@ def create_dynamic_model(table_name, fields):
     
     return type(table_name, (db.Model,), attributes)
 
-# Инициализация базы данных при старте
+# Инициализация базы данных
 init_db()
+
+# Универсальный обработчик для всех динамических эндпоинтов
+@app.route('/api/<endpoint_name>', methods=['GET', 'POST'])
+def handle_dynamic_endpoint(endpoint_name):
+    """Обрабатывает запросы ко всем динамическим эндпоинтам"""
+    # Находим описание эндпоинта в базе данных
+    endpoint = DynamicEndpoint.query.filter_by(endpoint_name=endpoint_name).first()
+    if not endpoint:
+        return jsonify({"error": "Endpoint not found"}), 404
+    
+    # Создаем модель на лету
+    fields = [{'name': name, 'type': typ} for name, typ in json.loads(endpoint.fields_description).items()]
+    DynamicModel = create_dynamic_model(endpoint.table_name, fields)
+    
+    if request.method == 'GET':
+        # Получение всех записей
+        records = DynamicModel.query.all()
+        return jsonify([{c.name: getattr(r, c.name) for c in r.__table__.columns} for r in records])
+    
+    elif request.method == 'POST':
+        # Создание новой записи
+        data = request.get_json()
+        new_record = DynamicModel(**data)
+        db.session.add(new_record)
+        db.session.commit()
+        return jsonify({"message": "Record created successfully"}), 201
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -162,7 +174,7 @@ def index():
             
             # Создаем таблицу в базе данных
             with app.app_context():
-                db.create_all()
+                DynamicModel.__table__.create(db.engine)
             
             # Сохраняем информацию о endpoint'е
             new_endpoint = DynamicEndpoint(
@@ -173,9 +185,6 @@ def index():
             )
             db.session.add(new_endpoint)
             db.session.commit()
-            
-            # Создаем route для нового endpoint'а
-            create_endpoint_route(endpoint_name, DynamicModel)
             
             return redirect(url_for('index'))
         except json.JSONDecodeError:
@@ -192,26 +201,6 @@ def index():
     
     endpoints = DynamicEndpoint.query.all()
     return render_template('index.html', endpoints=endpoints)
-
-def create_endpoint_route(endpoint_name, model):
-    """Динамически создает route для endpoint'а"""
-    # Генерация уникального имени функции
-    func_name = f"handle_{endpoint_name}_{str(uuid.uuid4()).replace('-', '')}"
-    
-    def endpoint_handler():
-        if request.method == 'GET':
-            records = model.query.all()
-            return jsonify([{c.name: getattr(r, c.name) for c in r.__table__.columns} for r in records])
-        elif request.method == 'POST':
-            data = request.get_json()
-            new_record = model(**data)
-            db.session.add(new_record)
-            db.session.commit()
-            return jsonify({"message": "Record created successfully"}), 201
-    
-    # Регистрация обработчика с уникальным именем
-    endpoint_handler.__name__ = func_name
-    app.add_url_rule(f'/api/{endpoint_name}', view_func=endpoint_handler, methods=['GET', 'POST'])
 
 @app.route('/delete/<endpoint_id>', methods=['POST'])
 def delete_endpoint(endpoint_id):
