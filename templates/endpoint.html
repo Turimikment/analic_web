@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Endpoint {{ endpoint_name }}</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .endpoint-info { background: #f5f5f5; padding: 15px; border-radius: 4px; margin-bottom: 20px; }
+        .field { margin-bottom: 10px; }
+        .field-name { font-weight: bold; }
+        .field-type { color: #666; }
+        .example { background: #e9f7ef; padding: 15px; border-radius: 4px; margin: 20px 0; }
+        pre { background: #333; color: #fff; padding: 10px; border-radius: 4px; overflow-x: auto; }
+        .endpoints-list { margin-top: 20px; }
+        .endpoint-method { display: inline-block; width: 80px; font-weight: bold; }
+        .get { color: #61affe; }
+        .post { color: #49cc90; }
+        .put { color: #fca130; }
+        .delete { color: #f93e3e; }
+        a { color: #1a73e8; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <h1>Endpoint: /{{ endpoint_name }}</h1>
+    
+    <div class="endpoint-info">
+        <h2>Структура данных</h2>
+        {% for field in fields %}
+        <div class="field">
+            <span class="field-name">{{ field.name }}</span>
+            <span class="field-type">{{ field.type }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <div class="example">
+        <h2>Пример данных</h2>
+        <pre>{{ example_data | tojson(indent=2) }}</pre>
+    </div>
+    
+    <div class="endpoints-list">
+        <h2>Доступные методы</h2>
+        <ul>
+            <li><span class="endpoint-method post">POST</span> /{{ endpoint_name }} - Создать запись</li>
+            <li><span class="endpoint-method get">GET</span> /{{ endpoint_name }} - Получить все записи</li>
+            <li><span class="endpoint-method get">GET</span> /{{ endpoint_name }}/&lt;id&gt; - Получить запись по ID</li>
+            <li><span class="endpoint-method put">PUT</span> /{{ endpoint_name }}/&lt;id&gt; - Обновить запись</li>
+            <li><span class="endpoint-method delete">DELETE</span> /{{ endpoint_name }}/&lt;id&gt; - Удалить запись</li>
+        </ul>
+    </div>
+    
+    <p>Полная документация API доступна в <a href="{{ swagger_url }}" target="_blank">Swagger UI</a></p>
+    <p><a href="/">Создать новый endpoint</a></p>
+</body>
+</html>
