@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, jsonify
+from flask import Flask, request, render_template, jsonify, redirect, url_for
 from flasgger import Swagger
 from flask_sqlalchemy import SQLAlchemy
 import json
@@ -69,36 +69,38 @@ def index():
                 'fields': fields
             }
             
-            return render_template('index.html', 
-                                 success=f"Endpoint /{endpoint} создан!",
-                                 swagger_url="/apidocs")
+            # Создаем таблицу в БД
+            db.create_all()
+            
+            return redirect(url_for('show_endpoint', endpoint_name=endpoint))
         except Exception as e:
-            return render_template('index.html', error=str(e))
+            return render_template('index.html', 
+                                error=str(e),
+                                endpoint_value=request.form.get('endpoint'),
+                                fields_value=request.form.get('fields'))
     
     return render_template('index.html')
+
+@app.route('/endpoint/<endpoint_name>')
+def show_endpoint(endpoint_name):
+    if endpoint_name not in dynamic_models:
+        return redirect(url_for('index'))
+    
+    endpoint_info = dynamic_models[endpoint_name]
+    example_data = {field['name']: f"example_{field['type']}" for field in endpoint_info['fields']}
+    
+    return render_template('endpoint.html',
+                         endpoint_name=endpoint_name,
+                         fields=endpoint_info['fields'],
+                         example_data=example_data,
+                         swagger_url="/apidocs")
 
 def register_crud_routes(model, endpoint):
     """Регистрирует CRUD маршруты для модели"""
     
     @app.route(f'/{endpoint}', methods=['POST'])
     def create_item():
-        """Создание новой записи
-        ---
-        tags:
-          - Dynamic API
-        parameters:
-          - in: body
-            name: body
-            schema:
-              id: {endpoint}_create
-              required:
-                - {required_fields}
-              properties:
-                {fields_schema}
-        responses:
-          201:
-            description: Запись создана
-        """
+        """Создание новой записи"""
         data = request.get_json()
         item = model(**data)
         db.session.add(item)
@@ -107,34 +109,13 @@ def register_crud_routes(model, endpoint):
     
     @app.route(f'/{endpoint}/<int:id>', methods=['GET'])
     def read_item(id):
-        """Получение записи по ID
-        ---
-        tags:
-          - Dynamic API
-        parameters:
-          - name: id
-            in: path
-            type: integer
-            required: true
-        responses:
-          200:
-            description: Запись найдена
-          404:
-            description: Запись не найдена
-        """
+        """Получение записи по ID"""
         item = model.query.get_or_404(id)
         return jsonify({col.name: getattr(item, col.name) for col in model.__table__.columns})
     
     @app.route(f'/{endpoint}', methods=['GET'])
     def list_items():
-        """Получение всех записей
-        ---
-        tags:
-          - Dynamic API
-        responses:
-          200:
-            description: Список записей
-        """
+        """Получение всех записей"""
         items = model.query.all()
         return jsonify([
             {col.name: getattr(item, col.name) for col in model.__table__.columns} 
@@ -143,27 +124,7 @@ def register_crud_routes(model, endpoint):
     
     @app.route(f'/{endpoint}/<int:id>', methods=['PUT'])
     def update_item(id):
-        """Обновление записи
-        ---
-        tags:
-          - Dynamic API
-        parameters:
-          - name: id
-            in: path
-            type: integer
-            required: true
-          - in: body
-            name: body
-            schema:
-              id: {endpoint}_update
-              properties:
-                {fields_schema}
-        responses:
-          200:
-            description: Запись обновлена
-          404:
-            description: Запись не найдена
-        """
+        """Обновление записи"""
         item = model.query.get_or_404(id)
         data = request.get_json()
         for key, value in data.items():
@@ -173,21 +134,7 @@ def register_crud_routes(model, endpoint):
     
     @app.route(f'/{endpoint}/<int:id>', methods=['DELETE'])
     def delete_item(id):
-        """Удаление записи
-        ---
-        tags:
-          - Dynamic API
-        parameters:
-          - name: id
-            in: path
-            type: integer
-            required: true
-        responses:
-          200:
-            description: Запись удалена
-          404:
-            description: Запись не найдена
-        """
+        """Удаление записи"""
         item = model.query.get_or_404(id)
         db.session.delete(item)
         db.session.commit()
