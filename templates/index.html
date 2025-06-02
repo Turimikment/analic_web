@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Integration</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        .endpoints {
+            margin-top: 30px;
+        }
+        .endpoint {
+            background: #f9f9f9;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #007bff;
+        }
+    </style>
+</head>
+<body>
+    <h1>Database Integration API</h1>
+    
+    <div>{{ description|safe }}</div>
+    
+    <div class="endpoints">
+        <h2>Примеры запросов:</h2>
+        
+        <div class="endpoint">
+            <h3>GET /api/data</h3>
+            <pre>curl http://localhost:5000/api/data</pre>
+        </div>
+        
+        <div class="endpoint">
+            <h3>POST /api/data</h3>
+            <pre>curl -X POST -H "Content-Type: application/json" -d '{"field1":"test", "field2":123, "field3":45.67}' http://localhost:5000/api/data</pre>
+        </div>
+        
+        <div class="endpoint">
+            <h3>PATCH /api/data/1</h3>
+            <pre>curl -X PATCH -H "Content-Type: application/json" -d '{"field1":"updated"}' http://localhost:5000/api/data/1</pre>
+        </div>
+    </div>
+    
+    <p>Для полной документации API посетите <a href="/apidocs">Swagger UI</a>.</p>
+</body>
+</html>
