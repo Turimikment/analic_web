@@ -5,9 +5,12 @@ import os
 import uuid
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///instance/dynamic_api.db'
+db_path = os.path.join(os.getcwd(), 'instance')
+if not os.path.exists(db_path):
+    os.makedirs(db_path)
+    
+app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(db_path, "dynamic_api.db")}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key')
 
 db = SQLAlchemy(app)
 
