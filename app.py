@@ -221,7 +221,7 @@ def index():
                 endpoint_name=endpoint_name,
                 fields_description=json.dumps(fields_dict),  # Сохраняем как объект
                 table_name=table_name,
-                swagger_examples=json.dumps(examples_data
+                swagger_examples=json.dumps(examples_data)
             )
             db.session.add(new_endpoint)
             db.session.commit()
