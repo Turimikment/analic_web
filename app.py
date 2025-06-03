@@ -88,21 +88,26 @@ def swagger():
                 }
             }
         }
+        
+        # ИСПРАВЛЕНО: Безопасная обработка примеров
         examples = {}
         if endpoint.swagger_examples:
             try:
                 examples = json.loads(endpoint.swagger_examples)
             except:
-                pass
+                pass  # Оставляем пустым при ошибке
         
-        # Добавляем примеры в спецификацию
-        swagger_doc["paths"][path]["get"]["responses"]["200"]["content"]["application/json"]["example"] = \
-            examples.get("get_response", [])
-            
-        swagger_doc["paths"][path]["post"]["requestBody"]["content"]["application/json"]["example"] = \
-            examples.get("post_request", {})
+        # Добавляем примеры только если они существуют
+        if "get_response" in examples:
+            swagger_doc["paths"][path]["get"]["responses"]["200"]["content"]["application/json"]["example"] = \
+                examples["get_response"]
+                
+        if "post_request" in examples:
+            swagger_doc["paths"][path]["post"]["requestBody"]["content"]["application/json"]["example"] = \
+                examples["post_request"]
     
     return jsonify(swagger_doc)
+
 @app.template_filter('pretty_json')
 def pretty_json_filter(s):
     try:
@@ -110,12 +115,14 @@ def pretty_json_filter(s):
         return json.dumps(obj, indent=2)
     except:
         return s
+
 class DynamicEndpoint(db.Model):
     id = db.Column(db.String(36), primary_key=True)
     endpoint_name = db.Column(db.String(80), unique=True, nullable=False)
     fields_description = db.Column(db.Text, nullable=False)
     table_name = db.Column(db.String(80), unique=True, nullable=False)
-    swagger_examples = db.Column(db.Text, nullable=True)  # Новое поле для примеров
+    swagger_examples = db.Column(db.Text, nullable=True)
+    
     def __repr__(self):
         return f'<DynamicEndpoint {self.endpoint_name}>'
 
@@ -134,7 +141,7 @@ def create_dynamic_model(table_name, fields):
     attributes = {
         '__tablename__': table_name,
         'id': db.Column(db.Integer, primary_key=True),
-        '__table_args__': {'extend_existing': True}  # Разрешает использование существующих таблиц
+        '__table_args__': {'extend_existing': True}
     }
     
     for field in fields:
@@ -160,24 +167,19 @@ init_db()
 # Универсальный обработчик для всех динамических эндпоинтов
 @app.route('/api/<endpoint_name>', methods=['GET', 'POST'])
 def handle_dynamic_endpoint(endpoint_name):
-    """Обрабатывает запросы ко всем динамическим эндпоинтам"""
-    # Находим описание эндпоинта в базе данных
     endpoint = DynamicEndpoint.query.filter_by(endpoint_name=endpoint_name).first()
     if not endpoint:
         return jsonify({"error": "Endpoint not found"}), 404
     
-    # Создаем модель на лету
     fields_dict = json.loads(endpoint.fields_description)
     fields = [{"name": name, "type": typ} for name, typ in fields_dict.items()]
     DynamicModel = create_dynamic_model(endpoint.table_name, fields)
     
     if request.method == 'GET':
-        # Получение всех записей
         records = DynamicModel.query.all()
         return jsonify([{c.name: getattr(r, c.name) for c in r.__table__.columns} for r in records])
     
     elif request.method == 'POST':
-        # Создание новой записи
         data = request.get_json()
         new_record = DynamicModel(**data)
         db.session.add(new_record)
@@ -190,45 +192,41 @@ def index():
         endpoint_name = request.form.get('endpoint_name')
         fields_description = request.form.get('fields_description')
         swagger_examples = request.form.get('swagger_examples', '{}')
+        
         try:
-            # Парсим JSON как объект (словарь)
             fields_dict = json.loads(fields_description)
             if not isinstance(fields_dict, dict):
                 raise ValueError("Fields description should be a JSON object")
             
-            # Преобразуем словарь в список полей для совместимости
             fields = [{"name": name, "type": typ} for name, typ in fields_dict.items()]
-            
-            # Генерируем уникальное имя таблицы
             table_name = f"table_{str(uuid.uuid4()).replace('-', '_')}"
+            
+            # ИСПРАВЛЕНО: Корректная обработка примеров Swagger
             examples_data = {}
             if swagger_examples.strip():
                 examples_data = json.loads(swagger_examples)
                 if not isinstance(examples_data, dict):
                     raise ValueError("Swagger examples should be a JSON object")
-            # Создаем динамическую модель
+            
             DynamicModel = create_dynamic_model(table_name, fields)
             
-            # Создаем таблицу в базе данных
             with app.app_context():
                 DynamicModel.__table__.create(db.engine)
                 
-            examples_data = {}
-
-            # Сохраняем информацию о endpoint'е
+            # ИСПРАВЛЕНО: Сохранение примеров в БД
             new_endpoint = DynamicEndpoint(
                 id=str(uuid.uuid4()),
                 endpoint_name=endpoint_name,
-                fields_description=json.dumps(fields_dict),  # Сохраняем как объект
+                fields_description=json.dumps(fields_dict),
                 table_name=table_name,
-                swagger_examples=json.dumps(examples_data)
+                swagger_examples=json.dumps(examples_data)  # Сохраняем примеры
             )
             db.session.add(new_endpoint)
             db.session.commit()
             
             return redirect(url_for('index'))
         except json.JSONDecodeError:
-            error = "Invalid JSON format for fields description"
+            error = "Invalid JSON format"
         except ValueError as e:
             error = str(e)
         except Exception as e:
@@ -247,13 +245,11 @@ def delete_endpoint(endpoint_id):
     endpoint = DynamicEndpoint.query.get_or_404(endpoint_id)
     
     try:
-        # Удаляем таблицу из базы данных
         db.engine.execute(f"DROP TABLE IF EXISTS {endpoint.table_name}")
         print(f"Deleted table: {endpoint.table_name}")
     except Exception as e:
         print(f"Error deleting table: {str(e)}")
     
-    # Удаляем запись о endpoint'е
     db.session.delete(endpoint)
     db.session.commit()
     
