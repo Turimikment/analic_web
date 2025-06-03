@@ -88,7 +88,7 @@ def swagger():
                 }
             }
         }
-                examples = {}
+        examples = {}
         if endpoint.swagger_examples:
             try:
                 examples = json.loads(endpoint.swagger_examples)
@@ -189,7 +189,7 @@ def index():
     if request.method == 'POST':
         endpoint_name = request.form.get('endpoint_name')
         fields_description = request.form.get('fields_description')
-        
+        swagger_examples = request.form.get('swagger_examples', '{}')
         try:
             # Парсим JSON как объект (словарь)
             fields_dict = json.loads(fields_description)
