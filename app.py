@@ -88,15 +88,34 @@ def swagger():
                 }
             }
         }
+                examples = {}
+        if endpoint.swagger_examples:
+            try:
+                examples = json.loads(endpoint.swagger_examples)
+            except:
+                pass
+        
+        # Добавляем примеры в спецификацию
+        swagger_doc["paths"][path]["get"]["responses"]["200"]["content"]["application/json"]["example"] = \
+            examples.get("get_response", [])
+            
+        swagger_doc["paths"][path]["post"]["requestBody"]["content"]["application/json"]["example"] = \
+            examples.get("post_request", {})
     
     return jsonify(swagger_doc)
-
+@app.template_filter('pretty_json')
+def pretty_json_filter(s):
+    try:
+        obj = json.loads(s)
+        return json.dumps(obj, indent=2)
+    except:
+        return s
 class DynamicEndpoint(db.Model):
     id = db.Column(db.String(36), primary_key=True)
     endpoint_name = db.Column(db.String(80), unique=True, nullable=False)
     fields_description = db.Column(db.Text, nullable=False)
     table_name = db.Column(db.String(80), unique=True, nullable=False)
-
+    swagger_examples = db.Column(db.Text, nullable=True)  # Новое поле для примеров
     def __repr__(self):
         return f'<DynamicEndpoint {self.endpoint_name}>'
 
@@ -182,20 +201,27 @@ def index():
             
             # Генерируем уникальное имя таблицы
             table_name = f"table_{str(uuid.uuid4()).replace('-', '_')}"
-            
+            examples_data = {}
+            if swagger_examples.strip():
+                examples_data = json.loads(swagger_examples)
+                if not isinstance(examples_data, dict):
+                    raise ValueError("Swagger examples should be a JSON object")
             # Создаем динамическую модель
             DynamicModel = create_dynamic_model(table_name, fields)
             
             # Создаем таблицу в базе данных
             with app.app_context():
                 DynamicModel.__table__.create(db.engine)
-            
+                
+            examples_data = {}
+
             # Сохраняем информацию о endpoint'е
             new_endpoint = DynamicEndpoint(
                 id=str(uuid.uuid4()),
                 endpoint_name=endpoint_name,
                 fields_description=json.dumps(fields_dict),  # Сохраняем как объект
-                table_name=table_name
+                table_name=table_name,
+                swagger_examples=json.dumps(examples_data
             )
             db.session.add(new_endpoint)
             db.session.commit()
