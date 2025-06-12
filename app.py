@@ -30,7 +30,9 @@ app.config.update(
 @app.route('/')
 def home():
     return render_template('index.html')
-
+@app.route('/normalization-tutorial')
+def normalization_tutorial():
+    return render_template('normalization_tutorial.html')
 @app.route('/soap-interface')
 def soap_interface():
     return render_template('soap.html')
