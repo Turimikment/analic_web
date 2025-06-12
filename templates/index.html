@@ -210,7 +210,469 @@
            animation: shine 3s infinite;
        "></div>
     </a>
-
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Урок по нормализации данных</title>
+    <style>
+        body {
+            font-family: 'Verdana', sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f0f8ff;
+            line-height: 1.6;
+        }
+        h1, h2 {
+            color: #2c5f2d;
+            text-shadow: 1px 1px 2px #a8dba8;
+        }
+        .section {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #4CAF50;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        .example {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-left: 4px solid #2196F3;
+            margin: 15px 0;
+        }
+        .problem {
+            color: #d32f2f;
+            font-weight: bold;
+        }
+        .solution {
+            color: #388E3C;
+            font-weight: bold;
+        }
+        .step {
+            counter-increment: step-counter;
+            margin-bottom: 20px;
+        }
+        .step h3:before {
+            content: counter(step-counter) ". ";
+            color: #2c5f2d;
+        }
+        .step h3 {
+            color: #2c5f2d;
+        }
+        .back-button {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .back-button:hover {
+            background: #45a049;
+        }
+        .drag-container {
+            display: flex;
+            justify-content: space-between;
+            margin: 20px 0;
+        }
+        .table-container {
+            width: 48%;
+            border: 2px dashed #ccc;
+            padding: 10px;
+            min-height: 200px;
+            background-color: #f9fff9;
+        }
+        .table-container h3 {
+            text-align: center;
+            color: #2c5f2d;
+        }
+        .field {
+            padding: 8px;
+            margin: 5px 0;
+            background: #e3f2fd;
+            border: 1px solid #bbdefb;
+            cursor: move;
+        }
+        .correct {
+            background: #c8e6c9 !important;
+            border-color: #a5d6a7 !important;
+        }
+        .incorrect {
+            background: #ffcdd2 !important;
+            border-color: #ef9a9a !important;
+        }
+    </style>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Настройка перетаскивания
+            const fields = document.querySelectorAll('.field');
+            const containers = document.querySelectorAll('.table-container');
+            
+            fields.forEach(field => {
+                field.setAttribute('draggable', 'true');
+                
+                field.addEventListener('dragstart', e => {
+                    e.dataTransfer.setData('text/plain', e.target.id);
+                    e.target.classList.add('dragging');
+                });
+                
+                field.addEventListener('dragend', e => {
+                    e.target.classList.remove('dragging');
+                });
+            });
+            
+            containers.forEach(container => {
+                container.addEventListener('dragover', e => {
+                    e.preventDefault();
+                    container.classList.add('dragover');
+                });
+                
+                container.addEventListener('dragleave', () => {
+                    container.classList.remove('dragover');
+                });
+                
+                container.addEventListener('drop', e => {
+                    e.preventDefault();
+                    container.classList.remove('dragover');
+                    
+                    const id = e.dataTransfer.getData('text/plain');
+                    const draggable = document.getElementById(id);
+                    
+                    // Проверяем, не переносим ли мы уже существующий элемент
+                    if (draggable.parentNode !== container) {
+                        container.appendChild(draggable);
+                        checkNormalization();
+                    }
+                });
+            });
+            
+            // Проверка нормализации
+            function checkNormalization() {
+                const usersFields = document.querySelectorAll('#users-container .field');
+                const ordersFields = document.querySelectorAll('#orders-container .field');
+                
+                // Сбрасываем все стили
+                document.querySelectorAll('.field').forEach(field => {
+                    field.classList.remove('correct', 'incorrect');
+                });
+                
+                // Проверка для таблицы Users
+                const requiredUsers = ['user_id', 'username', 'email'];
+                usersFields.forEach(field => {
+                    if (requiredUsers.includes(field.id)) {
+                        field.classList.add('correct');
+                    } else {
+                        field.classList.add('incorrect');
+                    }
+                });
+                
+                // Проверка для таблицы Orders
+                const requiredOrders = ['order_id', 'user_id', 'product', 'quantity'];
+                ordersFields.forEach(field => {
+                    if (requiredOrders.includes(field.id)) {
+                        field.classList.add('correct');
+                    } else {
+                        field.classList.add('incorrect');
+                    }
+                });
+                
+                // Проверка правильности распределения
+                const allCorrect = 
+                    usersFields.length === requiredUsers.length && 
+                    ordersFields.length === requiredOrders.length &&
+                    Array.from(usersFields).every(f => requiredUsers.includes(f.id)) &&
+                    Array.from(ordersFields).every(f => requiredOrders.includes(f.id));
+                
+                if (allCorrect) {
+                    document.getElementById('success-message').style.display = 'block';
+                }
+            }
+            
+            // Инициализация проверки
+            checkNormalization();
+        });
+    </script>
+</head>
+<body>
+    <h1>Урок по нормализации данных</h1>
+    
+    <div class="section">
+        <h2>Что такое нормализация?</h2>
+        <p>Нормализация — это процесс организации данных в базе данных для:</p>
+        <ul>
+            <li>Устранения избыточности данных</li>
+            <li>Улучшения целостности данных</li>
+            <li>Упрощения поддержки базы данных</li>
+            <li>Оптимизации производительности запросов</li>
+        </ul>
+        <p>Мы рассмотрим три основные нормальные формы:</p>
+        <ol>
+            <li><strong>1НФ (Первая нормальная форма)</strong>: Каждая ячейка содержит только атомарные значения, нет повторяющихся групп</li>
+            <li><strong>2НФ (Вторая нормальная форма)</strong>: Выполнена 1НФ и все неключевые атрибуты полностью зависят от первичного ключа</li>
+            <li><strong>3НФ (Третья нормальная форма)</strong>: Выполнена 2НФ и отсутствуют транзитивные зависимости</li>
+        </ol>
+    </div>
+    
+    <div class="section" style="counter-reset: step-counter;">
+        <h2>Пример нормализации</h2>
+        
+        <div class="step">
+            <h3>Исходная таблица (ненормализованная)</h3>
+            <table>
+                <tr>
+                    <th>user_id</th>
+                    <th>username</th>
+                    <th>email</th>
+                    <th>order_id</th>
+                    <th>product</th>
+                    <th>quantity</th>
+                    <th>address</th>
+                </tr>
+                <tr>
+                    <td>1</td>
+                    <td>Бакс Банни</td>
+                    <td>bucks@carrot.com</td>
+                    <td>101, 102</td>
+                    <td>Морковь премиум, Салат</td>
+                    <td>5, 3</td>
+                    <td>Нора №7, Морковное поле</td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td>Лола Банни</td>
+                    <td>lola@carrot.com</td>
+                    <td>103</td>
+                    <td>Капуста</td>
+                    <td>2</td>
+                    <td>Нора №12, Капустное поле</td>
+                </tr>
+            </table>
+            <p class="problem">Проблемы:</p>
+            <ul>
+                <li>Повторяющиеся группы в order_id, product, quantity</li>
+                <li>Избыточность данных (адрес повторяется для каждого заказа)</li>
+                <li>Аномалии обновления (при смене адреса нужно обновлять все записи пользователя)</li>
+            </ul>
+        </div>
+        
+        <div class="step">
+            <h3>Приводим к 1НФ</h3>
+            <p>Устраняем повторяющиеся группы:</p>
+            <table>
+                <tr>
+                    <th>user_id</th>
+                    <th>username</th>
+                    <th>email</th>
+                    <th>order_id</th>
+                    <th>product</th>
+                    <th>quantity</th>
+                    <th>address</th>
+                </tr>
+                <tr>
+                    <td>1</td>
+                    <td>Бакс Банни</td>
+                    <td>bucks@carrot.com</td>
+                    <td>101</td>
+                    <td>Морковь премиум</td>
+                    <td>5</td>
+                    <td>Нора №7, Морковное поле</td>
+                </tr>
+                <tr>
+                    <td>1</td>
+                    <td>Бакс Банни</td>
+                    <td>bucks@carrot.com</td>
+                    <td>102</td>
+                    <td>Салат</td>
+                    <td>3</td>
+                    <td>Нора №7, Морковное поле</td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td>Лола Банни</td>
+                    <td>lola@carrot.com</td>
+                    <td>103</td>
+                    <td>Капуста</td>
+                    <td>2</td>
+                    <td>Нора №12, Капустное поле</td>
+                </tr>
+            </table>
+            <p class="solution">Улучшения:</p>
+            <ul>
+                <li>Каждая строка содержит информацию только об одном заказе</li>
+                <li>Нет повторяющихся групп данных</li>
+            </ul>
+        </div>
+        
+        <div class="step">
+            <h3>Приводим к 2НФ</h3>
+            <p>Разделяем на две таблицы: Пользователи и Заказы</p>
+            
+            <p><strong>Таблица Users:</strong></p>
+            <table>
+                <tr>
+                    <th>user_id</th>
+                    <th>username</th>
+                    <th>email</th>
+                    <th>address</th>
+                </tr>
+                <tr>
+                    <td>1</td>
+                    <td>Бакс Банни</td>
+                    <td>bucks@carrot.com</td>
+                    <td>Нора №7, Морковное поле</td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td>Лола Банни</td>
+                    <td>lola@carrot.com</td>
+                    <td>Нора №12, Капустное поле</td>
+                </tr>
+            </table>
+            
+            <p><strong>Таблица Orders:</strong></p>
+            <table>
+                <tr>
+                    <th>order_id</th>
+                    <th>user_id</th>
+                    <th>product</th>
+                    <th>quantity</th>
+                </tr>
+                <tr>
+                    <td>101</td>
+                    <td>1</td>
+                    <td>Морковь премиум</td>
+                    <td>5</td>
+                </tr>
+                <tr>
+                    <td>102</td>
+                    <td>1</td>
+                    <td>Салат</td>
+                    <td>3</td>
+                </tr>
+                <tr>
+                    <td>103</td>
+                    <td>2</td>
+                    <td>Капуста</td>
+                    <td>2</td>
+                </tr>
+            </table>
+            
+            <p class="solution">Улучшения:</p>
+            <ul>
+                <li>Устранена избыточность данных (адрес хранится только один раз)</li>
+                <li>Упрощено обновление информации о пользователе</li>
+            </ul>
+        </div>
+        
+        <div class="step">
+            <h3>Приводим к 3НФ</h3>
+            <p>Устраняем транзитивные зависимости. В таблице Users:</p>
+            <p class="problem">Проблема: адрес зависит от пользователя, но также может зависеть от местоположения</p>
+            
+            <p><strong>Таблица Users (3НФ):</strong></p>
+            <table>
+                <tr>
+                    <th>user_id</th>
+                    <th>username</th>
+                    <th>email</th>
+                    <th>location_id</th>
+                </tr>
+                <tr>
+                    <td>1</td>
+                    <td>Бакс Банни</td>
+                    <td>bucks@carrot.com</td>
+                    <td>7</td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td>Лола Банни</td>
+                    <td>lola@carrot.com</td>
+                    <td>12</td>
+                </tr>
+            </table>
+            
+            <p><strong>Таблица Locations:</strong></p>
+            <table>
+                <tr>
+                    <th>location_id</th>
+                    <th>address</th>
+                    <th>field_type</th>
+                </tr>
+                <tr>
+                    <td>7</td>
+                    <td>Нора №7</td>
+                    <td>Морковное поле</td>
+                </tr>
+                <tr>
+                    <td>12</td>
+                    <td>Нора №12</td>
+                    <td>Капустное поле</td>
+                </tr>
+            </table>
+            
+            <p class="solution">Улучшения:</p>
+            <ul>
+                <li>Устранена транзитивная зависимость (адрес зависит только от location_id)</li>
+                <li>Упрощено изменение информации о местоположении</li>
+                <li>Легче добавлять новые типы полей</li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="section">
+        <h2>Практическое задание</h2>
+        <p>Перетащите поля в правильные таблицы для 3НФ:</p>
+        
+        <div class="drag-container">
+            <div class="table-container" id="users-container">
+                <h3>Пользователи (Users)</h3>
+                <div class="field" id="user_id">user_id</div>
+                <div class="field" id="username">username</div>
+            </div>
+            
+            <div class="table-container" id="orders-container">
+                <h3>Заказы (Orders)</h3>
+                <div class="field" id="order_id">order_id</div>
+            </div>
+        </div>
+        
+        <div style="text-align: center; margin: 20px;">
+            <div class="field" id="email">email</div>
+            <div class="field" id="product">product</div>
+            <div class="field" id="quantity">quantity</div>
+            <div class="field" id="address">address</div>
+            <div class="field" id="order_date">order_date</div>
+        </div>
+        
+        <div id="success-message" style="display: none; text-align: center; padding: 15px; background: #c8e6c9; border-radius: 5px; margin-top: 20px;">
+            <h3>🎉 Отлично! Вы правильно распределили поля! 🥕</h3>
+            <p>База данных теперь соответствует 3НФ</p>
+        </div>
+    </div>
+    
+    <a href="/" class="back-button">На главную</a>
+</body>
+</html>
 </div>
     </div>
 </body>
