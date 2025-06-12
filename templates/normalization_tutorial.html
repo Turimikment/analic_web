@@ -3,31 +3,720 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Урок по нормализации данных</title>
+    <title>Простая нормализация данных для начинающих</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* Стили остаются без изменений */
-    </style>
-    <script>
-        // JS с улучшенной логикой проверки и подсказками
-        document.addEventListener('DOMContentLoaded', function() {
-            // Настройка перетаскивания
-            const fields = document.querySelectorAll('.field');
-            const containers = document.querySelectorAll('.table-container');
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4edf5 100%);
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            padding: 30px 20px;
+            background: #2c3e50;
+            color: white;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .container {
+            display: flex;
+            gap: 25px;
+            flex-wrap: wrap;
+        }
+        
+        .explanation-section, .practice-section {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            flex: 1;
+            min-width: 300px;
+        }
+        
+        .section-title {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .normal-form {
+            background: #f8f9fa;
+            border-left: 4px solid #3498db;
+            padding: 20px;
+            margin-bottom: 25px;
+            border-radius: 0 8px 8px 0;
+            transition: transform 0.3s ease;
+        }
+        
+        .normal-form:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .form-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+        
+        .form-number {
+            background: #3498db;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        
+        .analogy {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 3px solid #1e88e5;
+        }
+        
+        .problem, .solution {
+            padding: 10px 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        
+        .problem {
+            background: #ffebee;
+            border-left: 3px solid #f44336;
+        }
+        
+        .solution {
+            background: #e8f5e9;
+            border-left: 3px solid #4caf50;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        
+        th {
+            background: #3498db;
+            color: white;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        td {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+        
+        .tasks-container {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+        
+        .task {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+        }
+        
+        .task-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .task-title {
+            color: #2c3e50;
+            font-size: 1.3rem;
+        }
+        
+        .difficulty {
+            background: #e3f2fd;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+        
+        .task-description {
+            margin-bottom: 20px;
+            line-height: 1.7;
+        }
+        
+        .fields-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .field-card {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+        }
+        
+        .field-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border-color: #3498db;
+        }
+        
+        .field-name {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        
+        .field-desc {
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .tables-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin: 25px 0;
+        }
+        
+        .table-box {
+            flex: 1;
+            min-width: 250px;
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+            border: 2px dashed #bdc3c7;
+        }
+        
+        .table-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #eee;
+        }
+        
+        .table-title {
+            font-weight: bold;
+            color: #2c3e50;
+            flex-grow: 1;
+        }
+        
+        .table-fields {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-height: 150px;
+        }
+        
+        .table-field {
+            background: #e3f2fd;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: move;
+            transition: all 0.2s ease;
+        }
+        
+        .table-field:hover {
+            background: #bbdefb;
+        }
+        
+        .btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+        
+        .btn-check {
+            background: #27ae60;
+        }
+        
+        .btn-reset {
+            background: #e74c3c;
+        }
+        
+        .feedback {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+        }
+        
+        .feedback.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            display: block;
+        }
+        
+        .feedback.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            display: block;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
             
-            fields.forEach(field => {
-                field.setAttribute('draggable', 'true');
+            .tables-container {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1><i class="fas fa-database"></i> Простая нормализация данных</h1>
+        <p class="subtitle">Научитесь организовывать информацию как профессиональный системный аналитик — даже если вы никогда не работали с базами данных!</p>
+    </header>
+    
+    <div class="container">
+        <section class="explanation-section">
+            <h2 class="section-title"><i class="fas fa-lightbulb"></i> Что такое нормализация?</h2>
+            <p>Нормализация — это способ организации данных в базе данных так, чтобы:</p>
+            <ul style="padding: 15px 0 15px 30px;">
+                <li>Информация не повторялась без необходимости</li>
+                <li>Данные были согласованными и точными</li>
+                <li>Базу данных было легко поддерживать и обновлять</li>
+            </ul>
+            <p>Представьте, что вы организуете свою библиотеку. Вы не будете хранить все книги в одной куче, а расставите их по полкам, разделам и авторам. Так и с данными!</p>
+            
+            <div class="normal-form">
+                <div class="form-title">
+                    <div class="form-number">1</div>
+                    <h3>Первая нормальная форма (1НФ)</h3>
+                </div>
+                <p><strong>Основное правило:</strong> В каждой ячейке таблицы — только одно значение, нет повторяющихся групп.</p>
                 
-                field.addEventListener('dragstart', e => {
-                    e.dataTransfer.setData('text/plain', e.target.id);
+                <div class="analogy">
+                    <p><i class="fas fa-book"></i> <strong>Аналогия из жизни:</strong> Представьте список покупок:</p>
+                    <p class="problem"><strong>Проблема:</strong> "Молоко, хлеб, яйца | Кофе, сахар" — несколько товаров в одной записи</p>
+                    <p class="solution"><strong>Решение:</strong> Каждый товар в отдельной строке</p>
+                </div>
+                
+                <table>
+                    <tr>
+                        <th>Покупатель</th>
+                        <th>Товар</th>
+                        <th>Количество</th>
+                    </tr>
+                    <tr>
+                        <td>Мария</td>
+                        <td>Молоко</td>
+                        <td>1</td>
+                    </tr>
+                    <tr>
+                        <td>Мария</td>
+                        <td>Хлеб</td>
+                        <td>2</td>
+                    </tr>
+                    <tr>
+                        <td>Мария</td>
+                        <td>Яйца</td>
+                        <td>1</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <div class="normal-form">
+                <div class="form-title">
+                    <div class="form-number">2</div>
+                    <h3>Вторая нормальная форма (2НФ)</h3>
+                </div>
+                <p><strong>Основное правило:</strong> Данные должны быть в 1НФ + вся информация в таблице относится только к тому, что описывает эта таблица.</p>
+                
+                <div class="analogy">
+                    <p><i class="fas fa-address-book"></i> <strong>Аналогия из жизни:</strong> Контакты в телефоне:</p>
+                    <p class="problem"><strong>Проблема:</strong> В записи о контакте "Иван" указаны его номер телефона, адрес и место работы его жены</p>
+                    <p class="solution"><strong>Решение:</strong> Создать отдельные записи для людей и для мест работы</p>
+                </div>
+                
+                <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 200px;">
+                        <h4>Контакты</h4>
+                        <table>
+                            <tr><th>ID</th><th>Имя</th><th>Телефон</th></tr>
+                            <tr><td>1</td><td>Иван</td><td>+7 123 456-78-90</td></tr>
+                        </table>
+                    </div>
+                    <div style="flex: 1; min-width: 200px;">
+                        <h4>Места работы</h4>
+                        <table>
+                            <tr><th>ID</th><th>Название</th><th>Адрес</th></tr>
+                            <tr><td>101</td><td>IT Компания</td><td>ул. Программистов, 5</td></tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="normal-form">
+                <div class="form-title">
+                    <div class="form-number">3</div>
+                    <h3>Третья нормальная форма (3НФ)</h3>
+                </div>
+                <p><strong>Основное правило:</strong> Данные должны быть в 2НФ + никакие данные не зависят от других данных, которые не являются ключом.</p>
+                
+                <div class="analogy">
+                    <p><i class="fas fa-school"></i> <strong>Аналогия из жизни:</strong> Школьный журнал:</p>
+                    <p class="problem"><strong>Проблема:</strong> В таблице с учениками указаны ФИО ученика, класс и ФИО классного руководителя. При смене классного руководителя придется обновлять все записи учеников</p>
+                    <p class="solution"><strong>Решение:</strong> Создать отдельную таблицу для классов и их руководителей</p>
+                </div>
+                
+                <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 200px;">
+                        <h4>Ученики</h4>
+                        <table>
+                            <tr><th>ID</th><th>Имя</th><th>Класс ID</th></tr>
+                            <tr><td>1</td><td>Анна</td><td>10А</td></tr>
+                        </table>
+                    </div>
+                    <div style="flex: 1; min-width: 200px;">
+                        <h4>Классы</h4>
+                        <table>
+                            <tr><th>ID</th><th>Класс</th><th>Классный руководитель</th></tr>
+                            <tr><td>10А</td><td>10 "А"</td><td>Иванова М.П.</td></tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <section class="practice-section">
+            <h2 class="section-title"><i class="fas fa-hands-helping"></i> Практические задания</h2>
+            <p>Примените знания на практике! Распределите поля по таблицам для каждой задачи.</p>
+            
+            <div class="tasks-container">
+                <!-- Задание 1: Библиотека -->
+                <div class="task">
+                    <div class="task-header">
+                        <h3 class="task-title"><i class="fas fa-book"></i> Задание 1: Библиотека</h3>
+                        <span class="difficulty">Начальный уровень</span>
+                    </div>
+                    
+                    <div class="task-description">
+                        <p>Вам нужно создать базу данных для библиотеки. Описание полей:</p>
+                    </div>
+                    
+                    <div class="fields-container">
+                        <div class="field-card">
+                            <div class="field-name">reader_id</div>
+                            <div class="field-desc">Уникальный идентификатор читателя</div>
+                        </div>
+                        <div class="field-card">
+                            <div class="field-name">reader_name</div>
+                            <div class="field-desc">ФИО читателя</div>
+                        </div>
+                        <div class="field-card">
+                            <div class="field-name">phone</div>
+                            <div class="field-desc">Телефон читателя</div>
+                        </div>
+                        <div class="field-card">
+                            <div class="field-name">book_id</div>
+                            <div class="field-desc">Уникальный идентификатор книги</div>
+                        </div>
+                        <div class="field-card">
+                            <div class="field-name">book_title</div>
+                            <div class="field-desc">Название книги</div>
+                        </div>
+                        <div class="field-card">
+                            <div class="field-name">author_id</div>
+                            <div class="field-desc">Идентификатор автора</div>
+                        </div>
+                        <div class="field-card">
+                            <div class="field-name">author_name</div>
+                            <div class="field-desc">ФИО автора</div>
+                        </div>
+                        <div class="field-card">
+                            <div class="field-name">issue_date</div>
+                            <div class="field-desc">Дата выдачи книги</div>
+                        </div>
+                        <div class="field-card">
+                            <div class="field-name">return_date</div>
+                            <div class="field-desc">Дата возврата книги</div>
+                        </div>
+                    </div>
+                    
+                    <h4 style="margin: 20px 0 10px;"><i class="fas fa-table"></i> Создайте таблицы и распределите поля:</h4>
+                    
+                    <div class="tables-container">
+                        <div class="table-box">
+                            <div class="table-header">
+                                <div class="table-title">Таблица 1</div>
+                                <i class="fas fa-edit"></i>
+                            </div>
+                            <div class="table-fields">
+                                <!-- Поля будут добавляться сюда -->
+                            </div>
+                        </div>
+                        
+                        <div class="table-box">
+                            <div class="table-header">
+                                <div class="table-title">Таблица 2</div>
+                                <i class="fas fa-edit"></i>
+                            </div>
+                            <div class="table-fields">
+                                <!-- Поля будут добавляться сюда -->
+                            </div>
+                        </div>
+                        
+                        <div class="table-box">
+                            <div class="table-header">
+                                <div class="table-title">Таблица 3</div>
+                                <i class="fas fa-edit"></i>
+                            </div>
+                            <div class="table-fields">
+                                <!-- Поля будут добавляться сюда -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="controls">
+                        <button class="btn btn-check"><i class="fas fa-check-circle"></i> Проверить решение</button>
+                        <button class="btn btn-reset"><i class="fas fa-redo"></i> Начать заново</button>
+                    </div>
+                    
+                    <div class="feedback">
+                        <!-- Здесь будет отображаться результат проверки -->
+                    </div>
+                </div>
+                
+                <!-- Задание 2: Магазин -->
+                <div class="task">
+                    <div class="task-header">
+                        <h3 class="task-title"><i class="fas fa-shopping-cart"></i> Задание 2: Интернет-магазин</h3>
+                        <span class="difficulty">Средний уровень</span>
+                    </div>
+                    
+                    <div class="task-description">
+                        <p>Создайте структуру базы данных для интернет-магазина. Описание полей:</p>
+                    </div>
+                    
+                    <div class="fields-container">
+                        <div class="field-card">
+                            <div class="field-name">order_id</div>
+                            <div class="field-desc">Уникальный номер заказа</div>
+                        </div>
+                        <div class="field-card">
+                            <div class="field-name">customer_id</div>
+                            <div class="field-desc">Идентификатор покупателя</div>
+                        </div>
+                        <div class="field-card">
+                            <div class="field-name">customer_name</div>
+                            <div class="field-desc">ФИО покупателя</div>
+                        </div>
+                        <div class="field-card">
+                            <div class="field-name">email</div>
+                            <div class="field-desc">Email покупателя</div>
+                        </div>
+                        <div class="field-card">
+                            <div class="field-name">product_id</div>
+                            <div class="field-desc">Идентификатор товара</div>
+                        </div>
+                        <div class="field-card">
+                            <div class="field-name">product_name</div>
+                            <div class="field-desc">Название товара</div>
+                        </div>
+                        <div class="field-card">
+                            <div class="field-name">category</div>
+                            <div class="field-desc">Категория товара</div>
+                        </div>
+                        <div class="field-card">
+                            <div class="field-name">quantity</div>
+                            <div class="field-desc">Количество товара в заказе</div>
+                        </div>
+                        <div class="field-card">
+                            <div class="field-name">price</div>
+                            <div class="field-desc">Цена товара</div>
+                        </div>
+                        <div class="field-card">
+                            <div class="field-name">order_date</div>
+                            <div class="field-desc">Дата заказа</div>
+                        </div>
+                    </div>
+                    
+                    <div class="controls">
+                        <button class="btn btn-check"><i class="fas fa-check-circle"></i> Проверить решение</button>
+                        <button class="btn btn-reset"><i class="fas fa-redo"></i> Начать заново</button>
+                    </div>
+                </div>
+                
+                <!-- Задание 3: Кинотеатр -->
+                <div class="task">
+                    <div class="task-header">
+                        <h3 class="task-title"><i class="fas fa-film"></i> Задание 3: Кинотеатр</h3>
+                        <span class="difficulty">Продвинутый уровень</span>
+                    </div>
+                    
+                    <div class="task-description">
+                        <p>Разработайте структуру базы данных для кинотеатра. Описание полей:</p>
+                    </div>
+                    
+                    <div class="fields-container">
+                        <div class="field-card">
+                            <div class="field-name">ticket_id</div>
+                            <div class="field-desc">Уникальный номер билета</div>
+                        </div>
+                        <div class="field-card">
+                            <div class="field-name">session_id</div>
+                            <div class="field-desc">Идентификатор сеанса</div>
+                        </div>
+                        <div class="field-card">
+                            <div class="field-name">movie_title</div>
+                            <div class="field-desc">Название фильма</div>
+                        </div>
+                        <div class="field-card">
+                            <div class="field-name">genre</div>
+                            <div class="field-desc">Жанр фильма</div>
+                        </div>
+                        <div class="field-card">
+                            <div class="field-name">duration</div>
+                            <div class="field-desc">Длительность фильма (мин)</div>
+                        </div>
+                        <div class="field-card">
+                            <div class="field-name">hall_id</div>
+                            <div class="field-desc">Идентификатор зала</div>
+                        </div>
+                        <div class="field-card">
+                            <div class="field-name">hall_name</div>
+                            <div class="field-desc">Название зала</div>
+                        </div>
+                        <div class="field-card">
+                            <div class="field-name">session_date</div>
+                            <div class="field-desc">Дата сеанса</div>
+                        </div>
+                        <div class="field-card">
+                            <div class="field-name">session_time</div>
+                            <div class="field-desc">Время начала сеанса</div>
+                        </div>
+                        <div class="field-card">
+                            <div class="field-name">seat_number</div>
+                            <div class="field-desc">Номер места</div>
+                        </div>
+                        <div class="field-card">
+                            <div class="field-name">price</div>
+                            <div class="field-desc">Цена билета</div>
+                        </div>
+                    </div>
+                    
+                    <div class="controls">
+                        <button class="btn btn-check"><i class="fas fa-check-circle"></i> Проверить решение</button>
+                        <button class="btn btn-reset"><i class="fas fa-redo"></i> Начать заново</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+    
+    <div class="footer">
+        <p>© 2023 Учебный курс по нормализации данных | Для будущих системных аналитиков</p>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Устанавливаем перетаскивание для всех карточек полей
+            const fieldCards = document.querySelectorAll('.field-card');
+            const tableFieldsContainers = document.querySelectorAll('.table-fields');
+            const feedbackElements = document.querySelectorAll('.feedback');
+            const checkButtons = document.querySelectorAll('.btn-check');
+            const resetButtons = document.querySelectorAll('.btn-reset');
+            
+            // Настройка перетаскивания
+            fieldCards.forEach(card => {
+                card.setAttribute('draggable', 'true');
+                
+                card.addEventListener('dragstart', e => {
+                    e.dataTransfer.setData('text/plain', e.target.innerHTML);
                     e.target.classList.add('dragging');
                 });
                 
-                field.addEventListener('dragend', e => {
+                card.addEventListener('dragend', e => {
                     e.target.classList.remove('dragging');
                 });
             });
             
-            containers.forEach(container => {
+            tableFieldsContainers.forEach(container => {
                 container.addEventListener('dragover', e => {
                     e.preventDefault();
                     container.classList.add('dragover');
@@ -41,344 +730,80 @@
                     e.preventDefault();
                     container.classList.remove('dragover');
                     
-                    const id = e.dataTransfer.getData('text/plain');
-                    const draggable = document.getElementById(id);
+                    const data = e.dataTransfer.getData('text/plain');
+                    const fieldElement = document.createElement('div');
+                    fieldElement.className = 'table-field';
+                    fieldElement.innerHTML = data;
                     
-                    if (draggable.parentNode !== container) {
-                        container.appendChild(draggable);
-                        checkNormalization();
-                    }
+                    // Добавляем возможность удаления поля
+                    fieldElement.addEventListener('dblclick', function() {
+                        this.remove();
+                    });
+                    
+                    container.appendChild(fieldElement);
                 });
             });
             
-            // Проверка нормализации с подсказками
-            function checkNormalization() {
-                const usersFields = document.querySelectorAll('#users-container .field');
-                const ordersFields = document.querySelectorAll('#orders-container .field');
-                const locationsFields = document.querySelectorAll('#locations-container .field');
+            // Функция проверки решения для первого задания
+            checkButtons[0].addEventListener('click', function() {
+                const tables = document.querySelectorAll('.task:first-child .table-fields');
+                let isCorrect = true;
+                let message = '';
                 
-                // Сбрасываем все стили и подсказки
-                document.querySelectorAll('.field').forEach(field => {
-                    field.classList.remove('correct', 'incorrect');
-                    field.removeAttribute('title');
-                });
-                
-                document.getElementById('error-messages').innerHTML = '';
-                
-                // Правильные наборы полей
-                const requiredUsers = ['user_id', 'username', 'email'];
-                const requiredOrders = ['order_id', 'user_id', 'product', 'quantity'];
-                const requiredLocations = ['location_id', 'address', 'field_type'];
-                
-                // Проверка таблицы Users
-                usersFields.forEach(field => {
-                    if (requiredUsers.includes(field.id)) {
-                        field.classList.add('correct');
-                    } else {
-                        field.classList.add('incorrect');
-                        showHint(field, 'Это поле не должно храниться в таблице пользователей');
-                    }
-                });
-                
-                // Проверка таблицы Orders
-                ordersFields.forEach(field => {
-                    if (requiredOrders.includes(field.id)) {
-                        field.classList.add('correct');
-                    } else {
-                        field.classList.add('incorrect');
-                        showHint(field, 'Это поле не относится к информации о заказах');
-                    }
-                });
-                
-                // Проверка таблицы Locations
-                locationsFields.forEach(field => {
-                    if (requiredLocations.includes(field.id)) {
-                        field.classList.add('correct');
-                    } else {
-                        field.classList.add('incorrect');
-                        showHint(field, 'Это поле не описывает местоположение');
-                    }
-                });
-                
-                // Проверка правильности распределения
-                const usersCorrect = usersFields.length === requiredUsers.length && 
-                    Array.from(usersFields).every(f => requiredUsers.includes(f.id));
+                // Проверка распределения полей
+                if (tables[0].children.length === 3 && 
+                    tables[1].children.length === 3 && 
+                    tables[2].children.length === 3) {
                     
-                const ordersCorrect = ordersFields.length === requiredOrders.length && 
-                    Array.from(ordersFields).every(f => requiredOrders.includes(f.id));
+                    // Проверяем содержание таблиц (упрощенная проверка)
+                    const table1Fields = Array.from(tables[0].children).map(el => el.textContent);
+                    const table2Fields = Array.from(tables[1].children).map(el => el.textContent);
+                    const table3Fields = Array.from(tables[2].children).map(el => el.textContent);
                     
-                const locationsCorrect = locationsFields.length === requiredLocations.length && 
-                    Array.from(locationsFields).every(f => requiredLocations.includes(f.id));
-                
-                if (usersCorrect && ordersCorrect && locationsCorrect) {
-                    document.getElementById('success-message').style.display = 'block';
+                    if (table1Fields.includes('reader_id') && 
+                        table1Fields.includes('reader_name') && 
+                        table1Fields.includes('phone') &&
+                        table2Fields.includes('book_id') && 
+                        table2Fields.includes('book_title') && 
+                        table2Fields.includes('author_id') &&
+                        table3Fields.includes('author_name') && 
+                        table3Fields.includes('issue_date') && 
+                        table3Fields.includes('return_date')) {
+                        
+                        message = 'Отлично! Вы правильно распределили поля. В библиотеке обычно создают три таблицы: Читатели, Книги и Выдачи книг.';
+                        feedbackElements[0].className = 'feedback success';
+                    } else {
+                        isCorrect = false;
+                        message = 'Почти правильно! Проверьте распределение полей. Совет: подумайте, какие данные относятся к читателям, какие к книгам, а какие к процессу выдачи.';
+                    }
+                } else {
+                    isCorrect = false;
+                    message = 'Количество полей в таблицах не соответствует правильному решению. Ожидается по 3 поля в каждой таблице.';
                 }
-            }
+                
+                feedbackElements[0].innerHTML = `<p><strong>${isCorrect ? '✓ Правильно!' : '✗ Нужно доработать'}</strong> ${message}</p>`;
+                feedbackElements[0].style.display = 'block';
+            });
             
-            // Показать подсказку для неправильного поля
-            function showHint(field, message) {
-                field.title = message;
-                const errorDiv = document.getElementById('error-messages');
-                errorDiv.innerHTML += <div>${field.textContent}: ${message}</div>;
-            }
+            // Кнопка сброса для первого задания
+            resetButtons[0].addEventListener('click', function() {
+                document.querySelectorAll('.task:first-child .table-fields').forEach(container => {
+                    container.innerHTML = '';
+                });
+                feedbackElements[0].style.display = 'none';
+            });
             
-            // Инициализация проверки
-            checkNormalization();
+            // Обработчики для остальных заданий (заглушки)
+            for (let i = 1; i < checkButtons.length; i++) {
+                checkButtons[i].addEventListener('click', function() {
+                    alert('В этом демо-примере полностью реализована только первая задача. Остальные задания включены для демонстрации концепции.');
+                });
+                
+                resetButtons[i].addEventListener('click', function() {
+                    alert('Функция сброса полностью реализована только для первой задачи.');
+                });
+            }
         });
     </script>
-</head>
-<body>
-    <h1>Урок по нормализации данных</h1>
-    
-    <div class="section">
-        <h2>Что такое нормализация?</h2>
-        <p>Нормализация — это процесс организации данных для:</p>
-        <ul>
-            <li>Устранения дублирования информации</li>
-            <li>Предотвращения противоречивых данных</li>
-            <li>Упрощения работы с базой данных</li>
-            <li>Ускорения выполнения запросов</li>
-        </ul>
-        <p>Три основные нормальные формы:</p>
-        <ol>
-            <li><strong>1НФ (Первая нормальная форма)</strong>: 
-                <ul>
-                    <li>Нет повторяющихся групп данных (каждая ячейка содержит одно значение)</li>
-                    <li>Нет дублирующих строк</li>
-                    <li>Пример: вместо "101,102" в одной ячейке - отдельные строки для каждого значения</li>
-                </ul>
-            </li>
-            <li><strong>2НФ (Вторая нормальная форма)</strong>: 
-                <ul>
-                    <li>Должна выполняться 1НФ</li>
-                    <li>Все данные в таблице зависят от всего первичного ключа (а не от его части)</li>
-                    <li>Пример: информация о пользователе не должна храниться в таблице заказов</li>
-                </ul>
-            </li>
-            <li><strong>3НФ (Третья нормальная форма)</strong>: 
-                <ul>
-                    <li>Должна выполняться 2НФ</li>
-                    <li>Нет зависимостей между неключевыми полями (все данные зависят только от ключа)</li>
-                    <li>Пример: почтовый индекс → город → область (лучше вынести в отдельную таблицу)</li>
-                </ul>
-            </li>
-        </ol>
-    </div>
-    
-    <div class="section" style="counter-reset: step-counter;">
-        <h2>Пример нормализации</h2>
-        
-        <div class="step">
-            <h3>Исходная таблица (ненормализованная)</h3>
-            <table>
-                <tr>
-                    <th>user_id</th>
-                    <th>username</th>
-                    <th>email</th>
-                    <th>order_id</th>
-                    <th>product</th>
-                    <th>quantity</th>
-                    <th>address</th>
-                </tr>
-                <tr>
-                    <td>1</td>
-                    <td>Бакс Банни</td>
-                    <td>bucks@carrot.com</td>
-                    <td>101, 102</td>
-                    <td>Морковь премиум, Салат</td>
-                    <td>5, 3</td>
-                    <td>Нора №7, Морковное поле</td>
-                </tr>
-            </table>
-            <p class="problem">Проблемы:</p>
-            <ul>
-                <li>Несколько заказов в одной строке (нарушение 1НФ)</li>
-                <li>Адрес дублируется для каждого заказа</li>
-                <li>При изменении адреса нужно обновлять все связанные записи</li>
-            </ul>
-        </div>
-        
-        <div class="step">
-            <h3>Приводим к 1НФ</h3>
-            <p>Устраняем множественные значения:</p>
-            <table>
-                <tr>
-                    <th>user_id</th>
-                    <th>username</th>
-                    <th>email</th>
-                    <th>order_id</th>
-                    <th>product</th>
-                    <th>quantity</th>
-                    <th>address</th>
-                </tr>
-                <tr>
-                    <td>1</td>
-                    <td>Бакс Банни</td>
-                    <td>bucks@carrot.com</td>
-                    <td>101</td>
-                    <td>Морковь премиум</td>
-                    <td>5</td>
-                    <td>Нора №7, Морковное поле</td>
-                </tr>
-                <tr>
-                    <td>1</td>
-                    <td>Бакс Банни</td>
-                    <td>bucks@carrot.com</td>
-                    <td>102</td>
-                    <td>Салат</td>
-                    <td>3</td>
-                    <td>Нора №7, Морковное поле</td>
-                </tr>
-            </table>
-            <p class="solution">Улучшения:</p>
-            <ul>
-                <li>Каждая строка содержит один заказ</li>
-                <li>Нет повторяющихся групп</li>
-            </ul>
-        </div>
-        
-        <div class="step">
-            <h3>Приводим к 2НФ</h3>
-            <p>Разделяем данные по сущностям:</p>
-            
-            <p><strong>Таблица Users (пользователи):</strong></p>
-            <table>
-                <tr>
-                    <th>user_id</th>
-                    <th>username</th>
-                    <th>email</th>
-                    <th>address</th>
-                </tr>
-                <tr>
-                    <td>1</td>
-                    <td>Бакс Банни</td>
-                    <td>bucks@carrot.com</td>
-                    <td>Нора №7, Морковное поле</td>
-                </tr>
-            </table>
-            
-            <p><strong>Таблица Orders (заказы):</strong></p>
-            <table>
-                <tr>
-                    <th>order_id</th>
-                    <th>user_id</th>
-                    <th>product</th>
-                    <th>quantity</th>
-                </tr>
-                <tr>
-                    <td>101</td>
-                    <td>1</td>
-                    <td>Морковь премиум</td>
-                    <td>5</td>
-                </tr>
-                <tr>
-                    <td>102</td>
-                    <td>1</td>
-                    <td>Салат</td>
-                    <td>3</td>
-                </tr>
-            </table>
-            
-            <p class="solution">Улучшения:</p>
-            <ul>
-                <li>Нет дублирования информации о пользователях</li>
-                <li>Заказы ссылаются на пользователей через user_id</li>
-                <li>Устранили связь "один-ко-многим" (1 пользователь → много заказов)</li>
-            </ul>
-        </div>
-        
-        <div class="step">
-            <h3>Приводим к 3НФ</h3>
-            <p>Устраняем скрытые зависимости:</p>
-            
-            <p class="problem">Проблема: адрес содержит две сущности (номер норы и тип поля), 
-            которые могут изменяться независимо. Если несколько пользователей живут на одном поле,
-            при его переименовании нужно обновлять всех пользователей.</p>
-            
-            <p><strong>Таблица Users (3НФ):</strong></p>
-            <table>
-                <tr>
-                    <th>user_id</th>
-                    <th>username</th>
-                    <th>email</th>
-                    <th>location_id</th>
-                </tr>
-                <tr>
-                    <td>1</td>
-                    <td>Бакс Банни</td>
-                    <td>bucks@carrot.com</td>
-                    <td>7</td>
-                </tr>
-            </table>
-            
-            <p><strong>Таблица Locations (местоположения):</strong></p>
-            <table>
-                <tr>
-                    <th>location_id</th>
-                    <th>address</th>
-                    <th>field_type</th>
-                </tr>
-                <tr>
-                    <td>7</td>
-                    <td>Нора №7</td>
-                    <td>Морковное поле</td>
-                </tr>
-            </table>
-            
-            <p class="solution">Улучшения:</p>
-            <ul>
-                <li>Информация о местоположении хранится централизованно</li>
-                <li>Изменение типа поля требует обновления только одной записи</li>
-                <li>Устранили транзитивную зависимость (поле → местоположение → пользователь)</li>
-            </ul>
-        </div>
-    </div>
-    
-    <div class="section">
-        <h2>Практическое задание</h2>
-        <p>Распределите поля по таблицам для 3НФ. Обратите внимание на:</p>
-        <ul>
-            <li>Устранение связи "многие-ко-многим" (разделение сущностей)</li>
-            <li>Исключение транзитивных зависимостей</li>
-            <li>Правильное использование внешних ключей</li>
-        </ul>
-        
-        <div class="drag-container">
-            <div class="table-container" id="users-container">
-                <h3>Пользователи (Users)</h3>
-                <!-- Изначально пусто -->
-            </div>
-            
-            <div class="table-container" id="orders-container">
-                <h3>Заказы (Orders)</h3>
-                <!-- Изначально пусто -->
-            </div>
-            
-            <div class="table-container" id="locations-container">
-                <h3>Местоположения (Locations)</h3>
-                <!-- Изначально пусто -->
-            </div>
-        </div>
-        
-        <div style="text-align: center; margin: 20px;">
-            <div class="field" id="user_id" title="Уникальный идентификатор пользователя">user_id</div>
-            <div class="field" id="username" title="Имя пользователя">username</div>
-            <div class="field" id="email" title="Электронная почта">email</div>
-            <div class="field" id="order_id" title="Уникальный номер заказа">order_id</div>
-            <div class="field" id="product" title="Наименование товара">product</div>
-            <div class="field" id="quantity" title="Количество товара">quantity</div>
-            <div class="field" id="address" title="Физический адрес">address</div>
-            <div class="field" id="location_id" title="Идентификатор местоположения">location_id</div>
-            <div class="field" id="field_type" title="Тип сельскохозяйственного поля">field_type</div>
-        </div>
-        
-        <div id="error-messages" style="color: #d32f2f; margin: 15px 0; padding: 10px; background: #ffebee; border-radius: 5px;"></div>
-        <div id="success-message" style="display: none; text-align: center; padding: 15px; background: #c8e6c9; border-radius: 5px; margin-top: 20px;">
-            <h3>🎉 Отлично! Вы правильно распределили поля! 🥕</h3>
-            <p>База данных теперь соответствует 3НФ</p>
-        </div>
-    </div>
-    
-    <a href="/" class="back-button">На главную</a>
 </body>
 </html>
