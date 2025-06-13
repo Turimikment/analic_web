@@ -28,32 +28,17 @@ app.config.update(
     SESSION_COOKIE_SAMESITE='Lax'
 )
 carrot_stats = CarrotStats()
+
+
+@app.route('/')
+def home():
+    return render_template('index.html')
 @app.route('/redis-stats')
 def redis_stats_page():
     """Страница статистики Redis (морковки)"""
     return render_template('redis_stats.html')
 
-@app.route('/redis-stats/data')
-def redis_stats_data():
-    """API для получения статистики по морковкам"""
-    stats = carrot_stats.get_stats()
-    return jsonify(stats)
 
-@app.route('/redis-stats/collect', methods=['POST'])
-def collect_carrot():
-    """API для сбора морковки"""
-    result = carrot_stats.collect_carrot()
-    return jsonify(result)
-
-@app.route('/redis-stats/reset', methods=['POST'])
-def reset_stats():
-    """Сброс всей статистики по морковкам"""
-    result = carrot_stats.reset_stats()
-    return jsonify(result)
-
-@app.route('/')
-def home():
-    return render_template('index.html')
 @app.route('/normalization-tutorial')
 def normalization_tutorial():
     return render_template('normalization_tutorial.html')
@@ -420,6 +405,25 @@ with get_db() as conn:
         ''')
         conn.commit()
     conn.commit()
+
+@app.route('/redis-stats/data')
+def redis_stats_data():
+    """API для получения статистики по морковкам"""
+    stats = carrot_stats.get_stats()
+    return jsonify(stats)
+
+@app.route('/redis-stats/collect', methods=['POST'])
+def collect_carrot():
+    """API для сбора морковки"""
+    result = carrot_stats.collect_carrot()
+    return jsonify(result)
+
+@app.route('/redis-stats/reset', methods=['POST'])
+def reset_stats():
+    """Сброс всей статистики по морковкам"""
+    result = carrot_stats.reset_stats()
+    return jsonify(result)
+
 
 def validate_email(email):
     """Проверяет валидность email адреса"""
