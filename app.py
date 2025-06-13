@@ -406,24 +406,71 @@ with get_db() as conn:
         conn.commit()
     conn.commit()
 
-@app.route('/redis-stats/data')
-def redis_stats_data():
-    """API для получения статистики по морковкам"""
-    stats = carrot_stats.get_stats()
-    return jsonify(stats)
+@app.route('/redis-edu')
+def redis_education():
+    """Образовательная страница Redis"""
+    return render_template('redis_education.html')
 
-@app.route('/redis-stats/collect', methods=['POST'])
-def collect_carrot():
-    """API для сбора морковки"""
-    result = carrot_stats.collect_carrot()
-    return jsonify(result)
+@app.route('/redis-edu/init', methods=['POST'])
+def edu_init_counter():
+    """Инициализация счетчика"""
+    try:
+        app.redis.set('total_carrots', 0)
+        return jsonify({'message': 'Счетчик инициализирован'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
-@app.route('/redis-stats/reset', methods=['POST'])
-def reset_stats():
-    """Сброс всей статистики по морковкам"""
-    result = carrot_stats.reset_stats()
-    return jsonify(result)
+@app.route('/redis-edu/incr', methods=['POST'])
+def edu_incr_counter():
+    """Увеличение счетчика"""
+    try:
+        new_value = app.redis.incr('total_carrots')
+        return jsonify({'value': new_value}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
+@app.route('/redis-edu/set-record', methods=['POST'])
+def edu_set_record():
+    """Установка рекорда"""
+    try:
+        app.redis.set('daily_record', 10)
+        return jsonify({'message': 'Рекорд установлен'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/redis-edu/get-counter', methods=['GET'])
+def edu_get_counter():
+    """Получение значения счетчика"""
+    try:
+        value = app.redis.get('total_carrots') or 0
+        return jsonify({'value': int(value)}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/redis-edu/add-leaderboard', methods=['POST'])
+def edu_add_leaderboard():
+    """Добавление в рейтинг"""
+    try:
+        app.redis.zadd('top_users', {'Быстрый Заяц': 5})
+        return jsonify({'message': 'Участник добавлен'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/redis-edu/get-leaderboard', methods=['GET'])
+def edu_get_leaderboard():
+    """Получение рейтинга"""
+    try:
+        leaderboard = []
+        # Получаем топ-10
+        results = app.redis.zrange('top_users', 0, -1, withscores=True)
+        for username, score in results:
+            leaderboard.append({
+                'username': username.decode('utf-8'),
+                'score': int(score)
+            })
+        return jsonify({'leaderboard': leaderboard}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 def validate_email(email):
     """Проверяет валидность email адреса"""
