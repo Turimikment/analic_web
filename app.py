@@ -14,7 +14,7 @@ from werkzeug.middleware.dispatcher import DispatcherMiddleware
 import os
 from urllib.parse import urlparse
 from datetime import datetime
-
+from redis_utils import CarrotStats
 # Добавить в импорты
 from flask import session
 import time
@@ -27,6 +27,30 @@ app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE='Lax'
 )
+carrot_stats = CarrotStats()
+@app.route('/redis-stats')
+def redis_stats_page():
+    """Страница статистики Redis (морковки)"""
+    return render_template('redis_stats.html')
+
+@app.route('/redis-stats/data')
+def redis_stats_data():
+    """API для получения статистики по морковкам"""
+    stats = carrot_stats.get_stats()
+    return jsonify(stats)
+
+@app.route('/redis-stats/collect', methods=['POST'])
+def collect_carrot():
+    """API для сбора морковки"""
+    result = carrot_stats.collect_carrot()
+    return jsonify(result)
+
+@app.route('/redis-stats/reset', methods=['POST'])
+def reset_stats():
+    """Сброс всей статистики по морковкам"""
+    result = carrot_stats.reset_stats()
+    return jsonify(result)
+
 @app.route('/')
 def home():
     return render_template('index.html')
