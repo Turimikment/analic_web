@@ -540,7 +540,7 @@ def create_holiday():
     'tags': ['Holidays'],
     'parameters': [
         {'name': 'holiday_id', 'in': 'path', 'required': True, 'type': 'integer', 'description': 'ID праздника'},
-        {'name': 'body', 'in': 'body', 'required': True, 'schema': {'type': 'object', 'properties': {'user_id': {'type': 'integer'}}}
+        {'name': 'body', 'in': 'body', 'required': True, 'schema': {'type': 'object', 'properties': {'user_id': {'type': 'integer'}}}}
     ],
     'responses': {
         201: {'description': 'Успешная запись', 'schema': {
