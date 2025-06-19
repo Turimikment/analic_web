@@ -717,7 +717,6 @@ class SoapResponse(ComplexModel):
 class SoapAccountService(ServiceBase):
     @rpc(Integer, _returns=SoapUser)
     def get_user_by_id(ctx, user_id):
-        """Получить пользователя по ID"""
         try:
             user = db_utils.get_account_by_id(user_id)
             if not user:
@@ -730,11 +729,10 @@ class SoapAccountService(ServiceBase):
                 creation_method=user['creation_method']
             )
         except Exception as e:
-            raise Fault(faultcode='Server', faultstring='Database error')
+            raise Fault(faultcode='Server', faultstring=f'Database error: {str(e)}')
 
     @rpc(_returns=Array(SoapUser))
     def get_all_users(ctx):
-        """Получить всех зайцев"""
         try:
             users = db_utils.get_all_accounts()
             return [
@@ -748,19 +746,17 @@ class SoapAccountService(ServiceBase):
                 for user in users
             ]
         except Exception as e:
-            raise Fault(faultcode='Server', faultstring='Database error')
+            raise Fault(faultcode='Server', faultstring=f'Database error: {str(e)}')
     
-     @rpc(SoapUserRequest, _returns=SoapResponse)
+    @rpc(SoapUserRequest, _returns=SoapResponse)
     def create_user(ctx, user_data):
         """Создать нового зайца"""
         try:
-            # Логирование входящих данных для диагностики
-            print(f"SOAP create_user request received:")
-            print(f"Username: {user_data.username}")
-            print(f"Email: {user_data.email}")
-            print(f"About_me: {user_data.about_me}")
+            # Логирование входящих данных
+            app.logger.info(f"SOAP create_user request: "
+                           f"username={user_data.username}, "
+                           f"email={user_data.email}")
             
-            # Создаем пользователя
             new_user = db_utils.create_account(
                 username=user_data.username,
                 email=user_data.email,
@@ -769,31 +765,30 @@ class SoapAccountService(ServiceBase):
                 about_me=user_data.about_me
             )
             
-            print(f"User created successfully: ID={new_user['id']}")
+            # Создаем объект SoapUser для ответа
+            soap_user = SoapUser(
+                id=new_user['id'],
+                username=new_user['username'],
+                email=new_user['email'],
+                about_me=new_user['about_me'] or '',
+                creation_method=new_user['creation_method']
+            )
             
-            # Формируем SOAP-ответ
+            # Формируем успешный ответ
             response = SoapResponse(
                 status='success',
                 message='User created successfully',
-                user=SoapUser(
-                    id=new_user['id'],
-                    username=new_user['username'],
-                    email=new_user['email'],
-                    about_me=new_user['about_me'] or '',
-                    creation_method=new_user['creation_method']
-                )
+                user=soap_user
             )
             
-            print("SOAP response prepared successfully")
+            app.logger.info(f"User created successfully: ID={new_user['id']}")
             return response
             
         except ValueError as e:
-            print(f"ValueError in create_user: {str(e)}")
+            app.logger.error(f"ValueError in create_user: {str(e)}")
             return Fault(faultcode='Client', faultstring=str(e))
         except Exception as e:
-            import traceback
-            print(f"Exception in create_user: {str(e)}")
-            traceback.print_exc()
+            app.logger.error(f"Exception in create_user: {str(e)}")
             return Fault(faultcode='Server', faultstring=f'Internal server error: {str(e)}')
 
     @rpc(Integer, Unicode, _returns=SoapResponse)
