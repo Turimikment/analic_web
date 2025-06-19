@@ -750,10 +750,17 @@ class SoapAccountService(ServiceBase):
         except Exception as e:
             raise Fault(faultcode='Server', faultstring='Database error')
     
-    @rpc(SoapUserRequest, _returns=SoapResponse)
+     @rpc(SoapUserRequest, _returns=SoapResponse)
     def create_user(ctx, user_data):
         """Создать нового зайца"""
         try:
+            # Логирование входящих данных для диагностики
+            print(f"SOAP create_user request received:")
+            print(f"Username: {user_data.username}")
+            print(f"Email: {user_data.email}")
+            print(f"About_me: {user_data.about_me}")
+            
+            # Создаем пользователя
             new_user = db_utils.create_account(
                 username=user_data.username,
                 email=user_data.email,
@@ -761,9 +768,13 @@ class SoapAccountService(ServiceBase):
                 creation_method='soap',
                 about_me=user_data.about_me
             )
-            return SoapResponse(
+            
+            print(f"User created successfully: ID={new_user['id']}")
+            
+            # Формируем SOAP-ответ
+            response = SoapResponse(
                 status='success',
-                message='User created',
+                message='User created successfully',
                 user=SoapUser(
                     id=new_user['id'],
                     username=new_user['username'],
@@ -772,10 +783,18 @@ class SoapAccountService(ServiceBase):
                     creation_method=new_user['creation_method']
                 )
             )
+            
+            print("SOAP response prepared successfully")
+            return response
+            
         except ValueError as e:
-            raise Fault(faultcode='Client', faultstring=str(e))
+            print(f"ValueError in create_user: {str(e)}")
+            return Fault(faultcode='Client', faultstring=str(e))
         except Exception as e:
-            raise Fault(faultcode='Server', faultstring='Database error')
+            import traceback
+            print(f"Exception in create_user: {str(e)}")
+            traceback.print_exc()
+            return Fault(faultcode='Server', faultstring=f'Internal server error: {str(e)}')
 
     @rpc(Integer, Unicode, _returns=SoapResponse)
     def update_username(ctx, user_id, new_username):
