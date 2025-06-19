@@ -1,27 +1,16 @@
-from flask import Flask, render_template, request, jsonify, abort, redirect, url_for,session
+from flask import Flask, render_template, request, jsonify, abort, redirect, url_for, session
 from flasgger import Swagger, swag_from
-import psycopg2
-from psycopg2 import sql, errors
 import re
-from werkzeug.security import generate_password_hash, check_password_hash
 import logging
 from time import sleep
 from psycopg2.extras import DictCursor
-from spyne import Application, rpc, ServiceBase, Unicode, Integer, ComplexModel, Array
-from spyne.protocol.soap import Soap11
-from spyne.server.wsgi import WsgiApplication
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
 import os
-from urllib.parse import urlparse
 from datetime import datetime
 from redis_utils import CarrotStats
-# Добавить в импорты
-from flask import session
-import time
-from soap_service import SoapUser, SoapUserRequest, SoapResponse, SoapAccountService
+import db_utils
 
 app = Flask(__name__)
-
 app.config['DATABASE_URL'] = os.environ.get('DATABASE_URL')
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'supersecretkey')
 app.config.update(
@@ -31,22 +20,23 @@ app.config.update(
 )
 carrot_stats = CarrotStats()
 
-
 @app.route('/')
 def home():
     return render_template('index.html')
+
 @app.route('/redis-stats')
 def redis_stats_page():
     """Страница статистики Redis (морковки)"""
     return render_template('redis_stats.html')
 
-
 @app.route('/normalization-tutorial')
 def normalization_tutorial():
     return render_template('normalization_tutorial.html')
+
 @app.route('/soap-interface')
 def soap_interface():
     return render_template('soap.html')
+
 @app.route('/create-user', methods=['GET', 'POST'])
 def create_user():
     form_errors = {}
@@ -56,7 +46,7 @@ def create_user():
         username = request.form.get('username', '').strip()
         email = request.form.get('email', '').strip()
         password = request.form.get('password', '')
-        cache_data = 'cache_data' in request.form  # Получаем состояние чекбокса
+        cache_data = 'cache_data' in request.form
 
         # Валидация
         if len(username) < 3 or len(username) > 20:
@@ -69,7 +59,6 @@ def create_user():
             form_errors['password'] = 'Пароль должен быть не менее 6 символов'
 
         if form_errors:
-            # Сохраняем данные в сессии если чекбокс активен
             if cache_data:
                 session['form_data'] = {
                     'username': username,
@@ -86,26 +75,17 @@ def create_user():
                 cache_checked=cache_data)
 
         try:
-            with get_db() as conn:
-                with conn.cursor() as cursor:
-                    password_hash = generate_password_hash(password)
-                    cursor.execute('''
-                        INSERT INTO accounts (username, email, password_hash, creation_method)
-                        VALUES (%s, %s, %s, %s)
-                        RETURNING id
-                    ''', (username, email, password_hash, 'interface'))
-                    user_id = cursor.fetchone()[0]
-                    conn.commit()
-                    session.pop('form_data', None)  # Очищаем кэш после успешной регистрации
-                    return redirect(url_for('user_profile', user_id=user_id))
+            new_user = db_utils.create_account(
+                username=username,
+                email=email,
+                password=password,
+                creation_method='interface'
+            )
+            session.pop('form_data', None)
+            return redirect(url_for('user_profile', user_id=new_user['id']))
 
-        except errors.UniqueViolation as e:
-            if 'username' in str(e):
-                form_errors['username'] = 'Имя пользователя уже занято'
-            elif 'email' in str(e):
-                form_errors['email'] = 'Этот email уже зарегистрирован'
-            
-            # Сохраняем данные при ошибке БД если чекбокс активен
+        except ValueError as e:
+            form_errors['database'] = str(e)
             if cache_data:
                 session['form_data'] = {
                     'username': username,
@@ -117,8 +97,8 @@ def create_user():
                 username=username,
                 email=email,
                 cache_checked=cache_data)
-        
-        except psycopg2.Error as e:
+
+        except Exception as e:
             form_errors['database'] = f'Ошибка базы данных: {str(e)}'
             if cache_data:
                 session['form_data'] = {
@@ -132,48 +112,21 @@ def create_user():
                 email=email,
                 cache_checked=cache_data)
 
-    # GET запрос - используем данные из сессии
     return render_template('create_user.html',
         errors={},
         username=form_data.get('username', ''),
         email=form_data.get('email', ''),
         cache_checked=form_data.get('cache_checked', False))
-    
+
 # Схемы данных Swagger
 account_model = {
     'type': 'object',
     'properties': {
-        'id': {
-            'type': 'integer',
-            'readOnly': True,
-            'description': 'Уникальный идентификатор пользователя',
-            'example': 1
-        },
-        'username': {
-            'type': 'string',
-            'description': 'Имя пользователя (3-20 символов)',
-            'minLength': 3,
-            'maxLength': 20,
-            'example': 'john_doe'
-        },
-        'email': {
-            'type': 'string',
-            'format': 'email',
-            'description': 'Валидный email-адрес',
-            'example': 'user@example.com'
-        },
-        'about_me': {
-            'type': 'string',
-            'description': 'Информация о пользователе',
-            'example': 'Разработчик из Москвы',
-            'default': ''
-        },
-        'creation_method' : {
-        'type': 'string',
-        'description': 'Метод создания пользователя',
-        'enum': ['rest', 'soap', 'interface'],
-        'example': 'rest'
-        }
+        'id': {'type': 'integer', 'readOnly': True, 'example': 1},
+        'username': {'type': 'string', 'minLength': 3, 'maxLength': 20, 'example': 'john_doe'},
+        'email': {'type': 'string', 'format': 'email', 'example': 'user@example.com'},
+        'about_me': {'type': 'string', 'example': 'Разработчик из Москвы', 'default': ''},
+        'creation_method': {'type': 'string', 'enum': ['rest', 'soap', 'interface'], 'example': 'rest'}
     }
 }
 
@@ -181,28 +134,9 @@ create_account_model = {
     'type': 'object',
     'required': ['username', 'email', 'password'],
     'properties': {
-        'username': {
-            'type': 'string',
-            'description': 'Имя пользователя (3-20 символов)',
-            'minLength': 3,
-            'maxLength': 20,
-            'example': 'jane_doe'
-        },
-        'email': {
-            'type': 'string',
-            'format': 'email',
-            'description': '''Валидный email-адрес. Требования:
-- Должен содержать @
-- Локальная часть (до @): буквы, цифры, .! # $ % & ' * + - / = ? ^ _ ` { | } ~
-- Доменная часть (после @): минимум одна точка, буквы/цифры и дефисы''',
-            'example': 'user@example.com'
-        },
-        'password': {
-            'type': 'string',
-            'description': 'Пароль (минимум 6 символов)',
-            'minLength': 6,
-            'example': 'secret123'
-        }
+        'username': {'type': 'string', 'minLength': 3, 'maxLength': 20, 'example': 'jane_doe'},
+        'email': {'type': 'string', 'format': 'email', 'example': 'user@example.com'},
+        'password': {'type': 'string', 'minLength': 6, 'example': 'secret123'}
     }
 }
 
@@ -210,13 +144,7 @@ update_username_model = {
     'type': 'object',
     'required': ['new_username'],
     'properties': {
-        'new_username': {
-            'type': 'string',
-            'description': 'Новое имя пользователя',
-            'minLength': 3,
-            'maxLength': 20,
-            'example': 'new_username123'
-        }
+        'new_username': {'type': 'string', 'minLength': 3, 'maxLength': 20, 'example': 'new_username123'}
     }
 }
 
@@ -224,25 +152,24 @@ about_me_model = {
     'type': 'object',
     'required': ['about_me'],
     'properties': {
-        'about_me': {
-            'type': 'string',
-            'description': 'Информация о пользователе',
-            'example': 'Люблю программирование и путешествия',
-            'maxLength': 500
-        }
+        'about_me': {'type': 'string', 'example': 'Люблю программирование и путешествия', 'maxLength': 500}
+    }
+}
+
+holiday_model = {
+    'type': 'object',
+    'required': ['start_time', 'location', 'title'],
+    'properties': {
+        'id': {'type': 'integer', 'format': 'int64', 'readOnly': True, 'example': 42},
+        'start_time': {'type': 'string', 'format': 'date-time', 'example': '2024-09-15T18:30:00Z'},
+        'location': {'type': 'string', 'minLength': 3, 'maxLength': 255, 'example': 'Морковное поле №5'},
+        'title': {'type': 'string', 'minLength': 3, 'maxLength': 100, 'example': 'Фестиваль весенней моркови'}
     }
 }
 
 swagger_config = {
     "headers": [],
-    "specs": [
-        {
-            "endpoint": "apispec",
-            "route": "/apispec.json",
-            "rule_filter": lambda rule: True,
-            "model_filter": lambda tag: True
-        }
-    ],
+    "specs": [{"endpoint": "apispec", "route": "/apispec.json"}],
     "static_url_path": "/flasgger_static",
     "swagger_ui": True,
     "specs_route": "/apidocs/",
@@ -250,163 +177,11 @@ swagger_config = {
         "Account": account_model,
         "CreateAccount": create_account_model,
         "UpdateUsername": update_username_model,
-        "AboutMe": about_me_model
-    }
-}
-# ====== Добавить в раздел моделей Swagger ======
-holiday_model = {
-    'type': 'object',
-    'required': ['start_time', 'location', 'title'],
-    'description': 'Модель представления праздника/мероприятия',
-    'x-examples': {
-        'basic': {
-            'value': {
-                'id': 1,
-                'start_time': '2024-03-20T15:00:00Z',
-                'location': 'Морковное поле №7',
-                'title': 'Фестиваль весенней моркови'
-            }
-        },
-        'error': {
-            'summary': 'Пример ошибки валидации',
-            'value': {
-                'title': 'Фе',
-                'location': '',
-                'start_time': 'invalid-date'
-            }
-        }
-    },
-    'properties': {
-        'id': {
-            'type': 'integer',
-            'format': 'int64',
-            'readOnly': True,
-            'description': 'Автогенерируемый уникальный идентификатор',
-            'example': 42
-        },
-        'start_time': {
-            'type': 'string',
-            'format': 'date-time',
-            'description': 'Дата и время начала праздника в формате ISO 8601',
-            'pattern': r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$',
-            'example': '2024-09-15T18:30:00Z',
-            'x-format-hint': 'YYYY-MM-DDTHH:MM:SSZ'
-        },
-        'location': {
-            'type': 'string',
-            'minLength': 3,
-            'maxLength': 255,
-            'description': 'Физическое место проведения мероприятия',
-            'examples': {
-                'field': {'value': 'Морковное поле №5'},
-                'forest': {'value': 'Лесная поляна'},
-                'city': {'value': 'Центральная площадь города'}
-            },
-            'x-geo': {
-                'type': 'object',
-                'properties': {
-                    'latitude': {'type': 'number'},
-                    'longitude': {'type': 'number'}
-                }
-            }
-        },
-        'title': {
-            'type': 'string',
-            'minLength': 3,
-            'maxLength': 100,
-            'description': 'Уникальное название праздника',
-            'pattern': r'^[a-zA-Zа-яА-ЯёЁ0-9\s\-!?()]+$',
-            'examples': [
-                'Фестиваль осеннего урожая',
-                'Новогодний карнавал кроликов',
-                'Чемпионат по скоростному поеданию моркови'
-            ],
-            'x-unique': True,
-            'x-validation-rules': [
-                'Должно содержать только буквы, цифры и специальные символы: -!?()',
-                'Не может повторяться в системе'
-            ]
-        }
-    },
-    'x-response-codes': {
-        '201': 'Успешное создание праздника',
-        '400': 'Некорректные данные в запросе',
-        '409': 'Конфликт: название праздника уже существует'
+        "AboutMe": about_me_model,
+        "Holiday": holiday_model
     }
 }
 Swagger(app, config=swagger_config)
-
-def get_db():
-    """Возвращает соединение с базой данных"""
-    conn = psycopg2.connect(app.config['DATABASE_URL'])
-    return conn
-
-def init_db():
-    """Инициализация базы данных"""
-    parsed_url = urlparse(app.config['DATABASE_URL'])
-    db_name = parsed_url.path[1:]
-    db_user = parsed_url.username
-    db_pass = parsed_url.password
-    db_host = parsed_url.hostname
-    db_port = parsed_url.port
-
-    # Подключаемся к postgres для создания БД
-    admin_conn = psycopg2.connect(
-        dbname='postgres',
-        user=db_user,
-        password=db_pass,
-        host=db_host,
-        port=db_port
-    )
-    admin_conn.autocommit = True
-    admin_cursor = admin_conn.cursor()
-    
-    # Создаем БД если не существует
-    admin_cursor.execute(f"SELECT 1 FROM pg_database WHERE datname = '{db_name}'")
-    if not admin_cursor.fetchone():
-        admin_cursor.execute(f"CREATE DATABASE {db_name}")
-    
-    admin_cursor.close()
-    admin_conn.close()
-
-    # Создаем таблицы
-with get_db() as conn:
-    with conn.cursor() as cursor:
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS accounts (
-                id SERIAL PRIMARY KEY,
-                username VARCHAR(20) NOT NULL UNIQUE,
-                email VARCHAR(255) NOT NULL UNIQUE,
-                password_hash VARCHAR(255) NOT NULL,
-                about_me TEXT DEFAULT '',
-                creation_method VARCHAR(10) NOT NULL DEFAULT 'interface'
-            )
-        ''')
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS holidays (
-                id SERIAL PRIMARY KEY,
-                start_time TIMESTAMP NOT NULL,
-                location VARCHAR(255) NOT NULL,
-                title VARCHAR(100) NOT NULL UNIQUE  
-            )
-        ''')
-
-
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS user_holidays (
-                id SERIAL PRIMARY KEY,  
-                user_id INTEGER REFERENCES accounts(id) ON DELETE CASCADE,
-                holiday_id INTEGER REFERENCES holidays(id) ON DELETE CASCADE,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,  
-                UNIQUE (user_id, holiday_id)  
-            )
-        ''')
-        cursor.execute('''
-            CREATE INDEX IF NOT EXISTS idx_holidays_search 
-            ON holidays USING gin (to_tsvector('russian', title || ' ' || location))
-        ''')
-        conn.commit()
-    conn.commit()
 
 @app.route('/redis-edu')
 def redis_education():
@@ -463,7 +238,6 @@ def edu_get_leaderboard():
     """Получение рейтинга"""
     try:
         leaderboard = []
-        # Получаем топ-10
         results = app.redis.zrange('top_users', 0, -1, withscores=True)
         for username, score in results:
             leaderboard.append({
@@ -483,25 +257,11 @@ def validate_email(email):
 def user_profile(user_id):
     """Страница профиля пользователя"""
     try:
-        with get_db() as conn:
-            with conn.cursor() as cursor:
-                cursor.execute('''
-                    SELECT username, email, about_me 
-                    FROM accounts 
-                    WHERE id = %s
-                ''', (user_id,))
-                user = cursor.fetchone()
-                
-                if not user:
-                    abort(404)
-                
-                return render_template('profile.html', user={
-                    'username': user[0],
-                    'email': user[1],
-                    'about_me': user[2]
-                })
-                
-    except psycopg2.Error as e:
+        user = db_utils.get_account_by_id(user_id)
+        if not user:
+            abort(404)
+        return render_template('profile.html', user=user)
+    except Exception as e:
         abort(500, description="Ошибка базы данных")
 
 @app.route('/view-db')
@@ -510,29 +270,27 @@ def view_database():
     try:
         selected_table = request.args.get('table', 'accounts')
         
-        with get_db() as conn:
+        with db_utils.get_db_connection() as conn:
             with conn.cursor(cursor_factory=DictCursor) as cursor:
-                # Получаем список таблиц
-                cursor.execute('''
+                cursor.execute("""
                     SELECT table_name 
                     FROM information_schema.tables 
                     WHERE table_schema = 'public'
-                ''')
+                """)
                 tables = [row['table_name'] for row in cursor.fetchall()]
                 
-                # Формируем SQL-запросы
                 if selected_table == 'accounts':
-                    sql_query = "SELECT * FROM accounts;"
-                    cursor.execute(sql_query)
+                    cursor.execute("SELECT * FROM accounts;")
                     data = cursor.fetchall()
+                    sql_query = "SELECT * FROM accounts;"
                     
                 elif selected_table == 'holidays':
-                    sql_query = "SELECT * FROM holidays ORDER BY start_time;"
-                    cursor.execute(sql_query)
+                    cursor.execute("SELECT * FROM holidays ORDER BY start_time;")
                     data = cursor.fetchall()
+                    sql_query = "SELECT * FROM holidays ORDER BY start_time;"
                     
                 elif selected_table == 'user_holidays':
-                    sql_query = '''
+                    sql_query = """
                         SELECT 
                             uh.id,
                             uh.user_id,
@@ -544,7 +302,7 @@ def view_database():
                         LEFT JOIN accounts a ON uh.user_id = a.id
                         LEFT JOIN holidays h ON uh.holiday_id = h.id
                         ORDER BY uh.created_at DESC;
-                    '''
+                    """
                     cursor.execute(sql_query)
                     data = cursor.fetchall()
                     
@@ -568,50 +326,24 @@ def view_database():
 @swag_from({
     'tags': ['Accounts'],
     'responses': {
-        200: {
-            'description': 'Список всех учетных записей',
-            'schema': {
-                'type': 'array',
-                'items': account_model
-            }
-        },
+        200: {'description': 'Список всех учетных записей', 'schema': {'type': 'array', 'items': account_model}},
         500: {'description': 'Ошибка базы данных'}
     }
 })
 def get_accounts():
     """Получить всех зайцев"""
     try:
-        with get_db() as conn:
-            with conn.cursor() as cursor:
-                cursor.execute('SELECT id, username, email, about_me,creation_method FROM accounts')
-                results = cursor.fetchall()
-                accounts = [{
-                        'id': row[0],
-                        'username': row[1],
-                        'email': row[2],
-                        'about_me': row[3],
-                        'creation_method': row[4]
-} for row in results]
-                return jsonify(accounts), 200
-    except psycopg2.Error as e:
+        accounts = db_utils.get_all_accounts()
+        return jsonify(accounts), 200
+    except Exception as e:
         return jsonify({'error': 'Ошибка базы данных'}), 500
 
 @app.route('/accounts', methods=['POST'])
 @swag_from({
     'tags': ['Accounts'],
-    'parameters': [
-        {
-            'name': 'body',
-            'in': 'body',
-            'required': True,
-            'schema': create_account_model
-        }
-    ],
+    'parameters': [{'name': 'body', 'in': 'body', 'required': True, 'schema': create_account_model}],
     'responses': {
-        201: {
-            'description': 'Созданная учетная запись',
-            'schema': account_model
-        },
+        201: {'description': 'Созданная учетная запись', 'schema': account_model},
         400: {'description': 'Некорректные данные'},
         409: {'description': 'Конфликт данных'}
     }
@@ -635,69 +367,33 @@ def create_account():
         validation_errors['password'] = 'Пароль должен быть не менее 6 символов'
     
     if validation_errors:
-        return jsonify(errors), 400
+        return jsonify(validation_errors), 400
     
     try:
-        with get_db() as conn:
-            with conn.cursor() as cursor:
-                password_hash = generate_password_hash(password)
-                
-                cursor.execute('''
-                    INSERT INTO accounts (username, email, password_hash, creation_method)
-                    VALUES (%s, %s, %s, %s)
-                    RETURNING id, username, email, about_me, creation_method
-                ''', (username, email, password_hash, 'rest'))
-                
-                new_user = cursor.fetchone()
-                conn.commit()
-                
-                return jsonify({
-                    'id': new_user[0],
-                    'username': new_user[1],
-                    'email': new_user[2],
-                    'about_me': new_user[3],
-                    'creation_method': new_user[4]
-                }), 201
+        new_user = db_utils.create_account(
+            username=username,
+            email=email,
+            password=password,
+            creation_method='rest'
+        )
+        return jsonify(new_user), 201
 
-    except errors.UniqueViolation as e:
-        error_msg = 'Ошибка уникальности: '
-        # Проверка, какое поле вызвало конфликт
-        if 'username' in str(e):
-            error_msg += 'Имя пользователя уже существует'
-        elif 'email' in str(e):
-            error_msg += 'Email уже зарегистрирован'
-        else:
-            error_msg += 'Дубликат данных'
+    except ValueError as e:
+        error_msg = str(e)
         return jsonify({'error': error_msg}), 409
     
-    except psycopg2.Error as e:
-        return jsonify({'error': 'Ошибка базы данных'}), 500
-    
     except Exception as e:
-        return jsonify({'error': 'Неизвестная ошибка'}), 500
+        return jsonify({'error': 'Ошибка базы данных'}), 500
         
 @app.route('/accounts/<int:user_id>', methods=['PUT'])
 @swag_from({
     'tags': ['Accounts'],
     'parameters': [
-        {
-            'name': 'user_id',
-            'in': 'path',
-            'type': 'integer',
-            'required': True
-        },
-        {
-            'name': 'body',
-            'in': 'body',
-            'required': True,
-            'schema': update_username_model
-        }
+        {'name': 'user_id', 'in': 'path', 'type': 'integer', 'required': True},
+        {'name': 'body', 'in': 'body', 'required': True, 'schema': update_username_model}
     ],
     'responses': {
-        200: {
-            'description': 'Обновленные данные пользователя',
-            'schema': account_model
-        },
+        200: {'description': 'Обновленные данные пользователя', 'schema': account_model},
         400: {'description': 'Некорректные данные'},
         404: {'description': 'Заяц не найден'},
         409: {'description': 'Имя пользователя уже занято'}
@@ -712,61 +408,24 @@ def update_username(user_id):
         return jsonify({'error': 'Некорректное имя пользователя'}), 400
     
     try:
-        with get_db() as conn:
-            with conn.cursor() as cursor:
-                cursor.execute('SELECT id FROM accounts WHERE id = %s', (user_id,))
-                if not cursor.fetchone():
-                    return jsonify({'error': 'Заяц не найден'}), 404
-                
-                cursor.execute('''
-                    UPDATE accounts 
-                    SET username = %s
-                    WHERE id = %s
-                    RETURNING id, username, email, about_me
-                ''', (new_username, user_id))
-                
-                updated_user = cursor.fetchone()
-                conn.commit()
-                
-                return jsonify({
-                    'id': updated_user[0],
-                    'username': updated_user[1],
-                    'email': updated_user[2],
-                    'about_me': updated_user[3]
-                }), 200
-                
-    except errors.UniqueViolation as e:
-        return jsonify({'error': 'Имя пользователя уже занято'}), 409
-    except psycopg2.Error as e:
+        updated_user = db_utils.update_username(user_id, new_username)
+        if not updated_user:
+            return jsonify({'error': 'Заяц не найден'}), 404
+        return jsonify(updated_user), 200
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 409
+    except Exception as e:
         return jsonify({'error': 'Ошибка базы данных'}), 500
 
 @app.route('/accounts/about/<int:user_id>', methods=['PUT'])
 @swag_from({
     'tags': ['Accounts'],
     'parameters': [
-        {
-            'name': 'user_id',
-            'in': 'path',
-            'type': 'integer',
-            'required': True
-        },
-        {
-            'name': 'about_me',
-            'in': 'body',
-            'required': True,
-            'schema': {
-                'type': 'object',
-                'properties': {
-                    'about_me': {'type': 'string'}
-                }
-            }
-        }
+        {'name': 'user_id', 'in': 'path', 'type': 'integer', 'required': True},
+        {'name': 'about_me', 'in': 'body', 'required': True, 'schema': {'type': 'object', 'properties': {'about_me': {'type': 'string'}}}}
     ],
     'responses': {
-        200: {
-            'description': 'Обновленные данные пользователя',
-            'schema': account_model
-        },
+        200: {'description': 'Обновленные данные пользователя', 'schema': account_model},
         404: {'description': 'Заяц не найден'}
     }
 })
@@ -776,46 +435,19 @@ def update_about_me(user_id):
     about_me = data.get('about_me', '')
     
     try:
-        with get_db() as conn:
-            with conn.cursor() as cursor:
-                cursor.execute('''
-                    UPDATE accounts 
-                    SET about_me = %s
-                    WHERE id = %s
-                    RETURNING id, username, email, about_me
-                ''', (about_me, user_id))
-                
-                updated_user = cursor.fetchone()
-                if not updated_user:
-                    return jsonify({'error': 'Заяц не найден'}), 404
-                
-                conn.commit()
-                
-                return jsonify({
-                    'id': updated_user[0],
-                    'username': updated_user[1],
-                    'email': updated_user[2],
-                    'about_me': updated_user[3]
-                }), 200
-                
-    except psycopg2.Error as e:
+        updated_user = db_utils.update_about_me(user_id, about_me)
+        if not updated_user:
+            return jsonify({'error': 'Заяц не найден'}), 404
+        return jsonify(updated_user), 200
+    except Exception as e:
         return jsonify({'error': 'Ошибка базы данных'}), 500
+
 @app.route('/accounts/about/<int:user_id>', methods=['DELETE'])
 @swag_from({
     'tags': ['Accounts'],
-    'parameters': [
-        {
-            'name': 'user_id',
-            'in': 'path',
-            'type': 'integer',
-            'required': True
-        }
-    ],
+    'parameters': [{'name': 'user_id', 'in': 'path', 'type': 'integer', 'required': True}],
     'responses': {
-        200: {
-            'description': 'Информация "О себе" успешно удалена',
-            'schema': account_model
-        },
+        200: {'description': 'Информация "О себе" успешно удалена', 'schema': account_model},
         404: {'description': 'Заяц не найден'},
         500: {'description': 'Ошибка базы данных'}
     }
@@ -823,42 +455,17 @@ def update_about_me(user_id):
 def delete_about_me(user_id):
     """Удалить информацию из поля любитмые занятия"""
     try:
-        with get_db() as conn:
-            with conn.cursor() as cursor:
-                cursor.execute('''
-                    UPDATE accounts 
-                    SET about_me = ''
-                    WHERE id = %s
-                    RETURNING id, username, email, about_me
-                ''', (user_id,))
-                
-                updated_user = cursor.fetchone()
-                if not updated_user:
-                    return jsonify({'error': 'Заяц не найден'}), 404
-                
-                conn.commit()
-                
-                return jsonify({
-                    'id': updated_user[0],
-                    'username': updated_user[1],
-                    'email': updated_user[2],
-                    'about_me': updated_user[3]
-                }), 200
-                
-    except psycopg2.Error as e:
+        updated_user = db_utils.delete_about_me(user_id)
+        if not updated_user:
+            return jsonify({'error': 'Заяц не найден'}), 404
+        return jsonify(updated_user), 200
+    except Exception as e:
         return jsonify({'error': 'Ошибка базы данных'}), 500
 
 @app.route('/accounts/<int:user_id>', methods=['DELETE'])
 @swag_from({
     'tags': ['Accounts'],
-    'parameters': [
-        {
-            'name': 'user_id',
-            'in': 'path',
-            'type': 'integer',
-            'required': True
-        }
-    ],
+    'parameters': [{'name': 'user_id', 'in': 'path', 'type': 'integer', 'required': True}],
     'responses': {
         200: {'description': 'Заяц успешно удален'},
         404: {'description': 'Заяц не найден'},
@@ -868,258 +475,129 @@ def delete_about_me(user_id):
 def delete_account(user_id):
     """Удалить зайца по ID"""
     try:
-        with get_db() as conn:
-            with conn.cursor() as cursor:
-                cursor.execute('DELETE FROM accounts WHERE id = %s', (user_id,))
-                if cursor.rowcount == 0:
-                    return jsonify({'error': 'Заяц не найден'}), 404
-                
-                conn.commit()
-                return jsonify({'message': 'Заяц успешно удален'}), 200
-                
-    except psycopg2.Error as e:
+        success = db_utils.delete_account(user_id)
+        if not success:
+            return jsonify({'error': 'Заяц не найден'}), 404
+        return jsonify({'message': 'Заяц успешно удален'}), 200
+    except Exception as e:
         return jsonify({'error': 'Ошибка базы данных'}), 500
-# ... (предыдущий код остается без изменений)
+
 @app.route('/holidays', methods=['POST'])
 @swag_from({
     'tags': ['Holidays'],
     'description': 'Создать новый праздник/мероприятие',
-    'parameters': [
-        {
-            'name': 'body',
-            'in': 'body',
-            'required': True,
-            'schema': holiday_model
-        }
-    ],
+    'parameters': [{'name': 'body', 'in': 'body', 'required': True, 'schema': holiday_model}],
     'responses': {
-        201: {
-            'description': 'Праздник успешно создан',
-            'schema': holiday_model
-        },
-        400: {
-            'description': 'Некорректные данные',
-            'examples': {
-                'missing_field': {'error': 'Отсутствует обязательное поле: title'},
-                'validation_error': {'error': 'Некорректный формат даты'}
-            }
-        },
-        409: {
-            'description': 'Конфликт данных',
-            'examples': {
-                'duplicate_title': {'error': 'Праздник с таким названием уже существует'}
-            }
-        },
-        500: {
-            'description': 'Ошибка сервера',
-            'examples': {
-                'database_error': {'error': 'Ошибка базы данных'}
-            }
-        }
+        201: {'description': 'Праздник успешно создан', 'schema': holiday_model},
+        400: {'description': 'Некорректные данные'},
+        409: {'description': 'Конфликт данных'},
+        500: {'description': 'Ошибка сервера'}
     }
 })
 def create_holiday():
     """Создать новый праздник"""
     data = request.get_json()
     
-    # Валидация обязательных полей
     required_fields = ['start_time', 'location', 'title']
     missing_fields = [field for field in required_fields if field not in data]
     if missing_fields:
-        return jsonify({
-            'error': f'Отсутствуют обязательные поля: {", ".join(missing_fields)}'
-        }), 400
+        return jsonify({'error': f'Отсутствуют обязательные поля: {", ".join(missing_fields)}'}), 400
     
-    # Дополнительная валидация
     errors = {}
-    
-    # Проверка длины названия
     if len(data['title']) < 3 or len(data['title']) > 100:
         errors['title'] = 'Название должно быть от 3 до 100 символов'
     
-    # Проверка длины локации
     if len(data['location']) < 3 or len(data['location']) > 255:
         errors['location'] = 'Локация должна быть от 3 до 255 символов'
     
-    # Проверка формата даты (упрощенная)
     try:
-        from datetime import datetime
         datetime.fromisoformat(data['start_time'].replace('Z', '+00:00'))
     except ValueError:
-        errors['start_time'] = 'Некорректный формат даты. Используйте ISO 8601 (например: 2024-03-20T15:00:00Z)'
+        errors['start_time'] = 'Некорректный формат даты. Используйте ISO 8601'
     
     if errors:
         return jsonify({'errors': errors}), 400
     
     try:
-        with get_db() as conn:
-            with conn.cursor() as cursor:
-                # Проверка уникальности названия
-                cursor.execute('SELECT 1 FROM holidays WHERE title = %s', (data['title'],))
-                if cursor.fetchone():
-                    return jsonify({
-                        'error': 'Праздник с таким названием уже существует'
-                    }), 409
-                
-                # Создание праздника
-                cursor.execute('''
-                    INSERT INTO holidays (start_time, location, title)
-                    VALUES (%s, %s, %s)
-                    RETURNING id, start_time, location, title
-                ''', (
-                    data['start_time'],
-                    data['location'],
-                    data['title']
-                ))
-                
-                new_holiday = cursor.fetchone()
-                conn.commit()
-                
-                return jsonify({
-                    'id': new_holiday[0],
-                    'start_time': new_holiday[1].isoformat() if isinstance(new_holiday[1], datetime) else new_holiday[1],
-                    'location': new_holiday[2],
-                    'title': new_holiday[3]
-                }), 201
-                
-    except errors.UniqueViolation:
+        new_holiday = db_utils.create_holiday(
+            start_time=data['start_time'],
+            location=data['location'],
+            title=data['title']
+        )
         return jsonify({
-            'error': 'Праздник с таким названием уже существует'
-        }), 409
-        
-    except psycopg2.Error as e:
-        app.logger.error(f'Database error: {str(e)}')
-        return jsonify({
-            'error': 'Ошибка базы данных при создании праздника'
-        }), 500
-        
+            'id': new_holiday['id'],
+            'start_time': new_holiday['start_time'].isoformat() if isinstance(new_holiday['start_time'], datetime) else new_holiday['start_time'],
+            'location': new_holiday['location'],
+            'title': new_holiday['title']
+        }), 201
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 409
     except Exception as e:
-        app.logger.error(f'Unexpected error: {str(e)}')
-        return jsonify({
-            'error': 'Неизвестная ошибка при создании праздника'
-        }), 500    
+        return jsonify({'error': 'Ошибка базы данных'}), 500
+        
 @app.route('/holidays/<int:holiday_id>/attend', methods=['POST'])
 @swag_from({
     'tags': ['Holidays'],
     'parameters': [
-        {
-            'name': 'holiday_id',
-            'in': 'path',
-            'required': True,
-            'type': 'integer',
-            'description': 'ID праздника'
-        },
-        {
-            'name': 'body',
-            'in': 'body',
-            'required': True,
-            'schema': {
-                'type': 'object',
-                'properties': {
-                    'user_id': {
-                        'type': 'integer',
-                        'description': 'ID пользователя'
-                    }
-                }
-            }
-        }
+        {'name': 'holiday_id', 'in': 'path', 'required': True, 'type': 'integer', 'description': 'ID праздника'},
+        {'name': 'body', 'in': 'body', 'required': True, 'schema': {'type': 'object', 'properties': {'user_id': {'type': 'integer'}}}
     ],
     'responses': {
-        201: {
-            'description': 'Успешная запись',
-            'schema': {
-                'type': 'object',
-                'properties': {
-                    'message': {'type': 'string'},
-                    'holiday': {'$ref': '#/definitions/Holiday'},
-                    'user': {'$ref': '#/definitions/Account'}
-                }
+        201: {'description': 'Успешная запись', 'schema': {
+            'type': 'object',
+            'properties': {
+                'message': {'type': 'string'},
+                'holiday': {'$ref': '#/definitions/Holiday'},
+                'user': {'$ref': '#/definitions/Account'}
             }
-        },
-        400: {
-            'description': 'Некорректный запрос',
-            'schema': {
-                'type': 'object',
-                'properties': {
-                    'error': {'type': 'string'}
-                }
-            }
-        }
+        }},
+        400: {'description': 'Некорректный запрос'}
     }
 })
 def add_user_to_holiday(holiday_id):
     """Записать зайца на праздник"""
     data = request.get_json()
     
-    # Проверка наличия user_id в теле запроса
     if not data or 'user_id' not in data:
         return jsonify({'error': 'Необходимо указать user_id в теле запроса'}), 400
     
     user_id = data['user_id']
 
     try:
-        with get_db() as conn:
-            with conn.cursor() as cursor:
-                # Проверка существования пользователя
-                cursor.execute('SELECT username FROM accounts WHERE id = %s', (user_id,))
-                user = cursor.fetchone()
-                if not user:
-                    return jsonify({'error': 'Заяц не найден'}), 404
+        # Проверка существования пользователя
+        user = db_utils.get_account_by_id(user_id)
+        if not user:
+            return jsonify({'error': 'Заяц не найден'}), 404
 
-                # Проверка существования праздника
+        # Проверка существования праздника
+        # В реальном приложении нужно добавить функцию get_holiday_by_id в db_utils
+        with db_utils.get_db_connection() as conn:
+            with conn.cursor() as cursor:
                 cursor.execute('SELECT title FROM holidays WHERE id = %s', (holiday_id,))
                 holiday = cursor.fetchone()
                 if not holiday:
                     return jsonify({'error': 'Праздник не найден'}), 404
 
-                # Проверка существующей записи
-                cursor.execute('''
-                    SELECT 1 FROM user_holidays 
-                    WHERE user_id = %s AND holiday_id = %s
-                ''', (user_id, holiday_id))
-                if cursor.fetchone():
-                    return jsonify({
-                        'error': 'Заяц уже записан на этот праздник'
-                    }), 409
+        # Запись пользователя на праздник
+        attendance = db_utils.add_user_to_holiday(user_id, holiday_id)
+        
+        return jsonify({
+            'message': 'Заяц успешно записан на праздник',
+            'holiday': {'id': holiday_id, 'title': holiday[0]},
+            'user': {'id': user_id, 'username': user['username']},
+            'attendance_id': attendance['id'],
+            'created_at': attendance['created_at']
+        }), 201
 
-                # Создание новой записи
-                cursor.execute('''
-                    INSERT INTO user_holidays (user_id, holiday_id)
-                    VALUES (%s, %s)
-                    RETURNING id, created_at
-                ''', (user_id, holiday_id))
-                
-                new_entry = cursor.fetchone()
-                conn.commit()
-
-                return jsonify({
-                    'message': 'Заяц успешно записан на праздник',
-                    'holiday': {
-                        'id': holiday_id,
-                        'title': holiday[0]
-                    },
-                    'user': {
-                        'id': user_id,
-                        'username': user[0]
-                    },
-                    'attendance_id': new_entry[0],
-                    'created_at': new_entry[1].isoformat()
-                }), 201
-
-    except psycopg2.Error as e:
-        conn.rollback()
-        app.logger.error(f'Database error: {str(e)}')
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 409
+    except Exception as e:
         return jsonify({'error': 'Ошибка базы данных'}), 500
         
 @app.route('/holidays/<int:holiday_id>', methods=['DELETE'])
 @swag_from({
     'tags': ['Holidays'],
-    'parameters': [{
-        'name': 'holiday_id',
-        'in': 'path',
-        'type': 'integer',
-        'required': True
-    }],
+    'parameters': [{'name': 'holiday_id', 'in': 'path', 'type': 'integer', 'required': True}],
     'responses': {
         200: {'description': 'Праздник удален'},
         404: {'description': 'Праздник не найден'}
@@ -1128,172 +606,64 @@ def add_user_to_holiday(holiday_id):
 def delete_holiday(holiday_id):
     """Удалить праздник"""
     try:
-        with get_db() as conn:
-            with conn.cursor() as cursor:
-                # Каскадное удаление через ON DELETE CASCADE
-                cursor.execute('DELETE FROM holidays WHERE id = %s', (holiday_id,))
-                if cursor.rowcount == 0:
-                    return jsonify({'error': 'Holiday not found'}), 404
-                
-                conn.commit()
-                return jsonify({'message': 'Holiday deleted'}), 200
-                
-    except psycopg2.Error as e:
+        success = db_utils.delete_holiday(holiday_id)
+        if not success:
+            return jsonify({'error': 'Holiday not found'}), 404
+        return jsonify({'message': 'Holiday deleted'}), 200
+    except Exception as e:
         return jsonify({'error': 'Database error'}), 500
 
-# ====== Обновить Swagger definitions ======
-swagger_config['definitions']['Holiday'] = holiday_model
-# ====== Добавить в Swagger-определения ======
 @app.route('/holidays/<int:holiday_id>/attendees', methods=['GET'])
 @swag_from({
     'tags': ['Holidays'],
-    'parameters': [
-        {
-            'name': 'holiday_id',
-            'in': 'path',
-            'type': 'integer',
-            'required': True,
-            'description': 'ID праздника'
-        }
-    ],
+    'parameters': [{'name': 'holiday_id', 'in': 'path', 'type': 'integer', 'required': True, 'description': 'ID праздника'}],
     'responses': {
-        200: {
-            'description': 'Список участников праздника',
-            'schema': {
-                'type': 'array',
-                'items': account_model
-            }
-        },
+        200: {'description': 'Список участников праздника', 'schema': {'type': 'array', 'items': account_model}},
         404: {'description': 'Праздник не найден'}
     }
 })
 def get_holiday_attendees(holiday_id):
     """Получить список зайцев, идущих на праздник"""
     try:
-        with get_db() as conn:
-            with conn.cursor() as cursor:
-                # Проверка существования праздника
-                cursor.execute('SELECT 1 FROM holidays WHERE id = %s', (holiday_id,))
-                if not cursor.fetchone():
-                    return jsonify({'error': 'Holiday not found'}), 404
-                
-                # Получение участников
-                cursor.execute('''
-                    SELECT a.id, a.username, a.email, a.about_me, a.creation_method 
-                    FROM accounts a
-                    JOIN user_holidays uh ON a.id = uh.user_id
-                    WHERE uh.holiday_id = %s
-                ''', (holiday_id,))
-                
-                attendees = [{
-                    'id': row[0],
-                    'username': row[1],
-                    'email': row[2],
-                    'about_me': row[3],
-                    'creation_method': row[4]
-                } for row in cursor.fetchall()]
-                
-                return jsonify(attendees), 200
-                
-    except psycopg2.Error as e:
+        attendees = db_utils.get_holiday_attendees(holiday_id)
+        return jsonify(attendees), 200
+    except Exception as e:
         return jsonify({'error': 'Database error'}), 500
-# ====== Добавить в раздел Swagger-эндпоинтов ======
+
 @app.route('/users/<int:user_id>/holidays', methods=['GET'])
 @swag_from({
     'tags': ['Holidays'],
-    'parameters': [
-        {
-            'name': 'user_id',
-            'in': 'path',
-            'type': 'integer',
-            'required': True,
-            'description': 'ID пользователя'
-        }
-    ],
+    'parameters': [{'name': 'user_id', 'in': 'path', 'type': 'integer', 'required': True, 'description': 'ID пользователя'}],
     'responses': {
-        200: {
-            'description': 'Список праздников пользователя',
-            'schema': {
-                'type': 'array',
-                'items': holiday_model
-            }
-        },
+        200: {'description': 'Список праздников пользователя', 'schema': {'type': 'array', 'items': holiday_model}},
         404: {'description': 'Заяц не найден'}
     }
 })
 def get_user_holidays(user_id):
     """Получить список праздников, на которые записан заяц"""
     try:
-        with get_db() as conn:
-            with conn.cursor() as cursor:
-                # Проверка существования пользователя
-                cursor.execute('SELECT 1 FROM accounts WHERE id = %s', (user_id,))
-                if not cursor.fetchone():
-                    return jsonify({'error': 'User not found'}), 404
-                
-                # Получение праздников пользователя
-                cursor.execute('''
-                    SELECT h.id, h.start_time, h.location, h.title 
-                    FROM holidays h
-                    JOIN user_holidays uh ON h.id = uh.holiday_id
-                    WHERE uh.user_id = %s
-                    ORDER BY h.start_time
-                ''', (user_id,))
-                
-                holidays = [{
-                    'id': row[0],
-                    'start_time': row[1].isoformat(),
-                    'location': row[2],
-                    'title': row[3]
-                } for row in cursor.fetchall()]
-                
-                return jsonify(holidays), 200
-                
-    except psycopg2.Error as e:
+        holidays = db_utils.get_user_holidays(user_id)
+        return jsonify(holidays), 200
+    except Exception as e:
         return jsonify({'error': 'Database error'}), 500
 
 get_user_by_id_request_model = {
     'type': 'object',
     'required': ['id'],
-    'properties': {
-        'id': {
-            'type': 'integer',
-            'description': 'ID зайца',
-            'example': 1
-        }
-    },
+    'properties': {'id': {'type': 'integer', 'description': 'ID зайца', 'example': 1}},
     'x-educational-purpose': 'Демонстрация нестандартного использования POST вместо GET'
 }
 
-# Добавляем в конфигурацию Swagger
 swagger_config['definitions']['GetUserByIdRequest'] = get_user_by_id_request_model
 
 @app.route('/accounts/get-by-id', methods=['POST'])
 @swag_from({
     'tags': ['Accounts'],
     'description': 'Получить зайца по ID (POST вместо GET в учебных целях)',
-    'parameters': [
-        {
-            'name': 'body',
-            'in': 'body',
-            'required': True,
-            'schema': {
-                '$ref': '#/definitions/GetUserByIdRequest'
-            }
-        }
-    ],
+    'parameters': [{'name': 'body', 'in': 'body', 'required': True, 'schema': {'$ref': '#/definitions/GetUserByIdRequest'}}],
     'responses': {
-        200: {
-            'description': 'Данные зайца',
-            'schema': account_model
-        },
-        400: {
-            'description': 'Некорректный запрос',
-            'examples': {
-                'missing_id': {'error': 'Отсутствует обязательное поле: id'},
-                'invalid_id': {'error': 'ID должен быть числом'}
-            }
-        },
+        200: {'description': 'Данные зайца', 'schema': account_model},
+        400: {'description': 'Некорректный запрос'},
         404: {'description': 'Заяц не найден'}
     },
     'x-educational-note': 'Обычно для получения ресурса по ID используется GET-запрос. Этот POST-метод демонстрирует альтернативный подход.'
@@ -1302,7 +672,6 @@ def get_user_by_id_post():
     """Получить зайца по ID (используя POST вместо GET)"""
     data = request.get_json()
     
-    # Валидация
     if not data or 'id' not in data:
         return jsonify({'error': 'Отсутствует обязательное поле: id'}), 400
     
@@ -1312,29 +681,183 @@ def get_user_by_id_post():
         return jsonify({'error': 'ID должен быть числом'}), 400
     
     try:
-        with get_db() as conn:
-            with conn.cursor() as cursor:
-                cursor.execute('''
-                    SELECT id, username, email, about_me, creation_method 
-                    FROM accounts 
-                    WHERE id = %s
-                ''', (user_id,))
-                user = cursor.fetchone()
-                
-                if not user:
-                    return jsonify({'error': 'Заяц не найден'}), 404
-                
-                return jsonify({
-                    'id': user[0],
-                    'username': user[1],
-                    'email': user[2],
-                    'about_me': user[3],
-                    'creation_method': user[4]
-                }), 200
-                
-    except psycopg2.Error as e:
+        user = db_utils.get_account_by_id(user_id)
+        if not user:
+            return jsonify({'error': 'Заяц не найден'}), 404
+        return jsonify(user), 200
+    except Exception as e:
         return jsonify({'error': 'Ошибка базы данных'}), 500
 
+# SOAP сервис
+from spyne import Application, rpc, ServiceBase, Unicode, Integer, ComplexModel, Array, Fault
+from spyne.protocol.soap import Soap11
+from spyne.server.wsgi import WsgiApplication
+
+class SoapUser(ComplexModel):
+    __namespace__ = 'soap.users'
+    id = Integer
+    username = Unicode
+    email = Unicode
+    about_me = Unicode
+    creation_method = Unicode
+
+class SoapUserRequest(ComplexModel):
+    __namespace__ = 'soap.users'
+    username = Unicode
+    email = Unicode
+    password = Unicode
+    about_me = Unicode(default='')
+
+class SoapResponse(ComplexModel):
+    __namespace__ = 'soap.users'
+    status = Unicode
+    message = Unicode
+    user = SoapUser.customize(min_occurs=0)
+
+class SoapAccountService(ServiceBase):
+    @rpc(Integer, _returns=SoapUser)
+    def get_user_by_id(ctx, user_id):
+        """Получить пользователя по ID"""
+        try:
+            user = db_utils.get_account_by_id(user_id)
+            if not user:
+                raise Fault(faultcode='Client', faultstring='User not found')
+            return SoapUser(
+                id=user['id'],
+                username=user['username'],
+                email=user['email'],
+                about_me=user['about_me'] or '',
+                creation_method=user['creation_method']
+            )
+        except Exception as e:
+            raise Fault(faultcode='Server', faultstring='Database error')
+
+    @rpc(_returns=Array(SoapUser))
+    def get_all_users(ctx):
+        """Получить всех зайцев"""
+        try:
+            users = db_utils.get_all_accounts()
+            return [
+                SoapUser(
+                    id=user['id'],
+                    username=user['username'],
+                    email=user['email'],
+                    about_me=user['about_me'] or '',
+                    creation_method=user['creation_method']
+                )
+                for user in users
+            ]
+        except Exception as e:
+            raise Fault(faultcode='Server', faultstring='Database error')
+    
+    @rpc(SoapUserRequest, _returns=SoapResponse)
+    def create_user(ctx, user_data):
+        """Создать нового зайца"""
+        try:
+            new_user = db_utils.create_account(
+                username=user_data.username,
+                email=user_data.email,
+                password=user_data.password,
+                creation_method='soap',
+                about_me=user_data.about_me
+            )
+            return SoapResponse(
+                status='success',
+                message='User created',
+                user=SoapUser(
+                    id=new_user['id'],
+                    username=new_user['username'],
+                    email=new_user['email'],
+                    about_me=new_user['about_me'] or '',
+                    creation_method=new_user['creation_method']
+                )
+            )
+        except ValueError as e:
+            raise Fault(faultcode='Client', faultstring=str(e))
+        except Exception as e:
+            raise Fault(faultcode='Server', faultstring='Database error')
+
+    @rpc(Integer, Unicode, _returns=SoapResponse)
+    def update_username(ctx, user_id, new_username):
+        """Обновить имя зайца"""
+        try:
+            updated_user = db_utils.update_username(user_id, new_username)
+            if not updated_user:
+                raise Fault(faultcode='Client', faultstring='User not found')
+            return SoapResponse(
+                status='success',
+                message='Username updated',
+                user=SoapUser(
+                    id=updated_user['id'],
+                    username=updated_user['username'],
+                    email=updated_user['email'],
+                    about_me=updated_user['about_me'] or '',
+                    creation_method=updated_user['creation_method']
+                )
+            )
+        except ValueError as e:
+            raise Fault(faultcode='Client', faultstring=str(e))
+        except Exception as e:
+            raise Fault(faultcode='Server', faultstring='Database error')
+
+    @rpc(Integer, Unicode, _returns=SoapResponse)
+    def update_about_me(ctx, user_id, about_text):
+        """Обновить информацию в поле Любимые занятия"""
+        try:
+            updated_user = db_utils.update_about_me(user_id, about_text)
+            if not updated_user:
+                raise Fault(faultcode='Client', faultstring='User not found')
+            return SoapResponse(
+                status='success',
+                message='About me updated',
+                user=SoapUser(
+                    id=updated_user['id'],
+                    username=updated_user['username'],
+                    email=updated_user['email'],
+                    about_me=updated_user['about_me'] or '',
+                    creation_method=updated_user['creation_method']
+                )
+            )
+        except Exception as e:
+            raise Fault(faultcode='Server', faultstring='Database error')
+
+    @rpc(Integer, _returns=SoapResponse)
+    def delete_about_me(ctx, user_id):
+        """Удалить информацию из поля Любимые занятия'"""
+        try:
+            updated_user = db_utils.delete_about_me(user_id)
+            if not updated_user:
+                raise Fault(faultcode='Client', faultstring='User not found')
+            return SoapResponse(
+                status='success',
+                message='About me cleared',
+                user=SoapUser(
+                    id=updated_user['id'],
+                    username=updated_user['username'],
+                    email=updated_user['email'],
+                    about_me=updated_user['about_me'] or '',
+                    creation_method=updated_user['creation_method']
+                )
+            )
+        except Exception as e:
+            raise Fault(faultcode='Server', faultstring='Database error')
+
+    @rpc(Integer, _returns=SoapResponse)
+    def delete_user(ctx, user_id):
+        """Удалить зайца"""
+        try:
+            success = db_utils.delete_account(user_id)
+            if not success:
+                raise Fault(faultcode='Client', faultstring='User not found')
+            return SoapResponse(
+                status='success',
+                message='User deleted',
+                user=None
+            )
+        except Exception as e:
+            raise Fault(faultcode='Server', faultstring='Database error')
+
+# Настройка SOAP endpoint
 soap_app = Application(
     [SoapAccountService],
     tns='soap.users',
@@ -1345,36 +868,29 @@ soap_app = Application(
 app.wsgi_app = DispatcherMiddleware(app.wsgi_app, {
     '/soap': WsgiApplication(soap_app)
 })
-holiday_cache = {}
-@app.route('/search')  # Новый маршрут для интерфейса
+
+@app.route('/search')
 def search_page():
     return render_template('search_holidays.html')
+
 @app.route('/api/search-holidays')
 def api_search_holidays():
     sleep(3)
     search_query = request.args.get('query', '')
-    
-    with get_db() as conn:
-        with conn.cursor() as cursor:
-            cursor.execute('''
-                SELECT id, start_time, location, title 
-                FROM holidays 
-                WHERE title ILIKE %s OR location ILIKE %s
-                ORDER BY start_time
-            ''', (f'%{search_query}%', f'%{search_query}%'))
-            
-            results = [{
-                'id': row[0],
-                'title': row[3],
-                'location': row[2],
-                'start_time': row[1].strftime('%d.%m.%Y %H:%M')
-            } for row in cursor.fetchall()]
-    
-    return jsonify(results)
-    
-
-# ... (остальной код остается без изменений)
+    try:
+        results = db_utils.search_holidays(search_query)
+        # Форматируем дату для вывода
+        formatted_results = []
+        for holiday in results:
+            formatted_holiday = holiday.copy()
+            # Если start_time - объект datetime, форматируем его
+            if isinstance(holiday['start_time'], datetime):
+                formatted_holiday['start_time'] = holiday['start_time'].strftime('%d.%m.%Y %H:%M')
+            formatted_results.append(formatted_holiday)
+        return jsonify(formatted_results)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    init_db()
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+    db_utils.init_db()
+    app.run()
