@@ -5,7 +5,7 @@ from werkzeug.security import generate_password_hash
 from psycopg2 import errors
 import psycopg2
 from datetime import datetime
-from . import get_db  # Импортируем из основного приложения
+from app import get_db  # Импортируем из основного приложения
 
 class SoapUser(ComplexModel):
     __namespace__ = 'soap.users'
