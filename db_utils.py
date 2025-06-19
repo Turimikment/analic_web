@@ -366,3 +366,27 @@ def delete_holiday(holiday_id):
             return deleted_count > 0
     finally:
         conn.close()
+        
+def get_table_data(table_name):
+    """Получение данных таблицы (упрощенная версия)"""
+    conn = get_db_connection()
+    try:
+        with conn.cursor(cursor_factory=DictCursor) as cursor:
+            if table_name == 'accounts':
+                cursor.execute("SELECT * FROM accounts")
+            elif table_name == 'holidays':
+                cursor.execute("SELECT * FROM holidays")
+            elif table_name == 'user_holidays':
+                cursor.execute("""
+                    SELECT 
+                        uh.id, uh.user_id, a.username AS user_name, 
+                        uh.holiday_id, h.title AS holiday_title, uh.created_at
+                    FROM user_holidays uh
+                    LEFT JOIN accounts a ON uh.user_id = a.id
+                    LEFT JOIN holidays h ON uh.holiday_id = h.id
+                """)
+            columns = [desc[0] for desc in cursor.description]
+            data = cursor.fetchall()
+        return data, columns
+    finally:
+        conn.close()
