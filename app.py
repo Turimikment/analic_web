@@ -909,7 +909,82 @@ def api_search_holidays():
         return jsonify(formatted_results)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+import io
+import csv
+import zipfile
+from datetime import datetime
+from flask import make_response
 
+def get_table_data(table_name):
+    """Получение данных и заголовков таблицы"""
+    with db_utils.get_db_connection() as conn:
+        with conn.cursor(cursor_factory=DictCursor) as cursor:
+            if table_name == 'accounts':
+                cursor.execute("SELECT * FROM accounts;")
+            elif table_name == 'holidays':
+                cursor.execute("SELECT * FROM holidays;")
+            elif table_name == 'user_holidays':
+                cursor.execute("""
+                    SELECT 
+                        uh.id, uh.user_id, a.username AS user_name, 
+                        uh.holiday_id, h.title AS holiday_title, uh.created_at
+                    FROM user_holidays uh
+                    LEFT JOIN accounts a ON uh.user_id = a.id
+                    LEFT JOIN holidays h ON uh.holiday_id = h.id;
+                """)
+            columns = [desc[0] for desc in cursor.description]
+            data = cursor.fetchall()
+    return data, columns
+
+def format_value(value):
+    """Форматирование значений для CSV"""
+    if isinstance(value, datetime):
+        return value.strftime('%Y-%m-%d %H:%M:%S')
+    return str(value) if value is not None else ''
+
+@app.route('/export-db')
+def export_database():
+    """Выгрузка текущей таблицы в CSV"""
+    table = request.args.get('table', 'accounts')
+    data, headers = get_table_data(table)
+    
+    # Формируем CSV в памяти
+    output = io.StringIO()
+    writer = csv.writer(output, delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+    writer.writerow(headers)
+    
+    for row in data:
+        writer.writerow([format_value(value) for value in row])
+    
+    response = make_response(output.getvalue())
+    response.headers["Content-Disposition"] = f"attachment; filename={table}.csv"
+    response.headers["Content-type"] = "text/csv; charset=utf-8"
+    return response
+
+@app.route('/export-db-all')
+def export_all_database():
+    """Выгрузка всей БД в ZIP с CSV"""
+    buffer = io.BytesIO()
+    tables = ['accounts', 'holidays', 'user_holidays']
+    
+    with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+        for table in tables:
+            data, headers = get_table_data(table)
+            
+            # Формируем CSV для таблицы
+            csv_output = io.StringIO()
+            writer = csv.writer(csv_output, delimiter=';')
+            writer.writerow(headers)
+            for row in data:
+                writer.writerow([format_value(value) for value in row])
+                
+            zip_file.writestr(f"{table}.csv", csv_output.getvalue())
+    
+    buffer.seek(0)
+    response = make_response(buffer.read())
+    response.headers["Content-Disposition"] = "attachment; filename=database_export.zip"
+    response.headers["Content-type"] = "application/zip"
+    return response
 if __name__ == '__main__':
     db_utils.init_db()
     app.run()
