@@ -85,6 +85,23 @@
             background: #F57C00;
         }
     </style>
+    <!-- Добавить в блок стилей -->
+<style>
+    .export-button {
+        display: inline-block;
+        padding: 10px 20px;
+        background: #4CAF50;
+        color: white;
+        border-radius: 25px;
+        text-decoration: none;
+        margin: 0 10px;
+        transition: 0.3s;
+    }
+    .export-button:hover {
+        background: #45a049;
+        transform: scale(1.05);
+    }
+</style>
 </head>
 <body>
     <div class="container">
@@ -259,7 +276,12 @@
 
 
 </div>
-        
+<div style="text-align: center; margin-top: 30px;">
+    {% if selected_table %}
+    <a href="/export-db?table={{ selected_table }}" class="export-button">📥 Выгрузить текущую таблицу (CSV)</a>
+    {% endif %}
+    <a href="/export-db-all" class="export-button">📦 Выгрузить всю базу (ZIP)</a>
+</div>        
 <p>⚠️ Внимание! Данные защищены морковным шифрованием 🥕🔒</p>
 </div>
     </div>
