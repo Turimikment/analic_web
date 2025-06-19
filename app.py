@@ -18,7 +18,7 @@ app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE='Lax'
 )
-carrot_stats = CarrotStats()
+#carrot_stats = CarrotStats()
 
 @app.route('/')
 def home():
