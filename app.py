@@ -21,9 +21,16 @@ app.config.update(
 carrot_stats = CarrotStats()
 
 @app.route('/')
-def home():
-    return render_template('index.html')
+def welcome():
+    return render_template('welcome.html')
 
+@app.route('/main')
+def main_page():
+    return render_template('index.html')  # текущая стартовая страница
+
+@app.route('/pipeline')
+def pipeline():
+    return render_template('pipeline.html')  # страница с пайплайном
 @app.route('/redis-stats')
 def redis_stats_page():
     """Страница статистики Redis (морковки)"""
