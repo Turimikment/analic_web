@@ -45,14 +45,17 @@ def soap_interface():
 
 @app.route('/create-user', methods=['GET', 'POST'])
 def create_user():
+    # Упрощенная версия без использования сессии
     form_errors = {}
-    form_data = session.get('form_data', {})
+    username = ''
+    email = ''
+    cache_checked = False
     
     if request.method == 'POST':
         username = request.form.get('username', '').strip()
         email = request.form.get('email', '').strip()
         password = request.form.get('password', '')
-        cache_data = 'cache_data' in request.form
+        cache_checked = 'cache_data' in request.form
 
         # Валидация
         if len(username) < 3 or len(username) > 20:
@@ -64,66 +67,27 @@ def create_user():
         if len(password) < 6:
             form_errors['password'] = 'Пароль должен быть не менее 6 символов'
 
-        if form_errors:
-            if cache_data:
-                session['form_data'] = {
-                    'username': username,
-                    'email': email,
-                    'cache_checked': True
-                }
-            else:
-                session.pop('form_data', None)
-            
-            return render_template('create_user.html', 
-                errors=form_errors,
-                username=username,
-                email=email,
-                cache_checked=cache_data)
-
-        try:
-            new_user = db_utils.create_account(
-                username=username,
-                email=email,
-                password=password,
-                creation_method='interface'
-            )
-            session.pop('form_data', None)
-            return redirect(url_for('user_profile', user_id=new_user['id']))
-
-        except ValueError as e:
-            form_errors['database'] = str(e)
-            if cache_data:
-                session['form_data'] = {
-                    'username': username,
-                    'email': email,
-                    'cache_checked': True
-                }
-            return render_template('create_user.html', 
-                errors=form_errors,
-                username=username,
-                email=email,
-                cache_checked=cache_data)
-
-        except Exception as e:
-            form_errors['database'] = f'Ошибка базы данных: {str(e)}'
-            if cache_data:
-                session['form_data'] = {
-                    'username': username,
-                    'email': email,
-                    'cache_checked': True
-                }
-            return render_template('create_user.html', 
-                errors=form_errors,
-                username=username,
-                email=email,
-                cache_checked=cache_data)
-
+        if not form_errors:
+            try:
+                new_user = db_utils.create_account(
+                    username=username,
+                    email=email,
+                    password=password,
+                    creation_method='interface'
+                )
+                return redirect(url_for('pipeline'))
+                
+            except ValueError as e:
+                form_errors['database'] = str(e)
+            except Exception as e:
+                form_errors['database'] = f'Ошибка базы данных: {str(e)}'
+    
+    # Для GET-запросов и POST с ошибками
     return render_template('create_user.html',
-        errors={},
-        username=form_data.get('username', ''),
-        email=form_data.get('email', ''),
-        cache_checked=form_data.get('cache_checked', False))
-
+        errors=form_errors,
+        username=username,
+        email=email,
+        cache_checked=cache_checked)
 # Схемы данных Swagger
 account_model = {
     'type': 'object',
