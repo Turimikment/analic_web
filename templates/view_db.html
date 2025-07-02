@@ -169,7 +169,6 @@
         
         <div class="table-selector">
             <select onchange="window.location.href = '/view-db?table=' + this.value">
-                <option value="">Выберите таблицу</option>
                 <option value="accounts" {% if selected_table == 'accounts' %}selected{% endif %}>
                     🗄️ Аккаунты
                 </option>
