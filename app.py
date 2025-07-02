@@ -9,7 +9,9 @@ import os
 from datetime import datetime
 from redis_utils import CarrotStats
 import db_utils
-
+from .routes import (
+    main_routes
+)
 app = Flask(__name__)
 app.config['DATABASE_URL'] = os.environ.get('DATABASE_URL')
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'supersecretkey')
@@ -20,28 +22,7 @@ app.config.update(
 )
 carrot_stats = CarrotStats()
 
-@app.route('/')
-def welcome():
-    return render_template('welcome.html')
-
-@app.route('/main')
-def main_page():
-    return render_template('index.html')  # текущая стартовая страница
-@app.route('/pipeline')
-def pipeline():
-    return render_template('pipeline.html')
-@app.route('/redis-stats')
-def redis_stats_page():
-    """Страница статистики Redis (морковки)"""
-    return render_template('redis_stats.html')
-
-@app.route('/normalization-tutorial')
-def normalization_tutorial():
-    return render_template('normalization_tutorial.html')
-
-@app.route('/soap-interface')
-def soap_interface():
-    return render_template('soap.html')
+app.register_blueprint(main_routes.bp)
 
 @app.route('/create-user', methods=['GET', 'POST'])
 def create_user():
