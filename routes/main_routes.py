@@ -1,5 +1,4 @@
 from flask import Blueprint, render_template, redirect, url_for
-from app.extensions import app
 
 bp = Blueprint('main', __name__)
 
