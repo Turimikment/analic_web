@@ -28,9 +28,6 @@ def welcome():
 def main_page():
     return render_template('index.html')  # текущая стартовая страница
 
-@app.route('/pipeline')
-def pipeline():
-    return render_template('pipeline.html')  # страница с пайплайном
 @app.route('/redis-stats')
 def redis_stats_page():
     """Страница статистики Redis (морковки)"""
@@ -987,6 +984,49 @@ def export_all_database():
     response.headers["Content-Disposition"] = "attachment; filename=database_export.zip"
     response.headers["Content-type"] = "application/zip"
     return response
+# Добавим импорт
+from werkzeug.security import check_password_hash
+
+# Добавим новый маршрут для пайплайна
+@app.route('/pipeline')
+def pipeline():
+    return render_template('pipeline.html')
+
+# Добавим функцию проверки учетной записи
+@app.route('/verify-account', methods=['POST'])
+def verify_account():
+    username = request.form.get('username')
+    password = request.form.get('password')
+    error = None
+    success = None
+    
+    try:
+        conn = get_db_connection()
+        with conn.cursor() as cursor:
+            # Находим пользователя
+            cursor.execute(
+                'SELECT password_hash FROM accounts WHERE username = %s',
+                (username,)
+            )
+            user = cursor.fetchone()
+            
+            if user is None:
+                error = "Пользователь не найден"
+            elif not check_password_hash(user[0], password):
+                error = "Неверный пароль"
+            else:
+                success = "Учетная запись успешно проверена! ✅"
+                
+    except Exception as e:
+        error = f"Ошибка базы данных: {str(e)}"
+    finally:
+        conn.close()
+    
+    return render_template(
+        'pipeline.html', 
+        error=error, 
+        success=success
+    )
 if __name__ == '__main__':
     db_utils.init_db()
     app.run()
