@@ -9,9 +9,7 @@ import os
 from datetime import datetime
 from redis_utils import CarrotStats
 import db_utils
-from .routes import (
-    main_routes
-)
+from .routes import  main_routes
 app = Flask(__name__)
 app.config['DATABASE_URL'] = os.environ.get('DATABASE_URL')
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'supersecretkey')
