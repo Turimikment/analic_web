@@ -27,7 +27,9 @@ def welcome():
 @app.route('/main')
 def main_page():
     return render_template('index.html')  # текущая стартовая страница
-
+@app.route('/pipeline')
+def pipeline():
+    return render_template('pipeline.html')
 @app.route('/redis-stats')
 def redis_stats_page():
     """Страница статистики Redis (морковки)"""
@@ -988,9 +990,7 @@ def export_all_database():
 from werkzeug.security import check_password_hash
 
 # Добавим новый маршрут для пайплайна
-@app.route('/pipeline')
-def pipeline():
-    return render_template('pipeline.html')
+
 
 # Добавим функцию проверки учетной записи
 @app.route('/verify-account', methods=['POST'])
