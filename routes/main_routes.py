@@ -27,9 +27,6 @@ def normalization_tutorial():
 def soap_interface():
     return render_template('soap.html')
 
-@bp.route('/redis-edu')
-def redis_education():
-    return render_template('redis_education.html')
 
 @bp.route('/search')
 def search_page():
