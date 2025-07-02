@@ -10,6 +10,7 @@ from datetime import datetime
 from redis_utils import CarrotStats
 import db_utils
 from .routes import  main_routes
+from .routes import admin_routes
 app = Flask(__name__)
 app.config['DATABASE_URL'] = os.environ.get('DATABASE_URL')
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'supersecretkey')
@@ -21,7 +22,7 @@ app.config.update(
 carrot_stats = CarrotStats()
 
 app.register_blueprint(main_routes.bp)
-
+app.register_blueprint(admin_routes.admin_bp)
 @app.route('/create-user', methods=['GET', 'POST'])
 def create_user():
     # Упрощенная версия без использования сессии
@@ -148,64 +149,6 @@ def user_profile(user_id):
         return render_template('profile.html', user=user)
     except Exception as e:
         abort(500, description="Ошибка базы данных")
-
-@app.route('/view-db')
-def view_database():
-    """Просмотр содержимого базы данных"""
-    try:
-        selected_table = request.args.get('table', 'accounts')
-        
-        with db_utils.get_db_connection() as conn:
-            with conn.cursor(cursor_factory=DictCursor) as cursor:
-                cursor.execute("""
-                    SELECT table_name 
-                    FROM information_schema.tables 
-                    WHERE table_schema = 'public'
-                """)
-                tables = [row['table_name'] for row in cursor.fetchall()]
-                
-                if selected_table == 'accounts':
-                    cursor.execute("SELECT * FROM accounts;")
-                    data = cursor.fetchall()
-                    sql_query = "SELECT * FROM accounts;"
-                    
-                elif selected_table == 'holidays':
-                    cursor.execute("SELECT * FROM holidays ORDER BY start_time;")
-                    data = cursor.fetchall()
-                    sql_query = "SELECT * FROM holidays ORDER BY start_time;"
-                    
-                elif selected_table == 'user_holidays':
-                    sql_query = """
-                        SELECT 
-                            uh.id,
-                            uh.user_id,
-                            uh.holiday_id,
-                            a.username AS user_name,
-                            h.title AS holiday_title,
-                            uh.created_at
-                        FROM user_holidays uh
-                        LEFT JOIN accounts a ON uh.user_id = a.id
-                        LEFT JOIN holidays h ON uh.holiday_id = h.id
-                        ORDER BY uh.created_at DESC;
-                    """
-                    cursor.execute(sql_query)
-                    data = cursor.fetchall()
-                    
-                else:
-                    data = []
-                    sql_query = ""
-
-        return render_template(
-            'view_db.html',
-            tables=tables,
-            selected_table=selected_table,
-            data=data,
-            sql_query=sql_query.strip()
-        )
-
-    except Exception as e:
-        app.logger.error(f"Database access error: {str(e)}")
-        return render_template('error.html', error=str(e)), 500
         
 @app.route('/accounts', methods=['GET'])
 @swag_from({
@@ -582,11 +525,6 @@ app.wsgi_app = DispatcherMiddleware(app.wsgi_app, {
 })
 
 
-
-@app.route('/search')
-def search_page():
-    return render_template('search_holidays.html')
-
 @app.route('/api/search-holidays')
 def api_search_holidays():
     sleep(3)
@@ -604,82 +542,6 @@ def api_search_holidays():
         return jsonify(formatted_results)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-import io
-import csv
-import zipfile
-from datetime import datetime
-from flask import make_response
-
-def get_table_data(table_name):
-    """Получение данных и заголовков таблицы"""
-    with db_utils.get_db_connection() as conn:
-        with conn.cursor(cursor_factory=DictCursor) as cursor:
-            if table_name == 'accounts':
-                cursor.execute("SELECT * FROM accounts;")
-            elif table_name == 'holidays':
-                cursor.execute("SELECT * FROM holidays;")
-            elif table_name == 'user_holidays':
-                cursor.execute("""
-                    SELECT 
-                        uh.id, uh.user_id, a.username AS user_name, 
-                        uh.holiday_id, h.title AS holiday_title, uh.created_at
-                    FROM user_holidays uh
-                    LEFT JOIN accounts a ON uh.user_id = a.id
-                    LEFT JOIN holidays h ON uh.holiday_id = h.id;
-                """)
-            columns = [desc[0] for desc in cursor.description]
-            data = cursor.fetchall()
-    return data, columns
-
-def format_value(value):
-    """Форматирование значений для CSV"""
-    if isinstance(value, datetime):
-        return value.strftime('%Y-%m-%d %H:%M:%S')
-    return str(value) if value is not None else ''
-
-@app.route('/export-db')
-def export_database():
-    """Выгрузка текущей таблицы в CSV"""
-    table = request.args.get('table', 'accounts')
-    data, headers = get_table_data(table)
-    
-    # Формируем CSV в памяти
-    output = io.StringIO()
-    writer = csv.writer(output, delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-    writer.writerow(headers)
-    
-    for row in data:
-        writer.writerow([format_value(value) for value in row])
-    
-    response = make_response(output.getvalue())
-    response.headers["Content-Disposition"] = f"attachment; filename={table}.csv"
-    response.headers["Content-type"] = "text/csv; charset=utf-8"
-    return response
-
-@app.route('/export-db-all')
-def export_all_database():
-    """Выгрузка всей БД в ZIP с CSV"""
-    buffer = io.BytesIO()
-    tables = ['accounts', 'holidays', 'user_holidays']
-    
-    with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-        for table in tables:
-            data, headers = get_table_data(table)
-            
-            # Формируем CSV для таблицы
-            csv_output = io.StringIO()
-            writer = csv.writer(csv_output, delimiter=';')
-            writer.writerow(headers)
-            for row in data:
-                writer.writerow([format_value(value) for value in row])
-                
-            zip_file.writestr(f"{table}.csv", csv_output.getvalue())
-    
-    buffer.seek(0)
-    response = make_response(buffer.read())
-    response.headers["Content-Disposition"] = "attachment; filename=database_export.zip"
-    response.headers["Content-type"] = "application/zip"
-    return response
 # Добавим импорт
 from werkzeug.security import check_password_hash
 
