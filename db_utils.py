@@ -4,6 +4,7 @@ from werkzeug.security import generate_password_hash
 import os
 from urllib.parse import urlparse
 from datetime import datetime
+from psycopg2.extras import DictCursor
 
 def get_db_connection():
     """Возвращает соединение с базой данных"""
@@ -390,3 +391,50 @@ def get_table_data(table_name):
         return data, columns
     finally:
         conn.close()
+def get_table_data(table_name):
+    """Получение данных таблицы и SQL-запроса"""
+    conn = get_db_connection()
+    try:
+        with conn.cursor(cursor_factory=DictCursor) as cursor:
+            if table_name == 'accounts':
+                sql_query = "SELECT * FROM accounts;"
+                cursor.execute(sql_query)
+                
+            elif table_name == 'holidays':
+                sql_query = "SELECT * FROM holidays ORDER BY start_time;"
+                cursor.execute(sql_query)
+                
+            elif table_name == 'user_holidays':
+                sql_query = """
+                    SELECT 
+                        uh.id,
+                        uh.user_id,
+                        uh.holiday_id,
+                        a.username AS user_name,
+                        h.title AS holiday_title,
+                        uh.created_at
+                    FROM user_holidays uh
+                    LEFT JOIN accounts a ON uh.user_id = a.id
+                    LEFT JOIN holidays h ON uh.holiday_id = h.id
+                    ORDER BY uh.created_at DESC;
+                """
+                cursor.execute(sql_query)
+                
+            else:
+                data = []
+                columns = []
+                sql_query = ""
+                return [], [], ""
+            
+            columns = [desc[0] for desc in cursor.description]
+            data = cursor.fetchall()
+            return data, columns, sql_query
+            
+    finally:
+        conn.close()
+
+def format_value(value):
+    """Форматирование значений для CSV"""
+    if isinstance(value, datetime):
+        return value.strftime('%Y-%m-%d %H:%M:%S')
+    return str(value) if value is not None else ''
