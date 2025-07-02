@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Учебный портал для зайцев - REST/SOAP API</title>
+    <style>
+        /* Добавляем новые стили для страницы приветствия */
+        .welcome-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px;
+            text-align: center;
+        }
+        
+        .welcome-title {
+            color: #2c5f2d;
+            font-size: 2.5em;
+            margin-bottom: 40px;
+            text-shadow: 2px 2px 4px #a8dba8;
+        }
+        
+        .welcome-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            align-items: center;
+        }
+        
+        .welcome-btn {
+            display: inline-block;
+            padding: 25px 50px;
+            font-size: 1.8em;
+            border-radius: 35px;
+            text-decoration: none;
+            transition: all 0.4s;
+            border: 3px solid;
+            box-shadow: 0 8px 15px rgba(0,0,0,0.3);
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+            position: relative;
+            overflow: hidden;
+            width: 80%;
+            max-width: 500px;
+        }
+        
+        .welcome-btn:first-child {
+            background: linear-gradient(145deg, #4CAF50, #2c5f2d);
+            border-color: #388E3C;
+            color: white;
+        }
+        
+        .welcome-btn:last-child {
+            background: linear-gradient(145deg, #2196F3, #0D47A1);
+            border-color: #1976D2;
+            color: white;
+        }
+        
+        .welcome-btn:hover {
+            transform: rotate(-3deg) scale(1.05);
+        }
+        
+        .btn-shine {
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, 
+                transparent 25%,
+                rgba(255,255,255,0.2) 50%,
+                transparent 75%
+            );
+            animation: shine 3s infinite;
+        }
+        
+        @keyframes shine {
+            0% { transform: translateX(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) rotate(45deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="welcome-container">
+        <h1 class="welcome-title">🐇 Добро пожаловать в Морковный Университет! 🥕</h1>
+        
+        <div class="welcome-buttons">
+            <a href="/pipeline" class="welcome-btn">
+                <span>Я тут впервые</span>
+                <div class="btn-shine"></div>
+            </a>
+            
+            <a href="/main" class="welcome-btn">
+                <span>Я уже бывал тут</span>
+                <div class="btn-shine"></div>
+            </a>
+        </div>
+    </div>
+</body>
+</html>
