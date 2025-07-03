@@ -5,17 +5,22 @@ import os
 from urllib.parse import urlparse
 from datetime import datetime
 from psycopg2.extras import DictCursor
+import logging
 
+# Настройка логгера
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 def get_db_connection():
     """Возвращает соединение с базой данных"""
     conn = psycopg2.connect(os.environ.get('DATABASE_URL'))
     return conn
 
 def init_db():
-    """Инициализация базы данных"""
+    """Инициализация базы данных с проверкой существования таблиц"""
     db_url = os.environ.get('DATABASE_URL')
     if not db_url:
-        raise RuntimeError("DATABASE_URL not set in environment")
+        logger.error("DATABASE_URL not set in environment")
+        return
     
     parsed_url = urlparse(db_url)
     db_name = parsed_url.path[1:]
@@ -25,60 +30,93 @@ def init_db():
     db_port = parsed_url.port
 
     # Подключаемся к postgres для создания БД
-    admin_conn = psycopg2.connect(
-        dbname='postgres',
-        user=db_user,
-        password=db_pass,
-        host=db_host,
-        port=db_port
-    )
-    admin_conn.autocommit = True
-    admin_cursor = admin_conn.cursor()
-    
-    # Создаем БД если не существует
-    admin_cursor.execute(f"SELECT 1 FROM pg_database WHERE datname = '{db_name}'")
-    if not admin_cursor.fetchone():
-        admin_cursor.execute(f"CREATE DATABASE {db_name}")
-    
-    admin_cursor.close()
-    admin_conn.close()
+    try:
+        admin_conn = psycopg2.connect(
+            dbname='postgres',
+            user=db_user,
+            password=db_pass,
+            host=db_host,
+            port=db_port
+        )
+        admin_conn.autocommit = True
+        admin_cursor = admin_conn.cursor()
+        
+        # Создаем БД если не существует
+        admin_cursor.execute(f"SELECT 1 FROM pg_database WHERE datname = '{db_name}'")
+        if not admin_cursor.fetchone():
+            logger.info(f"Creating database: {db_name}")
+            admin_cursor.execute(f"CREATE DATABASE {db_name}")
+        else:
+            logger.info(f"Database {db_name} already exists")
+        
+        admin_cursor.close()
+        admin_conn.close()
+    except Exception as e:
+        logger.error(f"Error creating database: {str(e)}")
+        return
 
-    # Создаем таблицы
+    # Создаем таблицы в целевой БД
     conn = get_db_connection()
-    with conn:
-        with conn.cursor() as cursor:
-            cursor.execute('''
-                CREATE TABLE IF NOT EXISTS accounts (
-                    id SERIAL PRIMARY KEY,
-                    username VARCHAR(20) NOT NULL UNIQUE,
-                    email VARCHAR(255) NOT NULL UNIQUE,
-                    password_hash VARCHAR(255) NOT NULL,
-                    about_me TEXT DEFAULT '',
-                    creation_method VARCHAR(10) NOT NULL DEFAULT 'interface'
-                )
-            ''')
-            cursor.execute('''
-                CREATE TABLE IF NOT EXISTS holidays (
-                    id SERIAL PRIMARY KEY,
-                    start_time TIMESTAMP NOT NULL,
-                    location VARCHAR(255) NOT NULL,
-                    title VARCHAR(100) NOT NULL UNIQUE  
-                )
-            ''')
-            cursor.execute('''
-                CREATE TABLE IF NOT EXISTS user_holidays (
-                    id SERIAL PRIMARY KEY,  
-                    user_id INTEGER REFERENCES accounts(id) ON DELETE CASCADE,
-                    holiday_id INTEGER REFERENCES holidays(id) ON DELETE CASCADE,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,  
-                    UNIQUE (user_id, holiday_id)  
-                )
-            ''')
-            cursor.execute('''
-                CREATE INDEX IF NOT EXISTS idx_holidays_search 
-                ON holidays USING gin (to_tsvector('russian', title || ' ' || location))
-            ''')
-    conn.close()
+    try:
+        with conn:
+            with conn.cursor() as cursor:
+                # Проверяем существование таблицы accounts
+                cursor.execute("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'accounts')")
+                if not cursor.fetchone()[0]:
+                    logger.info("Creating table: accounts")
+                    cursor.execute('''
+                        CREATE TABLE accounts (
+                            id SERIAL PRIMARY KEY,
+                            username VARCHAR(20) NOT NULL UNIQUE,
+                            email VARCHAR(255) NOT NULL UNIQUE,
+                            password_hash VARCHAR(255) NOT NULL,
+                            about_me TEXT DEFAULT '',
+                            creation_method VARCHAR(10) NOT NULL DEFAULT 'interface'
+                        )
+                    ''')
+                
+                # Проверяем существование таблицы holidays
+                cursor.execute("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'holidays')")
+                if not cursor.fetchone()[0]:
+                    logger.info("Creating table: holidays")
+                    cursor.execute('''
+                        CREATE TABLE holidays (
+                            id SERIAL PRIMARY KEY,
+                            start_time TIMESTAMP NOT NULL,
+                            location VARCHAR(255) NOT NULL,
+                            title VARCHAR(100) NOT NULL UNIQUE  
+                        )
+                    ''')
+                
+                # Проверяем существование таблицы user_holidays
+                cursor.execute("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'user_holidays')")
+                if not cursor.fetchone()[0]:
+                    logger.info("Creating table: user_holidays")
+                    cursor.execute('''
+                        CREATE TABLE user_holidays (
+                            id SERIAL PRIMARY KEY,  
+                            user_id INTEGER REFERENCES accounts(id) ON DELETE CASCADE,
+                            holiday_id INTEGER REFERENCES holidays(id) ON DELETE CASCADE,
+                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,  
+                            UNIQUE (user_id, holiday_id)  
+                        )
+                    ''')
+                
+                # Проверяем существование индекса для поиска
+                cursor.execute("SELECT EXISTS (SELECT FROM pg_indexes WHERE indexname = 'idx_holidays_search')")
+                if not cursor.fetchone()[0]:
+                    logger.info("Creating index: idx_holidays_search")
+                    cursor.execute('''
+                        CREATE INDEX idx_holidays_search 
+                        ON holidays USING gin (to_tsvector('russian', title || ' ' || location))
+                    ''')
+                
+        logger.info("Database initialization completed successfully")
+    except Exception as e:
+        logger.error(f"Error initializing database: {str(e)}")
+    finally:
+        if conn:
+            conn.close()
 
 # Функции для работы с аккаунтами
 def create_account(username, email, password, creation_method='rest', about_me=''):
