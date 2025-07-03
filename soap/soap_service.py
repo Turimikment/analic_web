@@ -1,7 +1,7 @@
 # soap_service.py
 from spyne import Application, rpc, ServiceBase, Unicode, Integer, ComplexModel, Array, Fault
 from spyne.protocol.soap import Soap11
-import db_utils
+from utils import db_utils
 import logging
 
 # Настройка логгера
