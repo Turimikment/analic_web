@@ -1,3 +1,4 @@
+<!-- app/templates/view_db.html -->
 <!DOCTYPE html>
 <html>
 <head>
@@ -59,7 +60,6 @@
         }
         tr:hover { 
             background-color: #FFF3E0; 
-            transform: scale(1.02);
             transition: 0.3s;
         }
         .holiday-time {
@@ -70,105 +70,52 @@
             font-weight: bold;
             color: #E64A19;
         }
-        a[href="/"] {
+        .sql-query-box {
+            margin: 30px 0;
+            padding: 20px;
+            background: #FFF8E1;
+            border: 2px dashed #FFB74D;
+            border-radius: 15px;
+            position: relative;
+        }
+        .sql-title {
+            font-family: 'Comic Sans MS', cursive;
+            color: #E64A19;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+        .sql-code {
+            background: #FFF3E0;
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #FFCC80;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            word-break: break-all;
+            margin: 0;
+        }
+        .export-button {
             display: inline-block;
             padding: 10px 20px;
-            background: #FF9800;
-            color: white!important;
+            background: #4CAF50;
+            color: white;
             border-radius: 25px;
             text-decoration: none;
-            margin-top: 20px;
+            margin: 10px;
             transition: 0.3s;
         }
-        a[href="/"]:hover {
-            transform: rotate(-3deg) scale(1.1);
-            background: #F57C00;
+        .export-button:hover {
+            background: #45a049;
+            transform: scale(1.05);
         }
     </style>
-    <!-- Добавить в блок стилей -->
-<style>
-    .export-button {
-        display: inline-block;
-        padding: 10px 20px;
-        background: #4CAF50;
-        color: white;
-        border-radius: 25px;
-        text-decoration: none;
-        margin: 0 10px;
-        transition: 0.3s;
-    }
-    .export-button:hover {
-        background: #45a049;
-        transform: scale(1.05);
-    }
-</style>
 </head>
-    
 <body>
-            <div style="text-align: left; margin-top: 30px;">
-            <a href="/">🏠 Вернуться в норку</a>
-
-<!-- Добавить в стили -->
-<style>
-    .sql-query-box {
-        margin: 30px 0;
-        padding: 20px;
-        background: #FFF8E1;
-        border: 2px dashed #FFB74D;
-        border-radius: 15px;
-        position: relative;
-    }
-    
-    .sql-title {
-        font-family: 'Comic Sans MS', cursive;
-        color: #E64A19;
-        margin-bottom: 10px;
-        font-size: 1.1em;
-    }
-    
-    .sql-code {
-        background: #FFF3E0;
-        padding: 15px;
-        border-radius: 10px;
-        border: 1px solid #FFCC80;
-        font-family: 'Courier New', monospace;
-        white-space: pre-wrap;
-        word-break: break-all;
-        margin: 0;
-    }
-    
-    .sql-code::before {
-        content: '🥕';
-        position: absolute;
-        right: -15px;
-        top: -25px;
-        font-size: 40px;
-        transform: rotate(15deg);
-        opacity: 0.3;
-    }
-</style>
-
-            <!-- Добавить в конец контейнера перед закрывающим </div> -->
-{% if selected_table %}
-<div class="sql-query-box">
-    <div class="sql-title">🐇 Использованный SQL-запрос:</div>
-    <pre class="sql-code">{{ sql_query }}</pre>
-</div>
-{% endif %}
-
-
-</div>
-<div style="text-align: center; margin-top: 30px;">
-    {% if selected_table %}
-    <a href="/export-db?table={{ selected_table }}" class="export-button">📥 Выгрузить текущую таблицу (CSV)</a>
-    {% endif %}
-    <a href="/export-db-all" class="export-button">📦 Выгрузить всю базу (ZIP)</a>
-</div>        
     <div class="container">
         <h1>🐇 Секретная морковная база данных 🥕</h1>
         
         <div class="table-selector">
-            <select onchange="window.location.href = '/view-db?table=' + this.value">
+            <select onchange="window.location.href = '/admin/view-db?table=' + this.value">
                 <option value="accounts" {% if selected_table == 'accounts' %}selected{% endif %}>
                     🗄️ Аккаунты
                 </option>
@@ -194,17 +141,17 @@
                 </tr>
             </thead>
             <tbody>
-                {% for account in data %}
+                {% for row in data %}
                 <tr>
-                    <td class="relation-id">{{ account.id }}</td>
+                    <td class="relation-id">{{ row.id }}</td>
                     <td>
-                        <a href="{{ url_for('user_profile', user_id=account.id) }}" class="profile-link">
-                            {{ account.username }}
+                        <a href="{{ url_for('main.user_profile', user_id=row.id) }}" class="profile-link">
+                            {{ row.username }}
                         </a>
                     </td>
-                  <td>{{ account.email|replace('@', ' 🐇 ')|safe }}</td>
-                    <td>{{ account.about_me or "" }}</td>
-                     <td>{{ account.creation_method}}</td>
+                    <td>{{ row.email|replace('@', ' 🐇 ')|safe }}</td>
+                    <td>{{ row.about_me or "" }}</td>
+                    <td>{{ row.creation_method }}</td>
                 </tr>
                 {% else %}
                 <tr>
@@ -226,12 +173,12 @@
                 </tr>
             </thead>
             <tbody>
-                {% for holiday in data %}
+                {% for row in data %}
                 <tr>
-                    <td class="relation-id">{{ holiday.id }}</td>
-                    <td class="holiday-time">{{ holiday.start_time }}</td>
-                    <td>{{ holiday.location }}</td>
-                    <td>{{ holiday.title }}</td>
+                    <td class="relation-id">{{ row.id }}</td>
+                    <td class="holiday-time">{{ row.start_time }}</td>
+                    <td>{{ row.location }}</td>
+                    <td>{{ row.title }}</td>
                 </tr>
                 {% else %}
                 <tr>
@@ -241,50 +188,55 @@
             </tbody>
         </table>
 
-{% elif selected_table == 'user_holidays' %}
-<h2>📌 Таблица "Участие в праздниках" 🎟️</h2>
-<table>
-    <thead>
-        <tr>
-            <th>🔑 ID связи</th>
-            <th>👤 ID пользователя</th>
-            <th>🐇 Имя пользователя</th>
-            <th>🎉 ID праздника</th>
-            <th>🎈 Название праздника</th>
-            <th>📅 Дата записи</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for relation in data %}
-        <tr>
-            <td class="relation-id">{{ relation.id }}</td>
-            <td>{{ relation.user_id }}</td>
-            <td>{{ relation.user_name or "Неизвестный" }}</td>
-            <td>{{ relation.holiday_id }}</td>
-            <td>{{ relation.holiday_title or "Удалённый праздник" }}</td>
-            <td>
-                {% if relation.created_at %}
-                    {% if relation.created_at is string %}
-                        {{ relation.created_at }}
-                    {% else %}
-                        {{ relation.created_at.strftime('%d.%m.%Y %H:%M') }}
-                    {% endif %}
+        {% elif selected_table == 'user_holidays' %}
+        <h2>📌 Таблица "Участие в праздниках" 🎟️</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>🔑 ID связи</th>
+                    <th>👤 ID пользователя</th>
+                    <th>🐇 Имя пользователя</th>
+                    <th>🎉 ID праздника</th>
+                    <th>🎈 Название праздника</th>
+                    <th>📅 Дата записи</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in data %}
+                <tr>
+                    <td class="relation-id">{{ row.id }}</td>
+                    <td>{{ row.user_id }}</td>
+                    <td>{{ row.user_name or "Неизвестный" }}</td>
+                    <td>{{ row.holiday_id }}</td>
+                    <td>{{ row.holiday_title or "Удалённый праздник" }}</td>
+                    <td>{{ row.created_at }}</td>
+                </tr>
                 {% else %}
-                    —
-                {% endif %}
-            </td>
-        </tr>
-        {% else %}
-        <tr>
-            <td colspan="6">🎭 Никто ещё не записался на праздники!</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-{% endif %}
+                <tr>
+                    <td colspan="6">🎭 Никто ещё не записался на праздники!</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
 
-<p>⚠️ Внимание! Данные защищены морковным шифрованием 🥕🔒</p>
-</div>
+        {% if sql_query %}
+        <div class="sql-query-box">
+            <div class="sql-title">🐇 Использованный SQL-запрос:</div>
+            <pre class="sql-code">{{ sql_query }}</pre>
+        </div>
+        {% endif %}
+        
+        <div style="text-align: center; margin-top: 30px;">
+            <a href="{{ url_for('admin.export_database', table=selected_table) }}" class="export-button">
+                📥 Выгрузить текущую таблицу (CSV)
+            </a>
+            <a href="{{ url_for('admin.export_all_database') }}" class="export-button">
+                📦 Выгрузить всю базу (ZIP)
+            </a>
+        </div>
+        
+        <p>⚠️ Внимание! Данные защищены морковным шифрованием 🥕🔒</p>
     </div>
 </body>
 </html>
