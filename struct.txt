@@ -1,8 +1,9 @@
+  /templates      # Шаблоны
+  /static         # Статика
   /main
     __init__.py
     routes.py       # Основные роуты
-    templates/      # Шаблоны
-    static/         # Статика
+
   /api
     __init__.py
     routes.py       # API роуты
