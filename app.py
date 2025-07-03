@@ -1,13 +1,13 @@
 # app.py
-from flask import Flask
+from flask import Flask, render_template
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
 from spyne.server.wsgi import WsgiApplication
-from config import Config
-from main.routes import main_bp
-from api.routes import api_bp
-from admin.routes import admin_bp
-from soap.soap_service import soap_app
-from utils.db_utils import init_db
+from app.config import Config
+from app.main.routes import main_bp
+from app.api.routes import api_bp
+from app.admin.routes import admin_bp
+from app.services.soap_service import soap_app
+from app.utils.db_utils import init_db
 from flasgger import Swagger
 import logging
 import os
@@ -37,9 +37,8 @@ def create_app():
     # Регистрация обработчиков ошибок
     register_error_handlers(app)
     
-    # Инициализация БД
-    @app.before_first_request
-    def initialize_database():
+    # Инициализация БД - выполняется при запуске приложения
+    with app.app_context():
         try:
             init_db()
             logger.info("Database initialized successfully")
@@ -59,12 +58,12 @@ def register_error_handlers(app):
     """Регистрирует обработчики ошибок"""
     @app.errorhandler(404)
     def page_not_found(e):
-        return render_template('404.html'), 404
+        return render_template('errors/404.html'), 404
     
     @app.errorhandler(500)
     def internal_server_error(e):
         logger.error(f"Server error: {str(e)}")
-        return render_template('500.html', error=str(e)), 500
+        return render_template('errors/500.html', error=str(e)), 500
     
     logger.info("Error handlers registered")
 
