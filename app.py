@@ -2,12 +2,12 @@
 from flask import Flask, render_template
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
 from spyne.server.wsgi import WsgiApplication
-from app.config import Config
-from app.main.routes import main_bp
-from app.api.routes import api_bp
-from app.admin.routes import admin_bp
-from app.services.soap_service import soap_app
-from app.utils.db_utils import init_db
+from config import Config
+from main.routes import main_bp
+from api.routes import api_bp
+from admin.routes import admin_bp
+from soap.soap_service import soap_app
+from utils.db_utils import init_db
 from flasgger import Swagger
 import logging
 import os
