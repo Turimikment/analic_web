@@ -1,0 +1,23 @@
+  /main
+    __init__.py
+    routes.py       # Основные роуты
+    templates/      # Шаблоны
+    static/         # Статика
+  /api
+    __init__.py
+    routes.py       # API роуты
+  /auth
+    __init__.py
+    routes.py       # Аутентификация
+  /admin
+    __init__.py
+    routes.py       # Админ-функции
+  /utils
+    __init__.py
+    db_utils.py     # Работа с БД
+    redis_utils.py  # Работа с Redis
+  /services
+    __init__.py
+    soap_service.py # SOAP сервис
+  config.py         # Конфигурация
+  app.py            # Основное приложение
