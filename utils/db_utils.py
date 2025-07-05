@@ -15,164 +15,116 @@ def get_db_connection():
     conn = psycopg2.connect(os.environ.get('DATABASE_URL'))
     return conn
 
+
 def init_db():
-    """Инициализация базы данных с проверкой существования таблиц"""
-    db_url = os.environ.get('DATABASE_URL')
-    if not db_url:
-        logger.error("DATABASE_URL not set in environment")
-        return
-    
-    parsed_url = urlparse(db_url)
-    db_name = parsed_url.path[1:]
-    db_user = parsed_url.username
-    db_pass = parsed_url.password
-    db_host = parsed_url.hostname
-    db_port = parsed_url.port
-
-    # Подключаемся к postgres для создания БД
-    try:
-        admin_conn = psycopg2.connect(
-            dbname='postgres',
-            user=db_user,
-            password=db_pass,
-            host=db_host,
-            port=db_port
-        )
-        admin_conn.autocommit = True
-        admin_cursor = admin_conn.cursor()
-        
-        # Создаем БД если не существует
-        admin_cursor.execute(f"SELECT 1 FROM pg_database WHERE datname = '{db_name}'")
-        if not admin_cursor.fetchone():
-            logger.info(f"Creating database: {db_name}")
-            admin_cursor.execute(f"CREATE DATABASE {db_name}")
-        else:
-            logger.info(f"Database {db_name} already exists")
-        
-        admin_cursor.close()
-        admin_conn.close()
-    except Exception as e:
-        logger.error(f"Error creating database: {str(e)}")
-        return
-
-    # Создаем таблицы в целевой БД
-    conn = get_db_connection()
-    try:
-        with conn:
-            with conn.cursor() as cursor:
-                # Проверяем существование таблицы accounts
-                cursor.execute("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'accounts')")
-                if not cursor.fetchone()[0]:
-                    logger.info("Creating table: accounts")
-                    cursor.execute('''
-                        CREATE TABLE accounts (
-                            id SERIAL PRIMARY KEY,
-                            username VARCHAR(20) NOT NULL UNIQUE,
-                            email VARCHAR(255) NOT NULL UNIQUE,
-                            password_hash VARCHAR(255) NOT NULL,
-                            about_me TEXT DEFAULT '',
-                            creation_method VARCHAR(10) NOT NULL DEFAULT 'interface'
-                        )
-                    ''')
-                
-                # Проверяем существование таблицы holidays
-                cursor.execute("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'holidays')")
-                if not cursor.fetchone()[0]:
-                    logger.info("Creating table: holidays")
-                    cursor.execute('''
-                        CREATE TABLE holidays (
-                            id SERIAL PRIMARY KEY,
-                            start_time TIMESTAMP NOT NULL,
-                            location VARCHAR(255) NOT NULL,
-                            title VARCHAR(100) NOT NULL UNIQUE  
-                        )
-                    ''')
-                
-                # Проверяем существование таблицы user_holidays
-                cursor.execute("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'user_holidays')")
-                if not cursor.fetchone()[0]:
-                    logger.info("Creating table: user_holidays")
-                    cursor.execute('''
-                        CREATE TABLE user_holidays (
-                            id SERIAL PRIMARY KEY,  
-                            user_id INTEGER REFERENCES accounts(id) ON DELETE CASCADE,
-                            holiday_id INTEGER REFERENCES holidays(id) ON DELETE CASCADE,
-                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,  
-                            UNIQUE (user_id, holiday_id)  
-                        )
-                    ''')
-                
-                # Проверяем существование индекса для поиска
-                cursor.execute("SELECT EXISTS (SELECT FROM pg_indexes WHERE indexname = 'idx_holidays_search')")
-                if not cursor.fetchone()[0]:
-                    logger.info("Creating index: idx_holidays_search")
-                    cursor.execute('''
-                        CREATE INDEX idx_holidays_search 
-                        ON holidays USING gin (to_tsvector('russian', title || ' ' || location))
-                    ''')
-                
-        logger.info("Database initialization completed successfully")
-    except Exception as e:
-        logger.error(f"Error initializing database: {str(e)}")
-    finally:
-        if conn:
-            conn.close()
-
-# Функции для работы с аккаунтами
-def create_account(username, email, password, creation_method='rest', about_me=''):
-    """Создать нового пользователя"""
+    """Инициализирует базу данных"""
     conn = get_db_connection()
     try:
         with conn.cursor() as cursor:
-            password_hash = generate_password_hash(password)
-            cursor.execute('''
-                INSERT INTO accounts (username, email, password_hash, creation_method, about_me)
-                VALUES (%s, %s, %s, %s, %s)
-                RETURNING id, username, email, about_me, creation_method
-            ''', (username, email, password_hash, creation_method, about_me))
-            new_user = cursor.fetchone()
+            # Создание таблицы accounts
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS accounts (
+                    id SERIAL PRIMARY KEY,
+                    username VARCHAR(20) UNIQUE NOT NULL,
+                    email VARCHAR(120) UNIQUE NOT NULL,
+                    password_hash VARCHAR(128) NOT NULL,
+                    about_me TEXT,
+                    creation_method VARCHAR(20) NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            
+            # Создание таблицы holidays
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS holidays (
+                    id SERIAL PRIMARY KEY,
+                    start_time TIMESTAMP NOT NULL,
+                    location VARCHAR(255) NOT NULL,
+                    title VARCHAR(100) NOT NULL
+                )
+            """)
+            
+            # Создание таблицы user_holidays
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS user_holidays (
+                    id SERIAL PRIMARY KEY,
+                    user_id INTEGER REFERENCES accounts(id) ON DELETE CASCADE,
+                    holiday_id INTEGER REFERENCES holidays(id) ON DELETE CASCADE,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            
             conn.commit()
-            return {
-                'id': new_user[0],
-                'username': new_user[1],
-                'email': new_user[2],
-                'about_me': new_user[3],
-                'creation_method': new_user[4]
-            }
-    except errors.UniqueViolation as e:
+    except Exception as e:
         conn.rollback()
-        if 'username' in str(e):
-            raise ValueError('Имя пользователя уже занято')
-        elif 'email' in str(e):
-            raise ValueError('Email уже зарегистрирован')
-        else:
-            raise ValueError('Ошибка уникальности')
+        raise e
     finally:
         conn.close()
 
-def get_account_by_id(user_id):
-    """Получить пользователя по ID"""
-    conn = get_db_connection()
+def create_account(username, email, password, creation_method, about_me=None):
+    """Создает новую учетную запись с хешированным паролем"""
     try:
+        # Хешируем пароль
+        password_hash = generate_password_hash(password)
+        
+        conn = get_db_connection()
         with conn.cursor() as cursor:
-            cursor.execute('''
-                SELECT id, username, email, about_me, creation_method
-                FROM accounts 
-                WHERE id = %s
-            ''', (user_id,))
+            # Проверяем уникальность имени пользователя и email
+            cursor.execute(
+                "SELECT id FROM accounts WHERE username = %s OR email = %s",
+                (username, email)
+            existing_user = cursor.fetchone()
+            
+            if existing_user:
+                raise ValueError("Пользователь с таким именем или email уже существует")
+            
+            # Создаем нового пользователя
+            cursor.execute(
+                "INSERT INTO accounts (username, email, password_hash, creation_method, about_me) "
+                "VALUES (%s, %s, %s, %s, %s) RETURNING id, username, email, creation_method",
+                (username, email, password_hash, creation_method, about_me)
+            )
             user = cursor.fetchone()
-            if not user:
-                return None
+            conn.commit()
+            
             return {
                 'id': user[0],
                 'username': user[1],
                 'email': user[2],
-                'about_me': user[3],
-                'creation_method': user[4]
+                'creation_method': user[3]
             }
+            
+    except Exception as e:
+        conn.rollback()
+        raise e
     finally:
         conn.close()
 
+def get_account_by_id(user_id):
+    """Возвращает аккаунт по ID"""
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                "SELECT id, username, email, about_me, creation_method "
+                "FROM accounts WHERE id = %s",
+                (user_id,)
+            )
+            user = cursor.fetchone()
+            if user:
+                return {
+                    'id': user[0],
+                    'username': user[1],
+                    'email': user[2],
+                    'about_me': user[3],
+                    'creation_method': user[4]
+                }
+            return None
+    except Exception as e:
+        raise e
+    finally:
+        conn.close()
+        
 def get_all_accounts():
     """Получить всех пользователей"""
     conn = get_db_connection()
