@@ -3,97 +3,134 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Учебный портал для зайцев - REST/SOAP API</title>
+    <title>Морковный Университет - Главная</title>
     <style>
-        /* Добавляем новые стили для страницы приветствия */
+        body {
+            font-family: 'Courier New', monospace;
+            margin: 0;
+            padding: 0;
+            background: #FFF3E0;
+        }
+        
+        .user-header {
+            background: #FF9800;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        .user-header .username {
+            font-size: 1.4em;
+            font-weight: bold;
+            color: white;
+            text-shadow: 1px 1px 1px rgba(0,0,0,0.3);
+        }
+        
+        .user-header .logout-btn {
+            background: #F57C00;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 20px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+        
+        .user-header .logout-btn:hover {
+            background: #E65100;
+        }
+        
         .welcome-container {
             max-width: 800px;
-            margin: 0 auto;
-            padding: 40px;
+            margin: 40px auto;
+            padding: 30px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 0 15px rgba(255, 152, 0, 0.2);
             text-align: center;
         }
         
         .welcome-title {
-            color: #2c5f2d;
+            color: #FF9800;
             font-size: 2.5em;
             margin-bottom: 40px;
-            text-shadow: 2px 2px 4px #a8dba8;
+            text-shadow: 2px 2px #FFE0B2;
         }
         
-        .welcome-buttons {
-            display: flex;
-            flex-direction: column;
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 30px;
-            align-items: center;
+            margin-top: 40px;
         }
         
-        .welcome-btn {
-            display: inline-block;
-            padding: 25px 50px;
-            font-size: 1.8em;
-            border-radius: 35px;
-            text-decoration: none;
-            transition: all 0.4s;
-            border: 3px solid;
-            box-shadow: 0 8px 15px rgba(0,0,0,0.3);
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
-            position: relative;
-            overflow: hidden;
-            width: 80%;
-            max-width: 500px;
+        .option-card {
+            padding: 30px;
+            background: #FFF8E1;
+            border-radius: 15px;
+            border: 2px dashed #FFB74D;
+            transition: all 0.3s;
+            cursor: pointer;
         }
         
-        .welcome-btn:first-child {
-            background: linear-gradient(145deg, #4CAF50, #2c5f2d);
-            border-color: #388E3C;
-            color: white;
+        .option-card:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(255, 87, 34, 0.3);
         }
         
-        .welcome-btn:last-child {
-            background: linear-gradient(145deg, #2196F3, #0D47A1);
-            border-color: #1976D2;
-            color: white;
+        .option-card h3 {
+            color: #E64A19;
+            margin-top: 15px;
         }
         
-        .welcome-btn:hover {
-            transform: rotate(-3deg) scale(1.05);
-        }
-        
-        .btn-shine {
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: linear-gradient(45deg, 
-                transparent 25%,
-                rgba(255,255,255,0.2) 50%,
-                transparent 75%
-            );
-            animation: shine 3s infinite;
-        }
-        
-        @keyframes shine {
-            0% { transform: translateX(-100%) rotate(45deg); }
-            100% { transform: translateX(100%) rotate(45deg); }
+        .option-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
         }
     </style>
 </head>
 <body>
+    <div class="user-header">
+        <div class="username">🐇 Зайчонок: <span id="username">Иван Зайцев</span></div>
+        <a href="/" class="logout-btn">Выйти из норки</a>
+    </div>
+
     <div class="welcome-container">
-        <h1 class="welcome-title">🐇 Добро пожаловать в Морковный Университет! 🥕</h1>
+        <h1 class="welcome-title">🐇 Добро пожаловать в норку, <span id="welcomeUsername">Иван</span>! 🥕</h1>
         
-        <div class="welcome-buttons">
-            <a href="/pipeline" class="welcome-btn">
-                <span>Я тут впервые</span>
-                <div class="btn-shine"></div>
-            </a>
+        <div class="options-grid">
+            <div class="option-card" onclick="location.href='/pipeline'">
+                <div class="option-icon">🥕</div>
+                <h3>Обучение</h3>
+                <p>Изучи основы REST и SOAP API</p>
+            </div>
             
-            <a href="/main" class="welcome-btn">
-                <span>Я уже бывал тут</span>
-                <div class="btn-shine"></div>
-            </a>
+            <div class="option-card" onclick="location.href='/docs'">
+                <div class="option-icon">📚</div>
+                <h3>Документация</h3>
+                <p>Подробное руководство по API</p>
+            </div>
+            
+            <div class="option-card" onclick="location.href='/main'">
+                <div class="option-icon">🪣</div>
+                <h3>Песочница</h3>
+                <p>Экспериментируй с API</p>
+            </div>
         </div>
     </div>
+
+    <script>
+        // Здесь будет код для получения имени пользователя из сессии
+        document.addEventListener('DOMContentLoaded', function() {
+            // Пример: получаем имя пользователя из localStorage
+            const username = localStorage.getItem('username') || 'Иван Зайцев';
+            const shortName = username.split(' ')[0];
+            
+            document.getElementById('username').textContent = username;
+            document.getElementById('welcomeUsername').textContent = shortName;
+        });
+    </script>
 </body>
 </html>
