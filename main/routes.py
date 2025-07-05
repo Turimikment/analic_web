@@ -31,20 +31,11 @@ def redis_stats_page():
     """Страница статистики Redis"""
     return render_template('redis_stats.html')
 
-@main_bp.route('/normalization-tutorial')
-def normalization_tutorial():
-    """Страница обучения нормализации данных"""
-    return render_template('normalization_tutorial.html')
 
 @main_bp.route('/soap-interface')
 def soap_interface():
     """Страница SOAP-интерфейса"""
     return render_template('soap.html')
-
-@main_bp.route('/search')
-def search_page():
-    """Страница поиска праздников"""
-    return render_template('search_holidays.html')
 
 @main_bp.route('/profile/<int:user_id>')
 def user_profile(user_id):
