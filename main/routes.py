@@ -25,7 +25,7 @@ def login_required(f):
 def index():
     """Стартовая страница входа"""
     return render_template('index.html')
-@main_bp.route('/base.html')
+@main_bp.route('/base')
 def heap():
     return render_template('base.html')
 
