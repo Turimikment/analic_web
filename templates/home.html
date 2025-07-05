@@ -19,6 +19,11 @@
             justify-content: space-between;
             align-items: center;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
         }
         
         .user-header .username {
@@ -40,11 +45,12 @@
         
         .user-header .logout-btn:hover {
             background: #E65100;
+            transform: scale(1.05);
         }
         
         .welcome-container {
             max-width: 800px;
-            margin: 40px auto;
+            margin: 100px auto 40px;
             padding: 30px;
             background: white;
             border-radius: 20px;
@@ -93,12 +99,12 @@
 </head>
 <body>
     <div class="user-header">
-        <div class="username">🐇 Зайчонок: <span id="username">Иван Зайцев</span></div>
-        <a href="/" class="logout-btn">Выйти из норки</a>
+        <div class="username">🐇 Зайчонок: {{ username }}</div>
+        <a href="{{ url_for('main.logout') }}" class="logout-btn">Выйти из норки</a>
     </div>
 
     <div class="welcome-container">
-        <h1 class="welcome-title">🐇 Добро пожаловать в норку, <span id="welcomeUsername">Иван</span>! 🥕</h1>
+        <h1 class="welcome-title">🐇 Добро пожаловать в норку, {{ username }}! 🥕</h1>
         
         <div class="options-grid">
             <div class="option-card" onclick="location.href='/pipeline'">
@@ -120,17 +126,5 @@
             </div>
         </div>
     </div>
-
-    <script>
-        // Здесь будет код для получения имени пользователя из сессии
-        document.addEventListener('DOMContentLoaded', function() {
-            // Пример: получаем имя пользователя из localStorage
-            const username = localStorage.getItem('username') || 'Иван Зайцев';
-            const shortName = username.split(' ')[0];
-            
-            document.getElementById('username').textContent = username;
-            document.getElementById('welcomeUsername').textContent = shortName;
-        });
-    </script>
 </body>
 </html>
