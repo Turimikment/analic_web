@@ -3,252 +3,107 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Учебный портал для зайцев - REST/SOAP API</title>
+    <title>Морковный Университет - Вход</title>
     <style>
         body {
-            font-family: 'Verdana';
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f0f8ff;
+            font-family: 'Courier New', monospace;
+            background: #FFF3E0;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
         }
-        h1 {
-            color: #2c5f2d;
-            text-align: center;
-            text-shadow: 2px 2px 4px #a8dba8;
-        }
-        .section {
+        
+        .login-container {
+            width: 100%;
+            max-width: 400px;
+            padding: 30px;
             background: white;
-            border-radius: 15px;
-            padding: 20px;
-            margin: 20px 0;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-radius: 20px;
+            box-shadow: 0 0 15px rgba(255, 152, 0, 0.2);
         }
-        .method {
-            padding: 10px;
-            margin: 10px 0;
-            border-left: 4px solid #2c5f2d;
-            background: #f9fff9;
+        
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
         }
-        .rest { border-color: #4CAF50; }
-        .soap { border-color: #2196F3; }
-        .badge {
-            display: inline-block;
-            padding: 3px 8px;
-            border-radius: 3px;
+        
+        .login-header h1 {
+            color: #FF9800;
+            font-size: 2.2em;
+            text-shadow: 2px 2px #FFE0B2;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #FFB74D;
+            border-radius: 10px;
+            font-size: 16px;
+            margin-top: 8px;
+        }
+        
+        button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(145deg, #FF9800, #F57C00);
             color: white;
-            font-weight: bold;
+            border: none;
+            border-radius: 25px;
+            font-size: 1.2em;
+            cursor: pointer;
+            transition: 0.3s;
+            margin-top: 10px;
         }
-        .get { background: #4CAF50; }
-        .post { background: #FF9800; }
-        .put { background: #2196F3; }
-        .soap-badge { background: #9C27B0; }
+        
+        button:hover {
+            transform: scale(1.05);
+        }
+        
+        .register-link {
+            text-align: center;
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
-    <h1>🌱 Морковный университет: API для зайцев 🐇</h1>
-<!-- В секции body, после заголовка h1 -->
-<!-- Добавить после заголовка h1 -->
-<div style="text-align: center; margin: 40px 0;">
-    <a href="/apidocs/" 
-       style="
-           display: inline-block;
-           padding: 25px 50px;
-           background: linear-gradient(145deg, #FF9800, #FF5722);
-           color: white !important;
-           border-radius: 35px;
-           text-decoration: none;
-           font-size: 1.8em;
-           transition: all 0.4s;
-           border: 3px solid #F57C00;
-           box-shadow: 0 8px 15px rgba(255, 87, 34, 0.3);
-           text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
-           position: relative;
-           overflow: hidden;
-       "
-       onmouseover="this.style.transform='rotate(-2deg) scale(1.05)'"
-       onmouseout="this.style.transform='none'">
-       
-       <span style="display: block; margin-bottom: 10px;">🐇🥕</span>
-       ПОПРОБУЙ REST API!
-       
-       <!-- Анимированная подсветка -->
-       <div style="
-           position: absolute;
-           top: -50%;
-           left: -50%;
-           width: 200%;
-           height: 200%;
-           background: linear-gradient(45deg, 
-               transparent 25%,
-               rgba(255,255,255,0.2) 50%,
-               transparent 75%
-           );
-           animation: shine 3s infinite;
-       "></div>
-    </a>
-</div>
-
-<style>
-    @keyframes shine {
-        0% { transform: translateX(-100%) rotate(45deg); }
-        100% { transform: translateX(100%) rotate(45deg); }
-    }
-</style>
-<!-- ... предыдущий код остается без изменений ... -->
-
-<div style="display: flex; flex-direction: column; align-items: center; gap: 30px; margin: 40px 0;">
-    <!-- Кнопка просмотра БД -->
-    <a href="{{ url_for('admin.view_database') }}" 
-       style="
-           display: inline-block;
-           padding: 20px 40px;
-           background: linear-gradient(145deg, #4CAF50, #2c5f2d);
-           color: white !important;
-           border-radius: 30px;
-           text-decoration: none;
-           font-size: 1.4em;
-           transition: all 0.4s;
-           border: 3px solid #388E3C;
-           box-shadow: 0 8px 15px rgba(76,175,80,0.3);
-           text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
-           position: relative;
-           overflow: hidden;
-       "
-       onmouseover="this.style.transform='rotate(2deg) scale(1.05)'"
-       onmouseout="this.style.transform='none'">
-       
-       <span style="display: block; margin-bottom: 8px;">📊🥬</span>
-       Просмотр базы данных
-       
-       <div style="
-           position: absolute;
-           top: -50%;
-           left: -50%;
-           width: 200%;
-           height: 200%;
-           background: linear-gradient(45deg, 
-               transparent 25%,
-               rgba(255,255,255,0.2) 50%,
-               transparent 75%
-           );
-           animation: shine 3s infinite;
-       "></div>
-    </a>
-
-    <!-- Кнопка WSDL -->
-    <a href="/soap?wsdl" target="_blank" 
-       style="
-           display: inline-block;
-           padding: 20px 40px;
-           background: linear-gradient(145deg, #9C27B0, #6A1B9A);
-           color: white !important;
-           border-radius: 30px;
-           text-decoration: none;
-           font-size: 1.4em;
-           transition: all 0.4s;
-           border: 3px solid #7B1FA2;
-           box-shadow: 0 8px 15px rgba(156,39,176,0.3);
-           text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
-           position: relative;
-           overflow: hidden;
-       "
-       onmouseover="this.style.transform='rotate(-2deg) scale(1.05)'"
-       onmouseout="this.style.transform='none'">
-       
-       <span style="display: block; margin-bottom: 8px;">🧼🫧</span>
-       WSDL для SOAP сервиса
-       
-       <div style="
-           position: absolute;
-           top: -50%;
-           left: -50%;
-           width: 200%;
-           height: 200%;
-           background: linear-gradient(45deg, 
-               transparent 25%,
-               rgba(255,255,255,0.2) 50%,
-               transparent 75%
-           );
-           animation: shine 3s infinite;
-       "></div>
-    </a>
-    <!-- В секции с кнопками после "Создать нового пользователя" -->
-<!--<a href="/normalization-tutorial" 
-   style="
-       display: inline-block;
-       padding: 20px 40px;
-       background: linear-gradient(145deg, #9C27B0, #6A1B9A);
-       color: white !important;
-       border-radius: 30px;
-       text-decoration: none;
-       font-size: 1.4em;
-       transition: all 0.4s;
-       border: 3px solid #7B1FA2;
-       box-shadow: 0 8px 15px rgba(156,39,176,0.3);
-       text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
-       position: relative;
-       overflow: hidden;
-   "
-   onmouseover="this.style.transform='rotate(2deg) scale(1.05)'"
-   onmouseout="this.style.transform='none'">
-   
-   <span style="display: block; margin-bottom: 8px;">📊📚</span>
-   Урок по нормализации
-   
-   <div style="
-       position: absolute;
-       top: -50%;
-       left: -50%;
-       width: 200%;
-       height: 200%;
-       background: linear-gradient(45deg, 
-           transparent 25%,
-           rgba(255,255,255,0.2) 50%,
-           transparent 75%
-       );
-       animation: shine 3s infinite;
-   "></div>
-</a>
- <a href="/redis-edu" 
-       style="
-           display: inline-block;
-           padding: 20px 40px;
-           background: linear-gradient(145deg, #FF5722, #E64A19);
-           color: white !important;
-           border-radius: 30px;
-           text-decoration: none;
-           font-size: 1.4em;
-           transition: all 0.4s;
-           border: 3px solid #D84315;
-           box-shadow: 0 8px 15px rgba(255, 87, 34, 0.3);
-           text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
-           position: relative;
-           overflow: hidden;
-       "
-       onmouseover="this.style.transform='rotate(2deg) scale(1.05)'"
-       onmouseout="this.style.transform='none'">
-       
-       <span style="display: block; margin-bottom: 8px;">🥕📊</span>
-       Статистика морковок при помощи Redis
-       
-       <div style="
-           position: absolute;
-           top: -50%;
-           left: -50%;
-           width: 200%;
-           height: 200%;
-           background: linear-gradient(45deg, 
-               transparent 25%,
-               rgba(255,255,255,0.2) 50%,
-               transparent 75%
-           );
-           animation: shine 3s infinite;
-       "></div>
-    </a><!--
-   
-</div>
-
+    <div class="login-container">
+        <div class="login-header">
+            <h1>🐇 Морковный Университет 🥕</h1>
+        </div>
+        
+        <form id="loginForm">
+            <div class="form-group">
+                <label>📛 Кличка зайца:</label>
+                <input type="text" name="username" required>
+            </div>
+            
+            <div class="form-group">
+                <label>🔑 Секретный пароль:</label>
+                <input type="password" name="password" required>
+            </div>
+            
+            <button type="submit">Войти в норку</button>
+        </form>
+        
+        <div class="register-link">
+            <p>Ещё не зайчонок? <a href="/create-user">Вырасти себя</a></p>
+        </div>
     </div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            // Здесь будет код для отправки данных на сервер
+            // После успешной авторизации перенаправляем на /welcome
+            window.location.href = '/welcome';
+        });
+    </script>
 </body>
-</html> 
+</html>
