@@ -1,5 +1,6 @@
 # app.py
-from flask import Flask, render_template
+from flask import Flask, session
+from flask_session import Session
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
 from spyne.server.wsgi import WsgiApplication
 from config import Config
@@ -11,8 +12,6 @@ from utils.db_utils import init_db
 from flasgger import Swagger
 import logging
 import os
-from flask import Flask, session
-from flask_session import Session
 
 # Настройка логгера
 logging.basicConfig(level=logging.INFO)
@@ -21,12 +20,15 @@ logger = logging.getLogger(__name__)
 def create_app():
     """Фабрика для создания экземпляра приложения Flask"""
     app = Flask(__name__)
-    app.config['SECRET_KEY'] = 'your_secret_key'
-    app.config['SESSION_TYPE'] = 'filesystem'
-    Session(app)
-
+    
     # Загрузка конфигурации
     app.config.from_object(Config)
+    
+    # Настройка сессий
+    app.config['SESSION_TYPE'] = 'filesystem'
+    app.config['SESSION_PERMANENT'] = False
+    app.config['SESSION_USE_SIGNER'] = True
+    Session(app)
     
     # Регистрация компонентов
     register_blueprints(app)
@@ -63,12 +65,12 @@ def register_error_handlers(app):
     """Регистрирует обработчики ошибок"""
     @app.errorhandler(404)
     def page_not_found(e):
-        return render_template('404.html'), 404
+        return render_template('errors/404.html'), 404
     
     @app.errorhandler(500)
     def internal_server_error(e):
         logger.error(f"Server error: {str(e)}")
-        return render_template('500.html', error=str(e)), 500
+        return render_template('errors/500.html', error=str(e)), 500
     
     logger.info("Error handlers registered")
 
