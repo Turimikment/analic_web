@@ -16,10 +16,11 @@ def index():
     """Домашняя страница с приветствием"""
     return render_template('index.html')
 
-@main_bp.route('/welcome')
-def welcome():
+@main_bp.route('/home')
+def home():
     """Домашняя страница с приветствием"""
-    return render_template('welcome.html')
+    return render_template('home.html')
+
 @main_bp.route('/main')
 def main_page():
     """Главная страница портала"""
