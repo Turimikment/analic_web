@@ -11,6 +11,8 @@ from utils.db_utils import init_db
 from flasgger import Swagger
 import logging
 import os
+from flask import Flask, session
+from flask_session import Session
 
 # Настройка логгера
 logging.basicConfig(level=logging.INFO)
@@ -19,7 +21,10 @@ logger = logging.getLogger(__name__)
 def create_app():
     """Фабрика для создания экземпляра приложения Flask"""
     app = Flask(__name__)
-    
+    app.config['SECRET_KEY'] = 'your_secret_key'
+    app.config['SESSION_TYPE'] = 'filesystem'
+    Session(app)
+
     # Загрузка конфигурации
     app.config.from_object(Config)
     
