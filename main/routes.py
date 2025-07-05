@@ -25,6 +25,9 @@ def login_required(f):
 def index():
     """Стартовая страница входа"""
     return render_template('index.html')
+@main_bp.route('/base.html')
+def heap():
+    return render_template('base.html')
 
 @main_bp.route('/login', methods=['POST'])
 def login():
@@ -150,40 +153,4 @@ def create_user():
         username=username,
         email=email)
 
-@main_bp.route('/verify-account', methods=['POST'])
-@login_required
-def verify_account():
-    """Проверка учетной записи пользователя"""
-    username = request.form.get('username')
-    password = request.form.get('password')
-    error = None
-    success = None
-    
-    try:
-        conn = db_utils.get_db_connection()
-        with conn.cursor() as cursor:
-            # Находим пользователя
-            cursor.execute(
-                'SELECT password_hash FROM accounts WHERE username = %s',
-                (username,)
-            )
-            user = cursor.fetchone()
-            
-            if user is None:
-                error = "Пользователь не найден"
-            elif not check_password_hash(user[0], password):
-                error = "Неверный пароль"
-            else:
-                success = "Учетная запись успешно проверена! ✅"
-                
-    except Exception as e:
-        logger.error(f"Database error: {e}")
-        error = f"Ошибка базы данных: {str(e)}"
-    finally:
-        conn.close()
-    
-    return render_template(
-        'pipeline.html', 
-        error=error, 
-        success=success
-    )
+
