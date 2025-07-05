@@ -40,13 +40,30 @@
             margin-bottom: 25px;
         }
         
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #5D4037;
+            font-weight: bold;
+        }
+        
         input {
             width: 100%;
             padding: 12px;
             border: 2px solid #FFB74D;
             border-radius: 10px;
             font-size: 16px;
-            margin-top: 8px;
+            margin-top: 5px;
+            box-sizing: border-box;
+        }
+        
+        .error {
+            color: #D32F2F;
+            background: #FFEBEE;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 15px 0;
+            border: 1px dashed #EF9A9A;
         }
         
         button {
@@ -78,7 +95,7 @@
             <h1>🐇 Морковный Университет 🥕</h1>
         </div>
         
-        <form id="loginForm">
+        <form method="POST" action="{{ url_for('main.login') }}">
             <div class="form-group">
                 <label>📛 Кличка зайца:</label>
                 <input type="text" name="username" required>
@@ -89,21 +106,18 @@
                 <input type="password" name="password" required>
             </div>
             
+            {% if error %}
+            <div class="error">
+                ⚠️ {{ error }}
+            </div>
+            {% endif %}
+            
             <button type="submit">Войти в норку</button>
         </form>
         
         <div class="register-link">
-            <p>Ещё не зайчонок? <a href="/create-user">Вырасти себя</a></p>
+            <p>Ещё не зайчонок? <a href="{{ url_for('main.create_user') }}">Вырасти себя</a></p>
         </div>
     </div>
-
-    <script>
-        document.getElementById('loginForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            // Здесь будет код для отправки данных на сервер
-            // После успешной авторизации перенаправляем на /home
-            window.location.href = '/home';
-        });
-    </script>
 </body>
 </html>
