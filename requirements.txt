@@ -10,3 +10,4 @@ spyne>=2.13.16
 lxml>=4.9.1
 flasgger
 redis
+flask-session
