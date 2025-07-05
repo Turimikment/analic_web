@@ -72,7 +72,7 @@ def create_account(username, email, password, creation_method, about_me=None):
             # Проверяем уникальность имени пользователя и email
             cursor.execute(
                 "SELECT id FROM accounts WHERE username = %s OR email = %s",
-                (username, email)
+                (username, email))
             existing_user = cursor.fetchone()
             
             if existing_user:
@@ -124,7 +124,7 @@ def get_account_by_id(user_id):
         raise e
     finally:
         conn.close()
-        
+
 def get_all_accounts():
     """Получить всех пользователей"""
     conn = get_db_connection()
