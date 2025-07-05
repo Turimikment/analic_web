@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ошибка сервера - Морковный Университет</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background: #FFF3E0;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            text-align: center;
+        }
+        
+        .error-container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 0 15px rgba(255, 152, 0, 0.2);
+            max-width: 600px;
+            margin: 20px;
+        }
+        
+        h1 {
+            color: #E64A19;
+            font-size: 2.5em;
+            text-shadow: 2px 2px #FFCCBC;
+            margin-bottom: 30px;
+        }
+        
+        p {
+            font-size: 1.2em;
+            color: #5D4037;
+            margin-bottom: 30px;
+        }
+        
+        .error-details {
+            background: #FFEBEE;
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px dashed #EF9A9A;
+            font-family: monospace;
+            margin: 20px 0;
+            text-align: left;
+            max-height: 200px;
+            overflow: auto;
+        }
+        
+        .home-link {
+            display: inline-block;
+            padding: 15px 30px;
+            background: linear-gradient(145deg, #FF5722, #E64A19);
+            color: white !important;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: all 0.3s;
+            border: 2px solid #D84315;
+            margin-top: 20px;
+        }
+        
+        .home-link:hover {
+            background: #E64A19;
+            transform: rotate(3deg) scale(1.05);
+        }
+        
+        .error-icon {
+            font-size: 5em;
+            margin-bottom: 20px;
+            color: #D32F2F;
+        }
+        
+        .contact {
+            margin-top: 30px;
+            font-size: 0.9em;
+            color: #795548;
+        }
+    </style>
+</head>
+<body>
+    <div class="error-container">
+        <div class="error-icon">🔥🥕🐇</div>
+        <h1>500 - Ой, что-то пошло не так!</h1>
+        <p>Кажется, наши зайцы перестарались и перекопали сервер.</p>
+        <p>Попробуйте вернуться на главную страницу или повторить попытку позже.</p>
+        
+        {% if error %}
+        <div class="error-details">
+            <strong>Детали ошибки:</strong><br>
+            {{ error }}
+        </div>
+        {% endif %}
+        
+        <a href="/" class="home-link">Вернуться в главную норку</a>
+        
+        <div class="contact">
+            Если ошибка повторяется, пожалуйста, сообщите на почту: 
+            <strong>support@carrot.university</strong>
+        </div>
+    </div>
+</body>
+</html>
