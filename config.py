@@ -1,7 +1,7 @@
 import os
 
 class Config:
-    SECRET_KEY = os.environ.get('SECRET_KEY', 'supersecretkey')
+    SECRET_KEY = os.environ.get('SECRET_KEY', 'supersecretkey123!')
     DATABASE_URL = os.environ.get('DATABASE_URL')
     REDIS_URL = os.environ.get('REDIS_URL', 'redis://localhost:6379')
     
