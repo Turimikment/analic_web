@@ -26,10 +26,6 @@ def index():
     """Стартовая страница входа"""
     return render_template('index.html')
 
-@main_bp.route('/create-user')
-def index():
-    """Стартовая страница входа"""
-    return render_template('/create-user.html')
 
 @main_bp.route('/base')
 def heap():
@@ -115,7 +111,6 @@ def user_profile(user_id):
         return render_template('error.html', error="Ошибка базы данных"), 500
 
 @main_bp.route('/create-user', methods=['GET', 'POST'])
-@login_required
 def create_user():
     """Страница создания пользователя"""
     form_errors = {}
@@ -145,7 +140,8 @@ def create_user():
                     password=password,
                     creation_method='interface'
                 )
-                return redirect(url_for('main.pipeline'))
+                # После успешного создания перенаправляем на страницу входа
+                return redirect(url_for('main.index'))
                 
             except ValueError as e:
                 form_errors['database'] = str(e)
@@ -158,5 +154,4 @@ def create_user():
         errors=form_errors,
         username=username,
         email=email)
-
 
