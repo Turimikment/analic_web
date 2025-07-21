@@ -116,6 +116,7 @@ def create_user():
     form_errors = {}
     username = ''
     email = ''
+    conn = None  # Инициализируем соединение как None
     
     if request.method == 'POST':
         username = request.form.get('username', '').strip()
@@ -134,24 +135,45 @@ def create_user():
 
         if not form_errors:
             try:
-                new_user = db_utils.create_account(
-                    username=username,
-                    email=email,
-                    password=password,
-                    creation_method='interface'
-                )
-                # После успешного создания перенаправляем на страницу входа
-                return redirect(url_for('main.index'))
+                # Устанавливаем соединение только при необходимости
+                conn = db_utils.get_db_connection()
+                with conn.cursor() as cursor:
+                    # Проверяем уникальность имени пользователя и email
+                    cursor.execute(
+                        "SELECT id FROM accounts WHERE username = %s OR email = %s",
+                        (username, email)
+                    )
+                    existing_user = cursor.fetchone()
+                    
+                    if existing_user:
+                        form_errors['database'] = "Пользователь с таким именем или email уже существует"
+                    else:
+                        # Хешируем пароль
+                        password_hash = generate_password_hash(password)
+                        
+                        # Создаем нового пользователя
+                        cursor.execute(
+                            "INSERT INTO accounts (username, email, password_hash, creation_method) "
+                            "VALUES (%s, %s, %s, 'interface') RETURNING id",
+                            (username, email, password_hash)
+                        )
+                        new_user_id = cursor.fetchone()[0]
+                        conn.commit()
+                        
+                        # После успешного создания перенаправляем на страницу входа
+                        return redirect(url_for('main.index'))
                 
-            except ValueError as e:
-                form_errors['database'] = str(e)
             except Exception as e:
                 logger.error(f"Database error: {e}")
                 form_errors['database'] = f'Ошибка базы данных: {str(e)}'
+                if conn:
+                    conn.rollback()
+            finally:
+                if conn:
+                    conn.close()
     
     # Для GET-запросов и POST с ошибками
     return render_template('create_user.html',
         errors=form_errors,
         username=username,
         email=email)
-
