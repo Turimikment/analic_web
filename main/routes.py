@@ -177,3 +177,39 @@ def create_user():
         errors=form_errors,
         username=username,
         email=email)
+@main_bp.route('/base')
+@login_required
+def heap():
+    """Доступ к песочнице"""
+    progress = db_utils.check_user_progress(session['user_id'])
+    
+    # Проверяем, выполнены ли все задачи или аккаунт создан не через интерфейс
+    if progress and (progress[3] or (progress[0] )):#and progress[1] and progress[2]
+        return render_template('base.html')
+    else:
+        return render_template('access_denied.html')
+    
+@main_bp.route('/verify-user-id', methods=['POST'])
+@login_required
+def verify_user_id():
+    user_id = session['user_id']
+    entered_id = request.form.get('user_id', '').strip()
+    
+    # Проверяем, совпадает ли введенный ID с ID пользователя
+    if entered_id == str(user_id):
+        # Обновляем прогресс пользователя
+        conn = db_utils.get_db_connection()
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute(
+                    "UPDATE user_progress SET task1 = TRUE "
+                    "WHERE user_id = %s",
+                    (user_id,)
+                )
+                conn.commit()
+        finally:
+            conn.close()
+            
+        return redirect(url_for('main.pipeline', task_success="✅ Задание выполнено успешно!"))
+    else:
+        return redirect(url_for('main.pipeline', task_error="⚠️ Неверный ID. Попробуйте еще раз"))
