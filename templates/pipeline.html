@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🥕 Морковный пайплайн обучения 🐇</title>
+    <title>🥕 Обучение работы с API 🐇</title>
     <style>
         body {
             font-family: 'Courier New', monospace;
@@ -12,82 +12,29 @@
         }
         .pipeline-container {
             max-width: 800px;
-            margin: 0 auto;
+            margin: 100px auto 40px;
             padding: 30px;
             background: white;
             border-radius: 20px;
             box-shadow: 0 0 15px rgba(255, 152, 0, 0.2);
-        }
-        
-        /* Стили для прогресс-бара */
-        .progress-container {
-            width: 100%;
-            background-color: #f1f1f1;
-            border-radius: 10px;
-            margin: 30px 0;
-            position: relative;
-        }
-        
-        .progress-bar {
-            height: 30px;
-            background: linear-gradient(90deg, #FF9800, #F57C00);
-            border-radius: 10px;
-            width: 0%;
-            transition: width 0.5s ease;
-            position: relative;
-        }
-        
-        .progress-steps {
-            display: flex;
-            justify-content: space-between;
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 2;
-        }
-        
-        .progress-step {
-            flex: 1;
             text-align: center;
-            line-height: 30px;
-            font-weight: bold;
-            color: #5D4037;
         }
         
-        .progress-text {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            text-align: center;
-            line-height: 30px;
-            color: white;
-            font-weight: bold;
-            text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
-            z-index: 1;
+        .pipeline-title {
+            color: #FF9800;
+            font-size: 2.5em;
+            margin-bottom: 40px;
+            text-shadow: 2px 2px #FFE0B2;
         }
         
         .step {
-            padding: 25px;
+            padding: 30px;
             margin: 25px 0;
             border-radius: 15px;
             background: #FFF8E1;
-            border: 2px dashed #FFB74D;
+            border: 2px solid #FFB74D;
             position: relative;
-            transition: all 0.3s ease;
-        }
-        
-        .step.completed {
-            background: #E8F5E9;
-            border-color: #4CAF50;
-        }
-        
-        .step.current {
-            transform: scale(1.02);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            border: 2px solid #FF9800;
+            text-align: left;
         }
         
         .step-number {
@@ -104,27 +51,6 @@
             justify-content: center;
             font-size: 1.8em;
             font-weight: bold;
-        }
-        
-        .step.completed .step-number {
-            background: #4CAF50;
-        }
-        
-        .btn {
-            display: inline-block;
-            padding: 15px 30px;
-            background: linear-gradient(145deg, #4CAF50, #2c5f2d);
-            color: white !important;
-            border: none;
-            border-radius: 25px;
-            text-decoration: none;
-            font-size: 1.2em;
-            margin: 15px 0;
-            transition: 0.3s;
-        }
-        
-        .btn:hover {
-            transform: rotate(-3deg) scale(1.05);
         }
         
         .instruction {
@@ -148,6 +74,28 @@
             margin: 10px 0;
         }
         
+        .btn {
+            display: inline-block;
+            padding: 15px 30px;
+            background: linear-gradient(145deg, #FF9800, #F57C00);
+            color: white !important;
+            border: none;
+            border-radius: 25px;
+            text-decoration: none;
+            font-size: 1.2em;
+            margin: 15px 0;
+            transition: 0.3s;
+            cursor: pointer;
+        }
+        
+        .btn:hover {
+            transform: rotate(-3deg) scale(1.05);
+        }
+        
+        .btn-success {
+            background: linear-gradient(145deg, #4CAF50, #2c5f2d);
+        }
+        
         .error {
             color: #D32F2F;
             background: #FFEBEE;
@@ -163,144 +111,67 @@
             border-radius: 5px;
             margin: 10px 0;
         }
+        
+        .carrot-animation {
+            display: block;
+            font-size: 3em;
+            margin: 20px auto;
+            animation: bounce 2s infinite;
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
     </style>
 </head>
 <body>
     <div class="pipeline-container">
-        <h1 style="text-align: center; color: #E64A19; text-shadow: 2px 2px #FFE0B2;">
-            🥕 Морковный пайплайн обучения 🐇
-        </h1>
+        <h1 class="pipeline-title">🥕 Морковный пайплайн обучения 🐇</h1>
         
-        <!-- Прогресс-бар -->
-        <div class="progress-container">
-            <div class="progress-bar" id="progress-bar"></div>
-            <div class="progress-steps">
-                <div class="progress-step">Регистрация</div>
-                <div class="progress-step">Проверка</div>
-                <div class="progress-step">API</div>
-            </div>
-            <div class="progress-text" id="progress-text">Прогресс: 0%</div>
-        </div>
+        <div class="carrot-animation">🥕</div>
         
-        <!-- Шаг 1: Регистрация -->
-        <div class="step" id="step1">
+        <!-- Шаг 1: Поиск ID через Swagger -->
+        <div class="step">
             <div class="step-number">1</div>
-            <h2>Создайте свою учетную запись</h2>
-            <p>Пройдите регистрацию, чтобы получить доступ ко всем возможностям</p>
-            <a href="/create-user" class="btn">🌱 Зарегистрироваться</a>
-        </div>
-        
-        <!-- Шаг 2: Проверка учетной записи -->
-        <div class="step" id="step2">
-            <div class="step-number">2</div>
-            <h2>Проверьте свою учетную запись</h2>
-            <p>Убедитесь, что ваша учетная запись успешно создана в базе данных</p>
+            <h2>Найдите свой ID через Swagger</h2>
+            <p>Используйте Swagger API, чтобы найти ID своего аккаунта</p>
             
             <div class="instruction">
                 <h3>Инструкция:</h3>
-                <p>Чтобы проверить свою учетную запись:</p>
                 <ol>
-                    <li>Установите DBeaver по <a href="https://www.notion.so/Dbeaver-2215a8b1585980768ec7f48c1391ce8e?source=copy_link" target="_blank">этой инструкции</a></li>
-                    <li>Подключитесь к учебной базе данных</li>
-                    <li>Найдите свою учетную запись в таблице accounts</li>
+                    <li>Перейдите в <a href="/apidocs/" target="_blank">Swagger документацию</a></li>
+                    <li>Найдите раздел <strong>Accounts</strong></li>
+                    <li>Используйте метод <code>GET /api/accounts</code></li>
+                    <li>Нажмите кнопку <strong>Try it out</strong> затем <strong>Execute</strong></li>
+                    <li>В ответе найдите свою "заячью кличку" (username)</li>
+                    <li>Скопируйте ID, соответствующий вашему имени пользователя</li>
                 </ol>
             </div>
             
-            <form method="POST" action="/verify-account">
+            <form method="POST" action="/verify-user-id">
                 <div class="form-group">
-                    <label>Логин:</label>
-                    <input type="text" name="username" placeholder="Ваш логин" required>
+                    <label>Введите ваш ID:</label>
+                    <input type="text" name="user_id" placeholder="Ваш уникальный ID" required>
                 </div>
                 
-                <div class="form-group">
-                    <label>Пароль:</label>
-                    <input type="password" name="password" placeholder="Ваш пароль" required>
-                </div>
+                <button type="submit" class="btn">🔍 Проверить ID</button>
                 
-                <button type="submit" class="btn">🔍 Проверить учетную запись</button>
-                
-                {% if error %}
-                <div class="error">{{ error }}</div>
+                {% if task_error %}
+                <div class="error">{{ task_error }}</div>
                 {% endif %}
                 
-                {% if success %}
-                <div class="success">{{ success }}</div>
+                {% if task_success %}
+                <div class="success">{{ task_success }}</div>
                 {% endif %}
             </form>
-        </div>
-        
-        <!-- Шаг 3: Изучение REST API -->
-        <div class="step" id="step3">
-            <div class="step-number">3</div>
-            <h2>Изучение REST API</h2>
-            <p>Научитесь работать с REST API на практике</p>
-            <div class="instruction">
-                <h3>Что вы изучите:</h3>
-                <ul>
-                    <li>Основы REST архитектуры</li>
-                    <li>HTTP методы (GET, POST, PUT, DELETE)</li>
-                    <li>Работу с конечными точками API</li>
-                    <li>Аутентификацию и авторизацию</li>
-                </ul>
-            </div>
             
-            {% if success %}
-            <a href="/rest-learning" class="btn">🚀 Начать изучение REST API</a>
-            {% else %}
-            <div style="text-align: center; opacity: 0.7;">
-                🔒 Этап заблокирован (пройдите предыдущий этап)
+            {% if task_success %}
+            <div style="margin-top: 30px;">
+                <a href="/base" class="btn btn-success">🚀 Перейти в Песочницу</a>
             </div>
             {% endif %}
         </div>
     </div>
-
-    <script>
-        // Функция для обновления прогресс-бара
-        function updateProgressBar() {
-            const progressBar = document.getElementById('progress-bar');
-            const progressText = document.getElementById('progress-text');
-            
-            // Проверяем состояние этапов
-            let completedSteps = 0;
-            
-            // Если пользователь на странице проверки, считаем первый этап завершенным
-            if (window.location.pathname === '/pipeline') {
-                completedSteps = 1;
-            }
-            
-            // Если есть сообщение об успехе, считаем второй этап завершенным
-            if (document.querySelector('.success')) {
-                completedSteps = 2;
-            }
-            
-            // Рассчитываем процент выполнения
-            const totalSteps = 3;
-            const progressPercent = Math.min(100, Math.round((completedSteps / totalSteps) * 100));
-            
-            // Обновляем прогресс-бар
-            progressBar.style.width = `${progressPercent}%`;
-            progressText.textContent = `Прогресс: ${progressPercent}%`;
-            
-            // Обновляем стили этапов
-            const steps = document.querySelectorAll('.step');
-            steps.forEach((step, index) => {
-                step.classList.remove('completed', 'current');
-                
-                if (index < completedSteps) {
-                    step.classList.add('completed');
-                }
-                
-                if (index === completedSteps) {
-                    step.classList.add('current');
-                }
-            });
-        }
-        
-        // Обновляем прогресс при загрузке страницы
-        document.addEventListener('DOMContentLoaded', updateProgressBar);
-        
-        // Обновляем прогресс при изменении состояния (для сообщений об ошибке/успехе)
-        setInterval(updateProgressBar, 1000);
-    </script>
 </body>
 </html>
