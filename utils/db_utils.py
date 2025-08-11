@@ -33,6 +33,15 @@ def init_db():
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             """)
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS user_progress (
+                user_id INTEGER PRIMARY KEY REFERENCES accounts(id) ON DELETE CASCADE,
+                task1 BOOLEAN NOT NULL DEFAULT FALSE,
+                task2 BOOLEAN NOT NULL DEFAULT FALSE,
+                task3 BOOLEAN NOT NULL DEFAULT FALSE,
+                is_full_account BOOLEAN NOT NULL DEFAULT FALSE
+                )
+            """)
             
             # Создание таблицы holidays
             cursor.execute("""
