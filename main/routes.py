@@ -206,6 +206,6 @@ def verify_user_id():
         finally:
             conn.close()
             
-        return redirect(url_for('main.pipeline', task_success="✅ Задание выполнено успешно!"))
+        return redirect(url_for('pipeline', task_success="✅ Задание выполнено успешно!"))
     else:
-        return redirect(url_for('main.pipeline', task_error="⚠️ Неверный ID. Попробуйте еще раз"))
+        return redirect(url_for('pipeline', task_error="⚠️ Неверный ID. Попробуйте еще раз"))
