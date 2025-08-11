@@ -27,10 +27,6 @@ def index():
     return render_template('index.html')
 
 
-@main_bp.route('/base')
-def heap():
-    return render_template('base.html')
-
 @main_bp.route('/login', methods=['POST'])
 def login():
     """Обработка входа пользователя"""
