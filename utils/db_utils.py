@@ -93,9 +93,14 @@ def create_account(username, email, password, creation_method, about_me=None):
                 "VALUES (%s, %s, %s, %s, %s) RETURNING id, username, email, creation_method",
                 (username, email, password_hash, creation_method, about_me)
             )
+ 
             user = cursor.fetchone()
+            cursor.execute(
+                "INSERT INTO user_progress (user_id) VALUES (%s)",
+                (user[0],)  # user[0] - ID нового пользователя
+            )
             conn.commit()
-            
+
             return {
                 'id': user[0],
                 'username': user[1],
@@ -437,3 +442,17 @@ def format_value(value):
     if isinstance(value, datetime):
         return value.strftime('%Y-%m-%d %H:%M:%S')
     return str(value) if value is not None else ''
+
+def check_user_progress(user_id):
+    """Проверяет прогресс выполнения заданий"""
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                "SELECT task1, task2, task3, is_full_account "
+                "FROM user_progress WHERE user_id = %s",
+                (user_id,)
+            )
+            return cursor.fetchone()
+    finally:
+        conn.close()
