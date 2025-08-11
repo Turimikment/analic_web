@@ -188,24 +188,48 @@ def heap():
 @main_bp.route('/verify-user-id', methods=['POST'])
 @login_required
 def verify_user_id():
-    user_id = session['user_id']
-    entered_id = request.form.get('user_id', '').strip()
-    
-    # Проверяем, совпадает ли введенный ID с ID пользователя
-    if entered_id == str(user_id):
-        # Обновляем прогресс пользователя
-        conn = db_utils.get_db_connection()
-        try:
-            with conn.cursor() as cursor:
-                cursor.execute(
-                    "UPDATE user_progress SET task1 = TRUE "
-                    "WHERE user_id = %s",
-                    (user_id,)
-                )
-                conn.commit()
-        finally:
-            conn.close()
+    try:
+        user_id = session['user_id']
+        entered_id = request.form.get('user_id', '').strip()
+        
+        # Проверяем, совпадает ли введенный ID с ID пользователя
+        if entered_id == str(user_id):
+            # Обновляем прогресс пользователя
+            conn = db_utils.get_db_connection()
+            try:
+                with conn.cursor() as cursor:
+                    # Проверяем, существует ли запись прогресса
+                    cursor.execute(
+                        "SELECT user_id FROM user_progress WHERE user_id = %s",
+                        (user_id,)
+                    )
+                    if not cursor.fetchone():
+                        # Создаем запись, если ее нет
+                        cursor.execute(
+                            "INSERT INTO user_progress (user_id) VALUES (%s)",
+                            (user_id,)
+                        )
+                    
+                    # Обновляем прогресс
+                    cursor.execute(
+                        "UPDATE user_progress SET task1 = TRUE "
+                        "WHERE user_id = %s",
+                        (user_id,)
+                    )
+                    conn.commit()
+            except Exception as e:
+                logger.error(f"Database error: {str(e)}")
+                return redirect(url_for('main.pipeline', task_error="Ошибка базы данных"))
+            finally:
+                conn.close()
             
-        return redirect(url_for('pipeline', task_success="✅ Задание выполнено успешно!"))
-    else:
-        return redirect(url_for('pipeline', task_error="⚠️ Неверный ID. Попробуйте еще раз"))
+            return redirect(url_for('main.pipeline', task_success="✅ Задание выполнено успешно!"))
+        else:
+            return redirect(url_for('main.pipeline', task_error="⚠️ Неверный ID. Попробуйте еще раз"))
+    
+    except KeyError:
+        # Если нет user_id в сессии
+        return redirect(url_for('main.index'))
+    except Exception as e:
+        logger.error(f"Unexpected error: {str(e)}")
+        return redirect(url_for('main.pipeline', task_error="Произошла непредвиденная ошибка"))
