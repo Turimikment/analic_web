@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🥕 REST API Задание 🐇</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            margin: 20px;
+            background: #FFF3E0;
+        }
+        .task-container {
+            max-width: 800px;
+            margin: 80px auto 40px;
+            padding: 30px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 0 15px rgba(255, 152, 0, 0.2);
+            position: relative;
+        }
+        
+        .btn-back {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            padding: 10px 20px;
+            background: #FF9800;
+            color: white;
+            border-radius: 10px;
+            text-decoration: none;
+            transition: 0.3s;
+        }
+        
+        .btn-back:hover {
+            background: #F57C00;
+            transform: scale(1.05);
+        }
+        
+        .task-title {
+            color: #FF9800;
+            font-size: 2.2em;
+            margin-bottom: 30px;
+            text-align: center;
+            text-shadow: 2px 2px #FFE0B2;
+        }
+        
+        .step {
+            padding: 25px;
+            margin: 20px 0;
+            border-radius: 15px;
+            background: #FFF8E1;
+            border: 2px solid #FFB74D;
+            position: relative;
+            text-align: left;
+        }
+        
+        .step-number {
+            position: absolute;
+            top: -15px;
+            left: -15px;
+            background: #FF9800;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+        
+        .instruction {
+            background: #E8F5E9;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 4px solid #4CAF50;
+        }
+        
+        .form-group {
+            margin: 20px 0;
+        }
+        
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #FFB74D;
+            border-radius: 10px;
+            font-size: 16px;
+            margin: 10px 0;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 15px 30px;
+            background: linear-gradient(145deg, #FF9800, #F57C00);
+            color: white !important;
+            border: none;
+            border-radius: 25px;
+            text-decoration: none;
+            font-size: 1.2em;
+            margin: 15px 0;
+            transition: 0.3s;
+            cursor: pointer;
+        }
+        
+        .btn:hover {
+            transform: rotate(-3deg) scale(1.05);
+        }
+        
+        .btn-success {
+            background: linear-gradient(145deg, #4CAF50, #2c5f2d);
+        }
+        
+        .error {
+            color: #D32F2F;
+            background: #FFEBEE;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border: 1px dashed #EF9A9A;
+        }
+        
+        .success {
+            color: #388E3C;
+            background: #E8F5E9;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border: 1px dashed #81C784;
+        }
+        
+        .carrot-animation {
+            display: block;
+            font-size: 3em;
+            margin: 20px auto;
+            animation: bounce 2s infinite;
+            text-align: center;
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+        
+        code {
+            background: #FFF3E0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            border: 1px solid #FFCC80;
+            font-family: 'Courier New', monospace;
+        }
+        
+        ol {
+            padding-left: 20px;
+        }
+        
+        li {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="task-container">
+        <a href="/course" class="btn-back">← Назад к курсу</a>
+        
+        <h1 class="task-title">📡 REST API Задание</h1>
+        
+        <div class="carrot-animation">🥕</div>
+        
+        <!-- Шаг 1: Поиск ID через Swagger -->
+        <div class="step">
+            <div class="step-number">1</div>
+            <h2>Найдите свой ID через Swagger</h2>
+            <p>Используйте Swagger API, чтобы найти ID своего аккаунта</p>
+            
+            <div class="instruction">
+                <h3>Инструкция:</h3>
+                <ol>
+                    <li>Перейдите в <a href="/apidocs/" target="_blank">Swagger документацию</a></li>
+                    <li>Найдите раздел <strong>Accounts</strong></li>
+                    <li>Используйте метод <code>GET /api/accounts</code></li>
+                    <li>Нажмите кнопку <strong>Try it out</strong> затем <strong>Execute</strong></li>
+                    <li>В ответе найдите свою "заячью кличку" (username)</li>
+                    <li>Скопируйте ID, соответствующий вашему имени пользователя</li>
+                </ol>
+            </div>
+            
+            <form method="POST" action="/verify-user-id">
+                <div class="form-group">
+                    <label>Введите ваш ID:</label>
+                    <input type="text" name="user_id" placeholder="Ваш уникальный ID" required>
+                </div>
+                
+                <button type="submit" class="btn">🔍 Проверить ID</button>
+                
+                {% if task_error %}
+                <div class="error">{{ task_error }}</div>
+                {% endif %}
+                
+                {% if task_success %}
+                <div class="success">{{ task_success }}</div>
+                {% endif %}
+            </form>
+            
+            {% if completed %}
+            <div class="success">
+                ✅ Задание уже выполнено!
+                <div style="margin-top: 20px;">
+                    <a href="/course/soap" class="btn btn-success">➡️ Перейти к SOAP заданию</a>
+                </div>
+            </div>
+            {% elif task_success %}
+            <div style="margin-top: 30px;">
+                <a href="/course/soap" class="btn btn-success">➡️ Перейти к SOAP заданию</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>
