@@ -27,7 +27,7 @@ def init_db():
                     id SERIAL PRIMARY KEY,
                     username VARCHAR(20) UNIQUE NOT NULL,
                     email VARCHAR(120) UNIQUE NOT NULL,
-                    password_hash VARCHAR(128) NOT NULL,
+                    password_hash VARCHAR(256) NOT NULL,
                     about_me TEXT,
                     creation_method VARCHAR(20) NOT NULL,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
