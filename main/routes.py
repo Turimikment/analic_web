@@ -188,6 +188,7 @@ def heap():
 @main_bp.route('/verify-user-id', methods=['POST'])
 @login_required
 def verify_user_id():
+    """Проверка выполнения REST задания (поиск ID через Swagger)"""
     try:
         user_id = session['user_id']
         entered_id = request.form.get('user_id', '').strip()
@@ -210,7 +211,7 @@ def verify_user_id():
                             (user_id,)
                         )
                     
-                    # Обновляем прогресс
+                    # Обновляем прогресс (отмечаем выполнение REST задания)
                     cursor.execute(
                         "UPDATE user_progress SET task1 = TRUE "
                         "WHERE user_id = %s",
@@ -218,18 +219,76 @@ def verify_user_id():
                     )
                     conn.commit()
             except Exception as e:
-                logger.error(f"Database error: {str(e)}")
-                return redirect(url_for('main.pipeline', task_error="Ошибка базы данных"))
+                logger.error(f"Database error in verify_user_id: {str(e)}")
+                return redirect(url_for('main.rest_task', error="Ошибка базы данных"))
             finally:
                 conn.close()
             
-            return redirect(url_for('main.pipeline', task_success="✅ Задание выполнено успешно!"))
+            # Перенаправляем на страницу REST задания с сообщением об успехе
+            return redirect(url_for('main.rest_task', success="✅ Задание выполнено успешно!"))
         else:
-            return redirect(url_for('main.pipeline', task_error="⚠️ Неверный ID. Попробуйте еще раз"))
+            return redirect(url_for('main.rest_task', error="⚠️ Неверный ID. Попробуйте еще раз"))
     
     except KeyError:
         # Если нет user_id в сессии
         return redirect(url_for('main.index'))
     except Exception as e:
-        logger.error(f"Unexpected error: {str(e)}")
-        return redirect(url_for('main.pipeline', task_error="Произошла непредвиденная ошибка"))
+        logger.error(f"Unexpected error in verify_user_id: {str(e)}")
+        return redirect(url_for('main.rest_task', error="Произошла непредвиденная ошибка"))
+    
+@main_bp.route('/course')
+@login_required
+def course():
+    """Страница обучающего курса"""
+    return render_template('course.html')
+
+@main_bp.route('/course/rest')
+@login_required
+def rest_task():
+    """Страница REST задания"""
+    progress = db_utils.check_user_progress(session['user_id'])
+    return render_template('rest_task.html', 
+                         task_error=request.args.get('error'),
+                         task_success=request.args.get('success'),
+                         completed=progress[0] if progress else False)
+
+@main_bp.route('/course/soap')
+@login_required
+def soap_task():
+    """Страница SOAP задания"""
+    progress = db_utils.check_user_progress(session['user_id'])
+    return render_template('soap_task.html',
+                         error=request.args.get('error'),
+                         success=request.args.get('success'),
+                         completed=progress[1] if progress else False)
+
+@main_bp.route('/course/db')
+@login_required
+def db_task():
+    """Страница задания с БД"""
+    return render_template('db_task.html')
+
+@main_bp.route('/verify-soap-task', methods=['POST'])
+@login_required
+def verify_soap_task():
+    """Проверка выполнения SOAP задания"""
+    try:
+        user_id = session['user_id']
+        user = db_utils.get_account_by_id(user_id)
+        
+        if user and user.get('about_me'):
+            # Отмечаем выполнение задания
+            conn = db_utils.get_db_connection()
+            with conn.cursor() as cursor:
+                cursor.execute(
+                    "UPDATE user_progress SET task2 = TRUE WHERE user_id = %s",
+                    (user_id,)
+                )
+                conn.commit()
+            return redirect(url_for('main.soap_task', success="✅ Задание выполнено успешно!"))
+        else:
+            return redirect(url_for('main.soap_task', error="⚠️ Поле 'О себе' пустое. Выполните задание через SoapUI."))
+    
+    except Exception as e:
+        logger.error(f"Ошибка проверки SOAP задания: {str(e)}")
+        return redirect(url_for('main.soap_task', error="Произошла ошибка при проверке"))   
