@@ -19,6 +19,7 @@
             box-shadow: 0 0 15px rgba(255, 152, 0, 0.2);
             position: relative;
         }
+        
         .btn-back {
             position: absolute;
             top: 20px;
@@ -30,10 +31,46 @@
             text-decoration: none;
             transition: 0.3s;
         }
+        
         .btn-back:hover {
             background: #F57C00;
             transform: scale(1.05);
         }
+        
+        .task-title {
+            color: #FF9800;
+            font-size: 2.2em;
+            margin-bottom: 30px;
+            text-align: center;
+            text-shadow: 2px 2px #FFE0B2;
+        }
+        
+        .step {
+            padding: 25px;
+            margin: 20px 0;
+            border-radius: 15px;
+            background: #FFF8E1;
+            border: 2px solid #FFB74D;
+            position: relative;
+            text-align: left;
+        }
+        
+        .step-number {
+            position: absolute;
+            top: -15px;
+            left: -15px;
+            background: #FF9800;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+        
         .instruction {
             background: #E8F5E9;
             padding: 20px;
@@ -41,17 +78,7 @@
             margin: 20px 0;
             border-left: 4px solid #4CAF50;
         }
-        .step-number {
-            background: #FF9800;
-            color: white;
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            margin-right: 10px;
-        }
+        
         .btn {
             display: inline-block;
             padding: 15px 30px;
@@ -65,12 +92,15 @@
             transition: 0.3s;
             cursor: pointer;
         }
+        
         .btn:hover {
             transform: rotate(-3deg) scale(1.05);
         }
+        
         .btn-success {
             background: linear-gradient(145deg, #4CAF50, #2c5f2d);
         }
+        
         .error {
             color: #D32F2F;
             background: #FFEBEE;
@@ -79,6 +109,7 @@
             margin: 10px 0;
             border: 1px dashed #EF9A9A;
         }
+        
         .success {
             color: #388E3C;
             background: #E8F5E9;
@@ -87,54 +118,73 @@
             margin: 10px 0;
             border: 1px dashed #81C784;
         }
+        
+        .carrot-animation {
+            display: block;
+            font-size: 3em;
+            margin: 20px auto;
+            animation: bounce 2s infinite;
+            text-align: center;
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
     </style>
 </head>
 <body>
     <a href="/course" class="btn-back">← Назад к курсу</a>
     
     <div class="task-container">
-        <h1>🧼 SOAP задание</h1>
-        <p>Измените поле "О себе" через SOAP API</p>
+        <h1 class="task-title">🧼 SOAP задание</h1>
         
-        <div class="instruction">
-            <h3>Инструкция:</h3>
-            <ol>
-                <li><span class="step-number">1</span> Установите SoapUI с официального сайта</li>
-                <li><span class="step-number">2</span> Создайте новый SOAP проект</li>
-                <li><span class="step-number">3</span> Используйте WSDL: 
-                    <a href="/soap?wsdl" class="wsdl-link" target="_blank">Открыть WSDL</a>
-                </li>
-                <li><span class="step-number">4</span> Найдите метод <code>update_about_me</code></li>
-                <li><span class="step-number">5</span> Заполните параметры: ваш ID и текст о себе</li>
-                <li><span class="step-number">6</span> Отправьте запрос и проверьте результат</li>
-            </ol>
+        <div class="carrot-animation">🥕</div>
+        
+        <div class="step">
+            <div class="step-number">2</div>
+            <h2>Измените поле "О себе" через SOAP API</h2>
             
-            <p><strong>Совет:</strong> Скопируйте ссылку WSDL выше и вставьте в SoapUI при создании нового проекта.</p>
+            <div class="instruction">
+                <h3>Инструкция:</h3>
+                <ol>
+                    <li>Установите SoapUI с официального сайта</li>
+                    <li>Создайте новый SOAP проект</li>
+                    <li>Используйте WSDL: 
+                        <a href="/soap?wsdl" class="wsdl-link" target="_blank">Открыть WSDL</a>
+                    </li>
+                    <li>Найдите метод <code>update_about_me</code></li>
+                    <li>Заполните параметры: ваш ID и текст о себе</li>
+                    <li>Отправьте запрос и проверьте результат</li>
+                </ol>
+                
+                <p><strong>Совет:</strong> Скопируйте ссылку WSDL выше и вставьте в SoapUI при создании нового проекта.</p>
+            </div>
+            
+            <form method="POST" action="/verify-soap-task">
+                <button type="submit" class="btn">✅ Проверить задание</button>
+                
+                {% if error %}
+                <div class="error">{{ error }}</div>
+                {% endif %}
+                
+                {% if completed %}
+                <div class="success">
+                    ✅ Задание уже выполнено!
+                    <div style="margin-top: 20px;">
+                        <a href="/course/db" class="btn btn-success">➡️ Перейти к следующему заданию</a>
+                    </div>
+                </div>
+                {% elif success %}
+                <div class="success">
+                    {{ success }}
+                    <div style="margin-top: 20px;">
+                        <a href="/course/db" class="btn btn-success">➡️ Перейти к следующему заданию</a>
+                    </div>
+                </div>
+                {% endif %}
+            </form>
         </div>
-        
-        <form method="POST" action="/verify-soap-task">
-            <button type="submit" class="btn">✅ Проверить задание</button>
-            
-            {% if error %}
-            <div class="error">{{ error }}</div>
-            {% endif %}
-            
-            {% if completed %}
-            <div class="success">
-                ✅ Задание уже выполнено!
-                <div style="margin-top: 20px;">
-                    <a href="/course/db" class="btn btn-success">➡️ Перейти к следующему заданию</a>
-                </div>
-            </div>
-            {% elif success %}
-            <div class="success">
-                {{ success }}
-                <div style="margin-top: 20px;">
-                    <a href="/course/db" class="btn btn-success">➡️ Перейти к следующему заданию</a>
-                </div>
-            </div>
-            {% endif %}
-        </form>
     </div>
 </body>
 </html>
