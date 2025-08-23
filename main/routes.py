@@ -83,7 +83,7 @@ def pipeline():
 
 @main_bp.route('/docs')
 @login_required
-def pipeline():
+def docs():
     """Страница с документацией по АПИ"""
     return render_template('docs.html')
 
