@@ -81,6 +81,12 @@ def pipeline():
     """Страница пайплайна обучения"""
     return render_template('pipeline.html')
 
+@main_bp.route('/docs')
+@login_required
+def pipeline():
+    """Страница с документацией по АПИ"""
+    return render_template('docs.html')
+
 @main_bp.route('/redis-stats')
 @login_required
 def redis_stats_page():
