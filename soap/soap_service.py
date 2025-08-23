@@ -67,36 +67,36 @@ class SoapAccountService(ServiceBase):
             logger.error(f"Database error: {str(e)}")
             raise Fault(faultcode='Server', faultstring=f'Database error: {str(e)}')
     
-    @rpc(SoapUserRequest, _returns=SoapResponse)
-    def create_user(ctx, user_data):
-        """Создать нового пользователя"""
-        try:
-            logger.info(f"SOAP create_user: {user_data.username}, {user_data.email}")
-            new_user = db_utils.create_account(
-                username=user_data.username,
-                email=user_data.email,
-                password=user_data.password,
-                creation_method='soap',
-                about_me=user_data.about_me
-            )
-            soap_user = SoapUser(
-                id=new_user['id'],
-                username=new_user['username'],
-                email=new_user['email'],
-                about_me=new_user['about_me'] or '',
-                creation_method=new_user['creation_method']
-            )
-            return SoapResponse(
-                status='success',
-                message='User created',
-                user=soap_user
-            )
-        except ValueError as e:
-            logger.error(f"Validation error: {str(e)}")
-            raise Fault(faultcode='Client', faultstring=str(e))
-        except Exception as e:
-            logger.error(f"Database error: {str(e)}")
-            raise Fault(faultcode='Server', faultstring=f'Database error: {str(e)}')
+   # @rpc(SoapUserRequest, _returns=SoapResponse)
+    #def create_user(ctx, user_data):
+     #   """Создать нового пользователя"""
+      #  try:
+       #     logger.info(f"SOAP create_user: {user_data.username}, {user_data.email}")
+       #     new_user = db_utils.create_account(
+        #        username=user_data.username,
+         #       email=user_data.email,
+    #            password=user_data.password,
+    #            creation_method='soap',
+    #            about_me=user_data.about_me
+    #        )
+    #        soap_user = SoapUser(
+    #            id=new_user['id'],
+    #            username=new_user['username'],
+    #            email=new_user['email'],
+    #            about_me=new_user['about_me'] or '',
+    #            creation_method=new_user['creation_method']
+    #        )
+    #        return SoapResponse(
+    #            status='success',
+    #            message='User created',
+    #            user=soap_user
+    #        )
+    #    except ValueError as e:
+    #        logger.error(f"Validation error: {str(e)}")
+    #        raise Fault(faultcode='Client', faultstring=str(e))
+    #    except Exception as e:
+    #        logger.error(f"Database error: {str(e)}")
+    #        raise Fault(faultcode='Server', faultstring=f'Database error: {str(e)}')
 
     @rpc(Integer, Unicode, _returns=SoapResponse)
     def update_username(ctx, user_id, new_username):
