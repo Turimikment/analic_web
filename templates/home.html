@@ -66,8 +66,8 @@
         }
         
         .options-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            display: flex;
+            flex-direction: column;
             gap: 30px;
             margin-top: 40px;
         }
@@ -79,21 +79,34 @@
             border: 2px dashed #FFB74D;
             transition: all 0.3s;
             cursor: pointer;
+            text-align: left;
         }
         
         .option-card:hover {
-            transform: scale(1.05);
+            transform: scale(1.02);
             box-shadow: 0 5px 15px rgba(255, 87, 34, 0.3);
         }
         
         .option-card h3 {
             color: #E64A19;
             margin-top: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
         
         .option-icon {
-            font-size: 3em;
-            margin-bottom: 15px;
+            font-size: 2em;
+            margin-right: 15px;
+        }
+        
+        .option-content {
+            display: flex;
+            align-items: center;
+        }
+        
+        .option-text {
+            flex: 1;
         }
     </style>
 </head>
@@ -108,21 +121,33 @@
         
         <div class="options-grid">
             <div class="option-card" onclick="location.href='/course'">
-                <div class="option-icon">🥕</div>
-                <h3>Обучение</h3>
-                <p>Изучи основы REST и SOAP API</p>
+                <div class="option-content">
+                    <div class="option-icon">🥕</div>
+                    <div class="option-text">
+                        <h3>Обучение</h3>
+                        <p>Изучи основы REST и SOAP API</p>
+                    </div>
+                </div>
             </div>
             
             <div class="option-card" onclick="location.href='/docs'">
-                <div class="option-icon">📚</div>
-                <h3>Документация</h3>
-                <p>Подробное руководство по API</p>
+                <div class="option-content">
+                    <div class="option-icon">📚</div>
+                    <div class="option-text">
+                        <h3>Документация</h3>
+                        <p>Подробное руководство по API</p>
+                    </div>
+                </div>
             </div>
             
             <div class="option-card" onclick="location.href='/base'">
-                <div class="option-icon">🪣</div>
-                <h3>Песочница</h3>
-                <p>Экспериментируй с API</p>
+                <div class="option-content">
+                    <div class="option-icon">🪣</div>
+                    <div class="option-text">
+                        <h3>Песочница</h3>
+                        <p>Экспериментируй с API</p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
