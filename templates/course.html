@@ -1,4 +1,3 @@
- 
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -6,29 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🥕 Обучающий курс API 🐇</title>
     <style>
-        /* Сохраняем существующие стили и добавляем новые */
-        .course-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin: 40px 0;
+        body {
+            font-family: 'Courier New', monospace;
+            margin: 20px;
+            background: #FFF3E0;
         }
-        .course-card {
-            padding: 25px;
-            background: #FFF8E1;
-            border-radius: 15px;
-            border: 2px solid #FFB74D;
-            text-align: center;
-            transition: all 0.3s;
+        
+        .pipeline-container {
+            max-width: 800px;
+            margin: 80px auto 40px;
+            padding: 30px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 0 15px rgba(255, 152, 0, 0.2);
+            position: relative;
         }
-        .course-card:hover {
-            transform: scale(1.05);
-            box-shadow: 0 5px 15px rgba(255, 152, 0, 0.3);
-        }
-        .course-icon {
-            font-size: 3em;
-            margin-bottom: 15px;
-        }
+        
         .btn-back {
             position: absolute;
             top: 20px;
@@ -38,31 +30,101 @@
             color: white;
             border-radius: 10px;
             text-decoration: none;
+            transition: 0.3s;
+        }
+        
+        .btn-back:hover {
+            background: #F57C00;
+            transform: scale(1.05);
+        }
+        
+        .pipeline-title {
+            color: #FF9800;
+            font-size: 2.2em;
+            margin-bottom: 30px;
+            text-align: center;
+            text-shadow: 2px 2px #FFE0B2;
+        }
+        
+        .course-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin: 40px 0;
+        }
+        
+        .course-card {
+            padding: 25px;
+            background: #FFF8E1;
+            border-radius: 15px;
+            border: 2px solid #FFB74D;
+            transition: all 0.3s;
+            cursor: pointer;
+            text-align: left;
+        }
+        
+        .course-card:hover {
+            transform: scale(1.02);
+            box-shadow: 0 5px 15px rgba(255, 152, 0, 0.3);
+        }
+        
+        .course-icon {
+            font-size: 2em;
+            margin-right: 15px;
+        }
+        
+        .course-content {
+            display: flex;
+            align-items: center;
+        }
+        
+        .course-text {
+            flex: 1;
+        }
+        
+        .course-text h3 {
+            color: #E64A19;
+            margin: 0 0 10px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
     </style>
 </head>
 <body>
     <div class="pipeline-container">
-        <a href="/course" class="btn-back">← Назад</a>
+        <a href="/" class="btn-back">← Назад</a>
         <h1 class="pipeline-title">🥕 Обучающий курс API 🐇</h1>
         
         <div class="course-grid">
             <div class="course-card" onclick="location.href='/course/rest'">
-                <div class="course-icon">📡</div>
-                <h3>REST API</h3>
-                <p>Изучите основы REST API</p>
+                <div class="course-content">
+                    <div class="course-icon">📡</div>
+                    <div class="course-text">
+                        <h3>REST API</h3>
+                        <p>Изучите основы REST API</p>
+                    </div>
+                </div>
             </div>
             
             <div class="course-card" onclick="location.href='/course/soap'">
-                <div class="course-icon">🧼</div>
-                <h3>SOAP API</h3>
-                <p>Работа с SOAP сервисами</p>
+                <div class="course-content">
+                    <div class="course-icon">🧼</div>
+                    <div class="course-text">
+                        <h3>SOAP API</h3>
+                        <p>Работа с SOAP сервисами</p>
+                    </div>
+                </div>
             </div>
             
             <div class="course-card" onclick="location.href='/course/db'">
-                <div class="course-icon">🗄️</div>
-                <h3>Базы данных</h3>
-                <p>Изучение работы с БД</p>
+                <div class="course-content">
+                    <div class="course-icon">🗄️</div>
+                    <div class="course-text">
+                        <h3>Базы данных</h3>
+                        <p>Изучение работы с БД</p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
