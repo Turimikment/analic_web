@@ -186,7 +186,7 @@ def heap():
     progress = db_utils.check_user_progress(session['user_id'])
     
     # Проверяем, выполнены ли все задачи или аккаунт создан не через интерфейс
-    if progress and (progress[3] or (progress[0] )):#and progress[1] and progress[2]
+    if progress and (progress[3] or (progress[0] and progress[1] and progress[2])):
         return render_template('base.html')
     else:
         return render_template('access_denied.html')
