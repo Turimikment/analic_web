@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🗄️ Задание с Базой Данных 🐇</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            margin: 20px;
+            background: #FFF3E0;
+        }
+        .task-container {
+            max-width: 800px;
+            margin: 80px auto 40px;
+            padding: 30px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 0 15px rgba(255, 152, 0, 0.2);
+            position: relative;
+        }
+        
+        .btn-back {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            padding: 10px 20px;
+            background: #FF9800;
+            color: white;
+            border-radius: 10px;
+            text-decoration: none;
+            transition: 0.3s;
+        }
+        
+        .btn-back:hover {
+            background: #F57C00;
+            transform: scale(1.05);
+        }
+        
+        .task-title {
+            color: #FF9800;
+            font-size: 2.2em;
+            margin-bottom: 30px;
+            text-align: center;
+            text-shadow: 2px 2px #FFE0B2;
+        }
+        
+        .step {
+            padding: 25px;
+            margin: 20px 0;
+            border-radius: 15px;
+            background: #FFF8E1;
+            border: 2px solid #FFB74D;
+            position: relative;
+            text-align: left;
+        }
+        
+        .step-number {
+            position: absolute;
+            top: -15px;
+            left: -15px;
+            background: #FF9800;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+        
+        .instruction {
+            background: #E8F5E9;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 4px solid #4CAF50;
+        }
+        
+        .form-group {
+            margin: 20px 0;
+        }
+        
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #FFB74D;
+            border-radius: 10px;
+            font-size: 16px;
+            margin: 10px 0;
+            box-sizing: border-box;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 15px 30px;
+            background: linear-gradient(145deg, #FF9800, #F57C00);
+            color: white !important;
+            border: none;
+            border-radius: 25px;
+            text-decoration: none;
+            font-size: 1.2em;
+            margin: 15px 0;
+            transition: 0.3s;
+            cursor: pointer;
+        }
+        
+        .btn:hover {
+            transform: rotate(-3deg) scale(1.05);
+        }
+        
+        .btn-success {
+            background: linear-gradient(145deg, #4CAF50, #2c5f2d);
+        }
+        
+        .error {
+            color: #D32F2F;
+            background: #FFEBEE;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border: 1px dashed #EF9A9A;
+        }
+        
+        .success {
+            color: #388E3C;
+            background: #E8F5E9;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border: 1px dashed #81C784;
+        }
+        
+        .carrot-animation {
+            display: block;
+            font-size: 3em;
+            margin: 20px auto;
+            animation: bounce 2s infinite;
+            text-align: center;
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+        
+        code {
+            background: #FFF3E0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            border: 1px solid #FFCC80;
+            font-family: 'Courier New', monospace;
+        }
+        
+        ol {
+            padding-left: 20px;
+        }
+        
+        li {
+            margin-bottom: 10px;
+        }
+        
+        .db-icon {
+            font-size: 2em;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body>
+    <div class="task-container">
+        <a href="/course" class="btn-back">← Назад к курсу</a>
+        
+        <h1 class="task-title">🗄️ Задание с Базой Данных</h1>
+        
+        <div class="carrot-animation">🥕</div>
+        
+        <!-- Шаг 1: Подключение к БД через DBeaver -->
+        <div class="step">
+            <div class="step-number">1</div>
+            <h2>Подключитесь к БД через DBeaver</h2>
+            <p>Используйте DBeaver для подключения к нашей базе данных</p>
+            
+            <div class="instruction">
+                <h3>Инструкция по подключению:</h3>
+                <ol>
+                    <li>Скачайте и установите <a href="https://dbeaver.io/" target="_blank">DBeaver</a></li>
+                    <li>Создайте новое соединение с PostgreSQL</li>
+                    <li>Используйте данные из руководства: 
+                        <a href="https://www.notion.so/Dbeaver-2215a8b1585980768ec7f48c1391ce8e" target="_blank">
+                            📖 Руководство по DBeaver
+                        </a>
+                    </li>
+                    <li>Подключитесь к базе данных используя предоставленные credentials</li>
+                    <li>Найдите таблицу <code>accounts</code> и свою учетную запись</li>
+                </ol>
+            </div>
+        </div>
+        
+        <!-- Шаг 2: Поиск password_hash -->
+        <div class="step">
+            <div class="step-number">2</div>
+            <h2>Найдите свой password_hash</h2>
+            <p>Найдите хэш своего пароля в базе данных</p>
+            
+            <div class="instruction">
+                <h3>Как найти:</h3>
+                <ol>
+                    <li>Откройте таблицу <code>accounts</code> в DBeaver</li>
+                    <li>Найдите строку с вашим именем пользователя</li>
+                    <li>Скопируйте значение из колонки <code>password_hash</code></li>
+                    <li>Вставьте его в поле ниже для проверки</li>
+                </ol>
+                
+                <p><strong>Подсказка:</strong> Можно использовать SQL запрос:<br>
+                <code>SELECT username, password_hash FROM accounts WHERE username = 'ваше_имя';</code></p>
+            </div>
+            
+            <form method="POST" action="/verify-db-task">
+                <div class="form-group">
+                    <label>Введите ваш password_hash:</label>
+                    <input type="text" name="password_hash" placeholder="Скопируйте hash из БД" required>
+                </div>
+                
+                <button type="submit" class="btn">🔍 Проверить hash</button>
+                
+                {% if error %}
+                <div class="error">{{ error }}</div>
+                {% endif %}
+                
+                {% if success %}
+                <div class="success">{{ success }}</div>
+                {% endif %}
+            </form>
+            
+            {% if completed %}
+            <div class="success">
+                ✅ Задание уже выполнено!
+                <div style="margin-top: 20px;">
+                    <a href="/base" class="btn btn-success">🎉 Перейти в Песочницу</a>
+                </div>
+            </div>
+            {% elif success %}
+            <div style="margin-top: 30px;">
+                <a href="/base" class="btn btn-success">🎉 Перейти в Песочницу</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>
