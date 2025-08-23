@@ -266,7 +266,12 @@ def soap_task():
 @login_required
 def db_task():
     """Страница задания с БД"""
-    return render_template('db_task.html')
+    progress = db_utils.check_user_progress(session['user_id'])
+    return render_template('db_task.html',
+                         error=request.args.get('error'),
+                         success=request.args.get('success'),
+                         completed=progress[2] if progress else False)
+
 
 @main_bp.route('/verify-soap-task', methods=['POST'])
 @login_required
@@ -292,3 +297,35 @@ def verify_soap_task():
     except Exception as e:
         logger.error(f"Ошибка проверки SOAP задания: {str(e)}")
         return redirect(url_for('main.soap_task', error="Произошла ошибка при проверке"))   
+    
+@main_bp.route('/verify-db-task', methods=['POST'])
+@login_required
+def verify_db_task():
+    """Проверка выполнения задания с БД"""
+    try:
+        user_id = session['user_id']
+        entered_hash = request.form.get('password_hash', '').strip()
+        
+        # Получаем настоящий хэш из базы данных
+        conn = db_utils.get_db_connection()
+        with conn.cursor() as cursor:
+            cursor.execute(
+                "SELECT password_hash FROM accounts WHERE id = %s",
+                (user_id,)
+            )
+            result = cursor.fetchone()
+            
+            if result and result[0] == entered_hash:
+                # Отмечаем выполнение задания
+                cursor.execute(
+                    "UPDATE user_progress SET task3 = TRUE WHERE user_id = %s",
+                    (user_id,)
+                )
+                conn.commit()
+                return redirect(url_for('main.db_task', success="✅ Задание выполнено успешно!"))
+            else:
+                return redirect(url_for('main.db_task', error="⚠️ Неверный hash. Проверьте, что скопировали правильное значение."))
+    
+    except Exception as e:
+        logger.error(f"Ошибка проверки задания с БД: {str(e)}")
+        return redirect(url_for('main.db_task', error="Произошла ошибка при проверке"))
