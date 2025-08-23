@@ -1,4 +1,3 @@
- 
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -18,6 +17,7 @@
             background: white;
             border-radius: 20px;
             box-shadow: 0 0 15px rgba(255, 152, 0, 0.2);
+            position: relative;
         }
         .btn-back {
             position: absolute;
@@ -28,6 +28,11 @@
             color: white;
             border-radius: 10px;
             text-decoration: none;
+            transition: 0.3s;
+        }
+        .btn-back:hover {
+            background: #F57C00;
+            transform: scale(1.05);
         }
         .instruction {
             background: #E8F5E9;
@@ -47,6 +52,41 @@
             justify-content: center;
             margin-right: 10px;
         }
+        .btn {
+            display: inline-block;
+            padding: 15px 30px;
+            background: linear-gradient(145deg, #FF9800, #F57C00);
+            color: white !important;
+            border: none;
+            border-radius: 25px;
+            text-decoration: none;
+            font-size: 1.2em;
+            margin: 15px 0;
+            transition: 0.3s;
+            cursor: pointer;
+        }
+        .btn:hover {
+            transform: rotate(-3deg) scale(1.05);
+        }
+        .btn-success {
+            background: linear-gradient(145deg, #4CAF50, #2c5f2d);
+        }
+        .error {
+            color: #D32F2F;
+            background: #FFEBEE;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border: 1px dashed #EF9A9A;
+        }
+        .success {
+            color: #388E3C;
+            background: #E8F5E9;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border: 1px dashed #81C784;
+        }
     </style>
 </head>
 <body>
@@ -56,7 +96,7 @@
         <h1>🧼 SOAP задание</h1>
         <p>Измените поле "О себе" через SOAP API</p>
         
-                <div class="instruction">
+        <div class="instruction">
             <h3>Инструкция:</h3>
             <ol>
                 <li><span class="step-number">1</span> Установите SoapUI с официального сайта</li>
@@ -71,6 +111,7 @@
             
             <p><strong>Совет:</strong> Скопируйте ссылку WSDL выше и вставьте в SoapUI при создании нового проекта.</p>
         </div>
+        
         <form method="POST" action="/verify-soap-task">
             <button type="submit" class="btn">✅ Проверить задание</button>
             
@@ -78,7 +119,14 @@
             <div class="error">{{ error }}</div>
             {% endif %}
             
-            {% if success %}
+            {% if completed %}
+            <div class="success">
+                ✅ Задание уже выполнено!
+                <div style="margin-top: 20px;">
+                    <a href="/course/db" class="btn btn-success">➡️ Перейти к следующему заданию</a>
+                </div>
+            </div>
+            {% elif success %}
             <div class="success">
                 {{ success }}
                 <div style="margin-top: 20px;">
