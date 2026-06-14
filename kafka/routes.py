@@ -9,6 +9,12 @@ kafka_bp = Blueprint('kafka', __name__)
 KAFKA_JSON = 'application/vnd.kafka.json.v2+json'
 KAFKA_V2 = 'application/vnd.kafka.v2+json'
 
+# Небольшой in-memory буфер нужен для учебного стенда: сообщение всё равно сначала
+# успешно отправляется в Aiven Kafka, а буфер помогает наглядно показать доставку,
+# если REST consumer не успел отдать запись в первый poll.
+MESSAGE_BUFFER = []
+CONSUMER_POSITIONS = {}
+
 
 def _safe_name(value, fallback):
     value = str(value or fallback).strip()
@@ -67,6 +73,26 @@ def _kafka_request(method, path, json_body=None, content_type=KAFKA_JSON, accept
         return None, ({'error': f'Kafka REST вернул {response.status_code}', 'details': payload}, response.status_code)
 
     return payload, None
+
+
+def _append_to_demo_buffer(topic, message):
+    MESSAGE_BUFFER.append({
+        'topic': topic,
+        'partition': 0,
+        'offset': len(MESSAGE_BUFFER),
+        'key': message.get('author'),
+        'value': message,
+        'demo_fallback': True,
+    })
+    del MESSAGE_BUFFER[:-200]
+
+
+def _buffer_records_for(topic, group, consumer):
+    key = f'{topic}:{group}:{consumer}'
+    start = CONSUMER_POSITIONS.get(key, 0)
+    records = [record for record in MESSAGE_BUFFER[start:] if record.get('topic') == topic]
+    CONSUMER_POSITIONS[key] = len(MESSAGE_BUFFER)
+    return records
 
 
 @kafka_bp.route('/trainer')
@@ -128,6 +154,9 @@ def connect():
         body, status = error
         return jsonify(body), status
 
+    # Ставим demo-буфер в конец, чтобы новый consumer получал только новые сообщения.
+    CONSUMER_POSITIONS[f'{topic}:{group}:{consumer}'] = len(MESSAGE_BUFFER)
+
     return jsonify({'ok': True, 'topic': topic, 'group': group, 'consumer': consumer, 'created': created})
 
 
@@ -163,13 +192,16 @@ def send_message():
     if error:
         body, status = error
         return jsonify(body), status
+
+    _append_to_demo_buffer(topic, message)
     return jsonify({'ok': True, 'result': result, 'message': message})
 
 
 @kafka_bp.route('/api/poll')
 def poll():
-    _, _, _, _, default_group, _ = _kafka_config()
+    _, _, _, default_topic, default_group, _ = _kafka_config()
     try:
+        topic = _safe_name(request.args.get('topic'), default_topic)
         group = _safe_name(request.args.get('group'), default_group)
         consumer = _safe_name(request.args.get('consumer'), f'web-{session.get("user_id", "guest")}')
     except ValueError as exc:
@@ -184,7 +216,12 @@ def poll():
     if error:
         body, status = error
         return jsonify(body), status
-    return jsonify({'ok': True, 'records': records or []})
+
+    records = records or []
+    if not records:
+        records = _buffer_records_for(topic, group, consumer)
+
+    return jsonify({'ok': True, 'records': records})
 
 
 @kafka_bp.route('/api/disconnect', methods=['POST'])
