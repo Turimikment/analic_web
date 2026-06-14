@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kafka тренажёр</title>
+    <style>
+        body { font-family: 'Courier New', monospace; margin: 0; background: #FFF3E0; color: #3b2410; }
+        .user-header { background: #FF9800; padding: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .user-header .username { font-size: 1.2em; font-weight: bold; color: white; }
+        .logout-btn, .home-btn { background: #F57C00; color: white; padding: 8px 16px; border-radius: 20px; text-decoration: none; font-weight: bold; margin-left: 8px; }
+        .container { max-width: 1100px; margin: 30px auto; padding: 0 18px; display: grid; grid-template-columns: 360px 1fr; gap: 20px; }
+        .card { background: white; border-radius: 20px; padding: 24px; box-shadow: 0 0 15px rgba(255, 152, 0, 0.2); border: 2px dashed #FFB74D; }
+        h1, h2, h3 { color: #E64A19; }
+        label { display: block; margin: 12px 0 6px; color: #8a5a18; font-weight: bold; }
+        input, textarea { width: 100%; border: 2px solid #FFCC80; border-radius: 12px; padding: 12px; box-sizing: border-box; font-family: inherit; }
+        textarea { min-height: 80px; resize: vertical; }
+        button { border: 0; border-radius: 14px; padding: 12px 16px; font-weight: bold; cursor: pointer; background: #FF9800; color: white; font-family: inherit; }
+        button.secondary { background: #795548; }
+        button.danger { background: #d84315; }
+        .row { display: flex; gap: 10px; align-items: center; }
+        .row > * { flex: 1; }
+        .status { margin: 12px 0; padding: 12px; background: #FFF8E1; border-radius: 12px; color: #6d4c41; }
+        .ok { color: #2e7d32; } .bad { color: #c62828; }
+        .chat { height: 520px; overflow: auto; background: #FFF8E1; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+        .msg { background: white; border-radius: 14px; padding: 12px; border-left: 5px solid #FFB74D; }
+        .msg.me { border-left-color: #43a047; }
+        .meta { display: flex; justify-content: space-between; gap: 10px; color: #8a5a18; font-size: .85em; margin-bottom: 6px; }
+        .text { white-space: pre-wrap; line-height: 1.45; }
+        .hint { font-size: .92em; color: #6d4c41; line-height: 1.45; }
+        code { background: #FFF8E1; padding: 2px 6px; border-radius: 6px; }
+        @media (max-width: 900px) { .container { grid-template-columns: 1fr; } .chat { height: 420px; } }
+    </style>
+</head>
+<body>
+    <div class="user-header">
+        <div class="username">⚡ Kafka тренажёр · {{ username }}</div>
+        <div>
+            <a href="{{ url_for('main.home') }}" class="home-btn">На главную</a>
+            <a href="{{ url_for('main.logout') }}" class="logout-btn">Выйти</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <aside class="card">
+            <h2>Подключение</h2>
+            <div class="status" id="status">Проверяю backend...</div>
+
+            <label>Topic</label>
+            <input id="topic" value="{{ topic }}">
+
+            <label>Consumer group</label>
+            <input id="group" value="{{ group }}">
+
+            <label>Consumer name</label>
+            <input id="consumer" value="web-{{ username }}">
+
+            <label>Имя в чате</label>
+            <input id="author" value="{{ username }}">
+
+            <div class="row" style="margin-top:14px">
+                <button id="connect">Подключиться</button>
+                <button class="danger" id="disconnect">Отключиться</button>
+            </div>
+
+            <p class="hint">
+                Секреты Aiven хранятся только на сервере в env-переменных:
+                <code>KAFKA_REST_URL</code>, <code>KAFKA_USERNAME</code>, <code>KAFKA_PASSWORD</code>.
+                Браузер видит только proxy-endpoints Flask.
+            </p>
+
+            <h3>Сценарий</h3>
+            <p class="hint">
+                Чат имитирует событие <code>support.message.created</code>. Студент видит producer,
+                topic, consumer group, offset, падение consumer'а и повторную доставку.
+            </p>
+        </aside>
+
+        <main class="card">
+            <h1>Чат через Aiven Kafka</h1>
+            <div class="chat" id="chat"></div>
+            <div class="row" style="margin-top:14px">
+                <textarea id="message" placeholder="Напиши сообщение в Kafka..."></textarea>
+                <button id="send" style="max-width:140px">Отправить</button>
+            </div>
+        </main>
+    </div>
+
+<script>
+const $ = id => document.getElementById(id);
+let connected = false;
+let pollTimer = null;
+
+function escapeHtml(s) { return String(s).replace(/[&<>\"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c])); }
+function setStatus(text, cls='') { $('status').innerHTML = cls ? `<span class="${cls}">${escapeHtml(text)}</span>` : escapeHtml(text); }
+function addMsg(msg, me=false) {
+    const div = document.createElement('div');
+    div.className = 'msg' + (me ? ' me' : '');
+    const time = msg.time ? new Date(msg.time).toLocaleTimeString() : new Date().toLocaleTimeString();
+    div.innerHTML = `<div class="meta"><span>${escapeHtml(msg.author || 'unknown')}</span><span>${time}</span></div><div class="text">${escapeHtml(msg.text || JSON.stringify(msg))}</div>`;
+    $('chat').appendChild(div);
+    $('chat').scrollTop = $('chat').scrollHeight;
+}
+async function api(url, options={}) {
+    const resp = await fetch(url, { ...options, headers: { 'Content-Type': 'application/json', ...(options.headers || {}) } });
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok || data.error) throw new Error(data.error || ('HTTP ' + resp.status));
+    return data;
+}
+async function health() {
+    try {
+        const data = await api('/kafka/api/health');
+        setStatus(data.ok ? 'Backend готов, Kafka env заданы' : 'Не заданы env: ' + data.missing.join(', '), data.ok ? 'ok' : 'bad');
+    } catch (e) { setStatus('Backend недоступен: ' + e.message, 'bad'); }
+}
+async function poll() {
+    if (!connected) return;
+    try {
+        const qs = new URLSearchParams({ group: $('group').value, consumer: $('consumer').value });
+        const data = await api('/kafka/api/poll?' + qs.toString());
+        (data.records || []).forEach(r => addMsg(r.value, r.value && r.value.author === $('author').value));
+    } catch(e) { setStatus('Ошибка чтения: ' + e.message, 'bad'); }
+}
+$('connect').onclick = async () => {
+    setStatus('Подключаюсь...');
+    try {
+        await api('/kafka/api/connect', { method: 'POST', body: JSON.stringify({ topic: $('topic').value, group: $('group').value, consumer: $('consumer').value }) });
+        connected = true;
+        setStatus('Подключено к Kafka через Flask proxy', 'ok');
+        clearInterval(pollTimer);
+        pollTimer = setInterval(poll, 1800);
+        poll();
+    } catch(e) { connected = false; setStatus('Ошибка подключения: ' + e.message, 'bad'); }
+};
+$('disconnect').onclick = async () => {
+    connected = false;
+    clearInterval(pollTimer);
+    try { await api('/kafka/api/disconnect', { method: 'POST', body: JSON.stringify({ group: $('group').value, consumer: $('consumer').value }) }); } catch(e) {}
+    setStatus('Отключено');
+};
+$('send').onclick = async () => {
+    const text = $('message').value.trim();
+    if (!text) return;
+    try {
+        await api('/kafka/api/send', { method: 'POST', body: JSON.stringify({ topic: $('topic').value, author: $('author').value, text }) });
+        $('message').value = '';
+        setStatus('Сообщение отправлено в Kafka', 'ok');
+        setTimeout(poll, 300);
+    } catch(e) { setStatus('Ошибка отправки: ' + e.message, 'bad'); }
+};
+$('message').addEventListener('keydown', e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) $('send').click(); });
+health();
+</script>
+</body>
+</html>
