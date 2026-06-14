@@ -11,3 +11,4 @@ lxml>=4.9.1
 flasgger
 redis
 flask-session
+requests
