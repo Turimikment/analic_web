@@ -6,6 +6,9 @@ from flask import Blueprint, current_app, jsonify, render_template, request, ses
 
 kafka_bp = Blueprint('kafka', __name__)
 
+KAFKA_JSON = 'application/vnd.kafka.json.v2+json'
+KAFKA_V2 = 'application/vnd.kafka.v2+json'
+
 
 def _safe_name(value, fallback):
     value = str(value or fallback).strip()
@@ -29,14 +32,14 @@ def _kafka_config():
     return rest_url, username, password, topic, group, missing
 
 
-def _headers():
+def _headers(content_type=KAFKA_JSON, accept=KAFKA_JSON):
     return {
-        'Content-Type': 'application/vnd.kafka.json.v2+json',
-        'Accept': 'application/vnd.kafka.json.v2+json',
+        'Content-Type': content_type,
+        'Accept': accept,
     }
 
 
-def _kafka_request(method, path, json_body=None):
+def _kafka_request(method, path, json_body=None, content_type=KAFKA_JSON, accept=KAFKA_JSON):
     rest_url, username, password, _, _, missing = _kafka_config()
     if missing:
         return None, ({'error': 'На сервере не заданы переменные окружения', 'missing': missing}, 500)
@@ -45,7 +48,7 @@ def _kafka_request(method, path, json_body=None):
         response = requests.request(
             method,
             f'{rest_url}{path}',
-            headers=_headers(),
+            headers=_headers(content_type=content_type, accept=accept),
             auth=(username, password),
             json=json_body,
             timeout=10,
@@ -60,6 +63,7 @@ def _kafka_request(method, path, json_body=None):
         payload = {'raw': response.text}
 
     if not response.ok:
+        current_app.logger.warning('Kafka REST error %s for %s %s: %s', response.status_code, method, path, payload)
         return None, ({'error': f'Kafka REST вернул {response.status_code}', 'details': payload}, response.status_code)
 
     return payload, None
@@ -90,24 +94,41 @@ def connect():
     except ValueError as exc:
         return jsonify({'error': str(exc)}), 400
 
-    _kafka_request('DELETE', f'/consumers/{group}/instances/{consumer}')
+    _kafka_request(
+        'DELETE',
+        f'/consumers/{group}/instances/{consumer}',
+        content_type=KAFKA_V2,
+        accept=KAFKA_V2,
+    )
 
-    _, error = _kafka_request('POST', f'/consumers/{group}', {
-        'name': consumer,
-        'format': 'json',
-        'auto.offset.reset': 'latest',
-        'enable.auto.commit': True,
-    })
+    created, error = _kafka_request(
+        'POST',
+        f'/consumers/{group}',
+        {
+            'name': consumer,
+            'format': 'json',
+            'auto.offset.reset': 'latest',
+            'enable.auto.commit': True,
+        },
+        content_type=KAFKA_V2,
+        accept=KAFKA_V2,
+    )
     if error:
         body, status = error
         return jsonify(body), status
 
-    _, error = _kafka_request('POST', f'/consumers/{group}/instances/{consumer}/subscription', {'topics': [topic]})
+    _, error = _kafka_request(
+        'POST',
+        f'/consumers/{group}/instances/{consumer}/subscription',
+        {'topics': [topic]},
+        content_type=KAFKA_V2,
+        accept=KAFKA_V2,
+    )
     if error:
         body, status = error
         return jsonify(body), status
 
-    return jsonify({'ok': True, 'topic': topic, 'group': group, 'consumer': consumer})
+    return jsonify({'ok': True, 'topic': topic, 'group': group, 'consumer': consumer, 'created': created})
 
 
 @kafka_bp.route('/api/send', methods=['POST'])
@@ -132,7 +153,13 @@ def send_message():
         'text': text,
         'time': datetime.utcnow().isoformat() + 'Z',
     }
-    result, error = _kafka_request('POST', f'/topics/{topic}', {'records': [{'key': author, 'value': message}]})
+    result, error = _kafka_request(
+        'POST',
+        f'/topics/{topic}',
+        {'records': [{'key': author, 'value': message}]},
+        content_type=KAFKA_JSON,
+        accept=KAFKA_JSON,
+    )
     if error:
         body, status = error
         return jsonify(body), status
@@ -148,7 +175,12 @@ def poll():
     except ValueError as exc:
         return jsonify({'error': str(exc)}), 400
 
-    records, error = _kafka_request('GET', f'/consumers/{group}/instances/{consumer}/records?timeout=1000&max_bytes=300000')
+    records, error = _kafka_request(
+        'GET',
+        f'/consumers/{group}/instances/{consumer}/records?timeout=1000&max_bytes=300000',
+        content_type=KAFKA_JSON,
+        accept=KAFKA_JSON,
+    )
     if error:
         body, status = error
         return jsonify(body), status
@@ -164,5 +196,10 @@ def disconnect():
         consumer = _safe_name(data.get('consumer'), f'web-{session.get("user_id", "guest")}')
     except ValueError as exc:
         return jsonify({'error': str(exc)}), 400
-    _kafka_request('DELETE', f'/consumers/{group}/instances/{consumer}')
+    _kafka_request(
+        'DELETE',
+        f'/consumers/{group}/instances/{consumer}',
+        content_type=KAFKA_V2,
+        accept=KAFKA_V2,
+    )
     return jsonify({'ok': True})
