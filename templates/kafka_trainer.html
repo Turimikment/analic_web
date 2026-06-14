@@ -5,101 +5,296 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kafka тренажёр</title>
     <style>
-        body { font-family: 'Courier New', monospace; margin: 0; background: #FFF3E0; color: #3b2410; }
-        .user-header { background: #FF9800; padding: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
-        .user-header .username { font-size: 1.2em; font-weight: bold; color: white; }
-        .logout-btn, .home-btn { background: #F57C00; color: white; padding: 8px 16px; border-radius: 20px; text-decoration: none; font-weight: bold; margin-left: 8px; }
-        .container { max-width: 1100px; margin: 30px auto; padding: 0 18px; display: grid; grid-template-columns: 360px 1fr; gap: 20px; }
-        .card { background: white; border-radius: 20px; padding: 24px; box-shadow: 0 0 15px rgba(255, 152, 0, 0.2); border: 2px dashed #FFB74D; }
-        h1, h2, h3 { color: #E64A19; }
-        label { display: block; margin: 12px 0 6px; color: #8a5a18; font-weight: bold; }
-        input, textarea { width: 100%; border: 2px solid #FFCC80; border-radius: 12px; padding: 12px; box-sizing: border-box; font-family: inherit; }
-        textarea { min-height: 80px; resize: vertical; }
-        button { border: 0; border-radius: 14px; padding: 12px 16px; font-weight: bold; cursor: pointer; background: #FF9800; color: white; font-family: inherit; }
-        button.secondary { background: #795548; }
-        button.danger { background: #d84315; }
-        .row { display: flex; gap: 10px; align-items: center; }
-        .row > * { flex: 1; }
-        .status { margin: 12px 0; padding: 12px; background: #FFF8E1; border-radius: 12px; color: #6d4c41; }
-        .ok { color: #2e7d32; } .bad { color: #c62828; }
-        .chat { height: 520px; overflow: auto; background: #FFF8E1; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
-        .msg { background: white; border-radius: 14px; padding: 12px; border-left: 5px solid #FFB74D; }
-        .msg.me { border-left-color: #43a047; }
-        .meta { display: flex; justify-content: space-between; gap: 10px; color: #8a5a18; font-size: .85em; margin-bottom: 6px; }
+        :root {
+            --bg: #FFF7E8;
+            --card: #ffffff;
+            --ink: #2f2418;
+            --muted: #7d6b5b;
+            --orange: #FF9800;
+            --orange-dark: #E64A19;
+            --green: #22c55e;
+            --green-soft: #EAF8EF;
+            --blue: #2563eb;
+            --blue-soft: #EFF6FF;
+            --purple: #8b5cf6;
+            --purple-soft: #F5F0FF;
+            --line: #FFD59A;
+            --shadow: 0 18px 50px rgba(169, 92, 18, .13);
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Courier New', monospace;
+            margin: 0;
+            background: radial-gradient(circle at 15% 0%, #fff 0, var(--bg) 34%, #FFF3E0 100%);
+            color: var(--ink);
+        }
+        .topbar {
+            background: #151515;
+            color: white;
+            padding: 14px 28px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            box-shadow: 0 4px 18px rgba(0,0,0,.25);
+            position: sticky;
+            top: 0;
+            z-index: 20;
+        }
+        .brand { display: flex; align-items: center; gap: 12px; font-size: 1.3em; font-weight: 900; }
+        .brand .bolt { color: #FFC107; font-size: 1.45em; }
+        .top-meta { display: flex; gap: 18px; flex-wrap: wrap; align-items: center; font-weight: 700; }
+        .pill { background: #2b2b2b; border-radius: 12px; padding: 4px 10px; color: #FFCA28; }
+        .active-dot { width: 12px; height: 12px; background: var(--green); border-radius: 50%; display: inline-block; box-shadow: 0 0 0 4px rgba(34,197,94,.12); }
+        .nav-link { color: white; background: #F57C00; padding: 8px 16px; border-radius: 18px; text-decoration: none; }
+        .page { max-width: 1440px; margin: 24px auto 38px; padding: 0 22px; }
+        .lab-grid { display: grid; grid-template-columns: minmax(330px, 1fr) 360px minmax(330px, 1fr); gap: 22px; align-items: stretch; }
+        .card {
+            background: rgba(255,255,255,.95);
+            border: 1px solid rgba(255,152,0,.25);
+            border-radius: 22px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+        .chat-card { min-height: 620px; display: flex; flex-direction: column; }
+        .chat-head {
+            padding: 22px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255,152,0,.22);
+        }
+        .producer .chat-head { background: linear-gradient(135deg, var(--green-soft), #fff); }
+        .consumer .chat-head { background: linear-gradient(135deg, var(--blue-soft), #fff); }
+        .title { margin: 0; font-size: 1.45em; display: flex; align-items: center; gap: 12px; }
+        .producer .title { color: #15803d; }
+        .consumer .title { color: #1d4ed8; }
+        .subtitle { margin: 8px 0 0; color: var(--muted); font-size: .95em; }
+        .badge { border-radius: 12px; padding: 8px 10px; font-size: .85em; font-weight: 900; }
+        .producer .badge { background: #dcfce7; color: #15803d; }
+        .consumer .badge { background: #dbeafe; color: #1d4ed8; }
+        .chat-box { flex: 1; padding: 22px; overflow: auto; min-height: 390px; display: flex; flex-direction: column; gap: 12px; background: linear-gradient(180deg, #fff, #fffaf2); }
+        .message { max-width: 88%; border-radius: 16px; padding: 12px 14px; border: 1px solid #eee; background: white; animation: pop .18s ease-out; }
+        .producer .message { align-self: flex-end; background: #ECFDF5; border-color: #BBF7D0; }
+        .consumer .message { align-self: flex-start; background: #EFF6FF; border-color: #BFDBFE; }
+        .meta { display: flex; gap: 12px; justify-content: space-between; color: var(--muted); font-size: .82em; margin-bottom: 6px; }
         .text { white-space: pre-wrap; line-height: 1.45; }
-        .hint { font-size: .92em; color: #6d4c41; line-height: 1.45; }
-        code { background: #FFF8E1; padding: 2px 6px; border-radius: 6px; }
-        @media (max-width: 900px) { .container { grid-template-columns: 1fr; } .chat { height: 420px; } }
+        .composer { padding: 18px 22px; border-top: 1px solid rgba(255,152,0,.22); background: #fff; display: grid; grid-template-columns: 1fr auto; gap: 12px; }
+        textarea { width: 100%; resize: vertical; min-height: 58px; max-height: 130px; border: 2px solid #FFCC80; border-radius: 14px; padding: 13px; font-family: inherit; outline: none; }
+        textarea:focus, input:focus { border-color: var(--orange); box-shadow: 0 0 0 4px rgba(255,152,0,.12); }
+        input { width: 100%; border: 2px solid #FFCC80; border-radius: 12px; padding: 11px; font-family: inherit; }
+        button { border: 0; border-radius: 14px; padding: 12px 16px; font-weight: 900; cursor: pointer; font-family: inherit; transition: .2s; }
+        button:hover { transform: translateY(-1px); }
+        .send-btn { background: linear-gradient(135deg, #22c55e, #16a34a); color: white; }
+        .secondary { background: #795548; color: white; }
+        .danger { background: #dc2626; color: white; }
+        .center-flow { display: flex; flex-direction: column; gap: 16px; }
+        .kafka-core { text-align: center; padding: 22px; min-height: 260px; display: flex; flex-direction: column; justify-content: center; }
+        .kafka-logo { font-size: 2.2em; font-weight: 900; margin-bottom: 12px; }
+        .topic-box { border: 2px solid #E5E7EB; border-radius: 18px; padding: 18px; background: #fff; margin: 10px 0 18px; }
+        .topic-title { font-weight: 900; color: #111827; }
+        .partitions { display: flex; justify-content: center; gap: 8px; margin-top: 14px; }
+        .partition { width: 32px; height: 42px; border-radius: 7px; border: 2px solid #d1d5db; background: #f9fafb; display: grid; place-items: end center; padding-bottom: 4px; font-size: .75em; color: var(--muted); }
+        .partition.p0 { border-color: #93c5fd; background: #eff6ff; }
+        .partition.p1 { border-color: #fcd34d; background: #fffbeb; }
+        .partition.p2 { border-color: #c4b5fd; background: #f5f3ff; }
+        .arrow { display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--muted); font-weight: 900; }
+        .arrow-line { height: 3px; flex: 1; border-radius: 999px; background: linear-gradient(90deg, var(--green), var(--orange), var(--blue)); }
+        .group-box { padding: 18px; background: var(--purple-soft); border: 1px solid #ddd6fe; border-radius: 18px; text-align: center; }
+        .group-title { color: #6d28d9; font-weight: 900; margin-bottom: 8px; }
+        .consumer-chip { background: white; border: 1px solid #bfdbfe; border-radius: 14px; padding: 12px; color: #1d4ed8; font-weight: 900; }
+        .settings { padding: 18px; }
+        .settings h3 { margin-top: 0; color: var(--orange-dark); }
+        .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        label { display: block; margin: 12px 0 6px; color: #8a5a18; font-weight: 900; font-size: .9em; }
+        .status { margin: 12px 0; padding: 12px; background: #FFF8E1; border-radius: 12px; color: #6d4c41; border: 1px solid #FFE0B2; }
+        .ok { color: #15803d; } .bad { color: #b91c1c; }
+        .diagram-grid { margin-top: 22px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; }
+        .diagram { padding: 20px; min-height: 210px; }
+        .diagram h3 { margin: 0 0 16px; color: var(--orange-dark); }
+        .mini-flow { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; gap: 10px; align-items: center; text-align: center; }
+        .mini-node { border: 1px solid #FFD59A; background: #FFF8E1; border-radius: 14px; padding: 14px 8px; font-weight: 900; min-height: 70px; display: grid; place-items: center; }
+        .mini-arrow { color: var(--muted); font-size: 1.6em; }
+        .lifecycle { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+        .life-step { border-radius: 16px; padding: 14px 8px; min-height: 86px; text-align: center; border: 1px solid #E5E7EB; background: #fff; }
+        .life-step b { display: block; margin-bottom: 6px; color: #111827; }
+        .stats { margin-top: 18px; padding: 18px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; align-items: center; }
+        .stat b { color: var(--orange-dark); display: block; margin-bottom: 6px; }
+        .stat span { color: var(--muted); }
+        .clear-wrap { text-align: right; }
+        .hint { color: var(--muted); line-height: 1.45; font-size: .92em; }
+        code { background: #FFF8E1; padding: 2px 6px; border-radius: 7px; color: #9a3412; }
+        @keyframes pop { from { transform: scale(.98); opacity: .4; } to { transform: scale(1); opacity: 1; } }
+        @media (max-width: 1120px) {
+            .lab-grid { grid-template-columns: 1fr; }
+            .diagram-grid { grid-template-columns: 1fr; }
+            .stats { grid-template-columns: 1fr 1fr; }
+        }
+        @media (max-width: 640px) {
+            .topbar { align-items: flex-start; flex-direction: column; }
+            .composer, .row, .stats { grid-template-columns: 1fr; }
+            .mini-flow, .lifecycle { grid-template-columns: 1fr; }
+            .mini-arrow { transform: rotate(90deg); }
+        }
     </style>
 </head>
 <body>
-    <div class="user-header">
-        <div class="username">⚡ Kafka тренажёр · {{ username }}</div>
-        <div>
-            <a href="{{ url_for('main.home') }}" class="home-btn">На главную</a>
-            <a href="{{ url_for('main.logout') }}" class="logout-btn">Выйти</a>
+    <div class="topbar">
+        <div class="brand"><span class="bolt">⚡</span> Kafka Тренажёр</div>
+        <div class="top-meta">
+            <span><span class="active-dot"></span> Подключение: <span id="topStatus">проверяется</span></span>
+            <span>Топик: <span class="pill" id="topTopic">{{ topic }}</span></span>
+            <span>Группа: <span class="pill" id="topGroup">{{ group }}</span></span>
+            <a href="{{ url_for('main.home') }}" class="nav-link">На главную</a>
         </div>
     </div>
 
-    <div class="container">
-        <aside class="card">
-            <h2>Подключение</h2>
-            <div class="status" id="status">Проверяю backend...</div>
+    <div class="page">
+        <section class="lab-grid">
+            <article class="card chat-card producer">
+                <div class="chat-head">
+                    <div>
+                        <h2 class="title">✈️ ПРОДЮСЕР</h2>
+                        <p class="subtitle">Отправляет сообщения в Kafka topic</p>
+                    </div>
+                    <span class="badge">WRITE</span>
+                </div>
+                <div class="chat-box" id="producerChat"></div>
+                <div class="composer">
+                    <textarea id="message" placeholder="Введите сообщение от продюсера..."></textarea>
+                    <button class="send-btn" id="send">Отправить ➜</button>
+                </div>
+            </article>
 
-            <label>Topic</label>
-            <input id="topic" value="{{ topic }}">
+            <aside class="center-flow">
+                <div class="card kafka-core">
+                    <div class="kafka-logo">⛓️ kafka</div>
+                    <div class="arrow"><span>write()</span><span class="arrow-line"></span><span>poll()</span></div>
+                    <div class="topic-box">
+                        <div class="topic-title">Топик: <span id="schemaTopic">{{ topic }}</span></div>
+                        <div class="hint">Сообщения сохраняются в партициях</div>
+                        <div class="partitions">
+                            <div class="partition p0">P0</div>
+                            <div class="partition p1">P1</div>
+                            <div class="partition p2">P2</div>
+                        </div>
+                    </div>
+                    <div class="group-box">
+                        <div class="group-title">Consumer Group</div>
+                        <div id="schemaGroup">{{ group }}</div>
+                        <div class="consumer-chip" id="schemaConsumer">consumer</div>
+                    </div>
+                </div>
 
-            <label>Consumer group</label>
-            <input id="group" value="{{ group }}">
+                <div class="card settings">
+                    <h3>⚙️ Настройки</h3>
+                    <div class="status" id="status">Проверяю backend...</div>
+                    <label>Topic</label>
+                    <input id="topic" value="{{ topic }}">
+                    <div class="row">
+                        <div>
+                            <label>Consumer group</label>
+                            <input id="group" value="{{ group }}">
+                        </div>
+                        <div>
+                            <label>Consumer name</label>
+                            <input id="consumer" value="web-{{ username }}">
+                        </div>
+                    </div>
+                    <label>Имя продюсера</label>
+                    <input id="author" value="{{ username }}">
+                    <div class="row" style="margin-top:14px">
+                        <button class="secondary" id="connect">Подключиться</button>
+                        <button class="danger" id="disconnect">Отключиться</button>
+                    </div>
+                </div>
+            </aside>
 
-            <label>Consumer name</label>
-            <input id="consumer" value="web-{{ username }}">
+            <article class="card chat-card consumer">
+                <div class="chat-head">
+                    <div>
+                        <h2 class="title">📥 КОНСЮМЕР</h2>
+                        <p class="subtitle">Читает сообщения из Kafka consumer group</p>
+                    </div>
+                    <span class="badge">READ</span>
+                </div>
+                <div class="chat-box" id="consumerChat"></div>
+                <div class="composer" style="grid-template-columns:1fr">
+                    <div class="hint">🔒 Консюмер только читает сообщения. Отправка доступна слева через продюсер.</div>
+                </div>
+            </article>
+        </section>
 
-            <label>Имя в чате</label>
-            <input id="author" value="{{ username }}">
-
-            <div class="row" style="margin-top:14px">
-                <button id="connect">Подключиться</button>
-                <button class="danger" id="disconnect">Отключиться</button>
+        <section class="diagram-grid">
+            <div class="card diagram">
+                <h3>🏗️ Архитектура Kafka</h3>
+                <div class="mini-flow">
+                    <div class="mini-node">Продюсер<br><small>write()</small></div>
+                    <div class="mini-arrow">→</div>
+                    <div class="mini-node">Kafka Topic<br><small>partitions</small></div>
+                    <div class="mini-arrow">→</div>
+                    <div class="mini-node">Консюмер<br><small>poll()</small></div>
+                </div>
+                <p class="hint">Продюсер пишет события в топик, Kafka хранит их в партициях, консюмер читает через свою группу.</p>
             </div>
-
-            <p class="hint">
-                Секреты Aiven хранятся только на сервере в env-переменных:
-                <code>KAFKA_REST_URL</code>, <code>KAFKA_USERNAME</code>, <code>KAFKA_PASSWORD</code>.
-                Браузер видит только proxy-endpoints Flask.
-            </p>
-
-            <h3>Сценарий</h3>
-            <p class="hint">
-                Чат имитирует событие <code>support.message.created</code>. Студент видит producer,
-                topic, consumer group, offset, падение consumer'а и повторную доставку.
-            </p>
-        </aside>
-
-        <main class="card">
-            <h1>Чат через Aiven Kafka</h1>
-            <div class="chat" id="chat"></div>
-            <div class="row" style="margin-top:14px">
-                <textarea id="message" placeholder="Напиши сообщение в Kafka..."></textarea>
-                <button id="send" style="max-width:140px">Отправить</button>
+            <div class="card diagram">
+                <h3>👥 Consumer Group</h3>
+                <div class="group-box">
+                    <div class="group-title">Группа: <span id="groupInfo">{{ group }}</span></div>
+                    <div class="consumer-chip">Консюмер #1 читает свои партиции</div>
+                </div>
+                <p class="hint">В одной группе каждое сообщение обрабатывает один участник. Разные группы получают независимые копии потока.</p>
             </div>
-        </main>
+            <div class="card diagram">
+                <h3>📦 Жизненный цикл сообщения</h3>
+                <div class="lifecycle">
+                    <div class="life-step"><b>1. Send</b>Продюсер отправляет</div>
+                    <div class="life-step"><b>2. Store</b>Kafka сохраняет</div>
+                    <div class="life-step"><b>3. Poll</b>Консюмер получает</div>
+                    <div class="life-step"><b>4. Commit</b>Offset фиксируется</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="card stats">
+            <div class="stat"><b>🔌 Подключение</b><span id="healthStat">проверяется</span></div>
+            <div class="stat"><b>📊 Статистика</b><span>Отправлено: <span id="sentCount">0</span><br>Получено: <span id="receivedCount">0</span></span></div>
+            <div class="stat"><b>⏱️ Последнее событие</b><span id="lastEvent">ещё нет</span></div>
+            <div class="clear-wrap"><button class="danger" id="clearChats">Очистить чаты</button></div>
+        </section>
     </div>
 
 <script>
 const $ = id => document.getElementById(id);
 let connected = false;
 let pollTimer = null;
+let sentCount = 0;
+let receivedCount = 0;
+const seenMessages = new Set();
 
 function escapeHtml(s) { return String(s).replace(/[&<>\"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c])); }
-function setStatus(text, cls='') { $('status').innerHTML = cls ? `<span class="${cls}">${escapeHtml(text)}</span>` : escapeHtml(text); }
-function addMsg(msg, me=false) {
+function nowTime() { return new Date().toLocaleTimeString(); }
+function setStatus(text, cls='') {
+    $('status').innerHTML = cls ? `<span class="${cls}">${escapeHtml(text)}</span>` : escapeHtml(text);
+    $('topStatus').innerHTML = cls === 'ok' ? '<span class="ok">активно</span>' : escapeHtml(text);
+    $('healthStat').innerHTML = cls === 'ok' ? 'Kafka REST: ✅<br>Топик: ✅' : escapeHtml(text);
+}
+function refreshLabels() {
+    $('topTopic').textContent = $('topic').value;
+    $('schemaTopic').textContent = $('topic').value;
+    $('topGroup').textContent = $('group').value;
+    $('schemaGroup').textContent = $('group').value;
+    $('groupInfo').textContent = $('group').value;
+    $('schemaConsumer').textContent = $('consumer').value;
+}
+function addMsg(targetId, msg, options={}) {
     const div = document.createElement('div');
-    div.className = 'msg' + (me ? ' me' : '');
-    const time = msg.time ? new Date(msg.time).toLocaleTimeString() : new Date().toLocaleTimeString();
-    div.innerHTML = `<div class="meta"><span>${escapeHtml(msg.author || 'unknown')}</span><span>${time}</span></div><div class="text">${escapeHtml(msg.text || JSON.stringify(msg))}</div>`;
-    $('chat').appendChild(div);
-    $('chat').scrollTop = $('chat').scrollHeight;
+    div.className = 'message';
+    const time = msg.time ? new Date(msg.time).toLocaleTimeString() : nowTime();
+    const source = options.source || msg.author || 'Kafka';
+    div.innerHTML = `<div class="meta"><span>${escapeHtml(source)}</span><span>${time}</span></div><div class="text">${escapeHtml(msg.text || JSON.stringify(msg))}</div>`;
+    $(targetId).appendChild(div);
+    $(targetId).scrollTop = $(targetId).scrollHeight;
 }
 async function api(url, options={}) {
     const resp = await fetch(url, { ...options, headers: { 'Content-Type': 'application/json', ...(options.headers || {}) } });
@@ -110,25 +305,40 @@ async function api(url, options={}) {
 async function health() {
     try {
         const data = await api('/kafka/api/health');
+        if (data.topic) $('topic').value = data.topic;
+        if (data.group) $('group').value = data.group;
+        refreshLabels();
         setStatus(data.ok ? 'Backend готов, Kafka env заданы' : 'Не заданы env: ' + data.missing.join(', '), data.ok ? 'ok' : 'bad');
     } catch (e) { setStatus('Backend недоступен: ' + e.message, 'bad'); }
 }
+function recordEvent(text) { $('lastEvent').textContent = text + ' · ' + nowTime(); }
 async function poll() {
     if (!connected) return;
     try {
         const qs = new URLSearchParams({ group: $('group').value, consumer: $('consumer').value });
         const data = await api('/kafka/api/poll?' + qs.toString());
-        (data.records || []).forEach(r => addMsg(r.value, r.value && r.value.author === $('author').value));
+        (data.records || []).forEach(r => {
+            const value = r.value || {};
+            const key = `${r.topic || $('topic').value}:${r.partition}:${r.offset}:${value.time || ''}:${value.text || ''}`;
+            if (seenMessages.has(key)) return;
+            seenMessages.add(key);
+            receivedCount += 1;
+            $('receivedCount').textContent = receivedCount;
+            addMsg('consumerChat', value, { source: 'Kafka → ' + $('consumer').value });
+            recordEvent('Консюмер получил сообщение');
+        });
     } catch(e) { setStatus('Ошибка чтения: ' + e.message, 'bad'); }
 }
 $('connect').onclick = async () => {
+    refreshLabels();
     setStatus('Подключаюсь...');
     try {
         await api('/kafka/api/connect', { method: 'POST', body: JSON.stringify({ topic: $('topic').value, group: $('group').value, consumer: $('consumer').value }) });
         connected = true;
         setStatus('Подключено к Kafka через Flask proxy', 'ok');
         clearInterval(pollTimer);
-        pollTimer = setInterval(poll, 1800);
+        pollTimer = setInterval(poll, 1400);
+        recordEvent('Консюмер подключился');
         poll();
     } catch(e) { connected = false; setStatus('Ошибка подключения: ' + e.message, 'bad'); }
 };
@@ -137,17 +347,35 @@ $('disconnect').onclick = async () => {
     clearInterval(pollTimer);
     try { await api('/kafka/api/disconnect', { method: 'POST', body: JSON.stringify({ group: $('group').value, consumer: $('consumer').value }) }); } catch(e) {}
     setStatus('Отключено');
+    recordEvent('Консюмер отключился');
 };
 $('send').onclick = async () => {
     const text = $('message').value.trim();
     if (!text) return;
+    refreshLabels();
+    const localMessage = { author: $('author').value, text, time: new Date().toISOString() };
     try {
         await api('/kafka/api/send', { method: 'POST', body: JSON.stringify({ topic: $('topic').value, author: $('author').value, text }) });
         $('message').value = '';
+        sentCount += 1;
+        $('sentCount').textContent = sentCount;
+        addMsg('producerChat', localMessage, { source: $('author').value + ' → Kafka' });
         setStatus('Сообщение отправлено в Kafka', 'ok');
-        setTimeout(poll, 300);
+        recordEvent('Продюсер отправил сообщение');
+        setTimeout(poll, 350);
     } catch(e) { setStatus('Ошибка отправки: ' + e.message, 'bad'); }
 };
+$('clearChats').onclick = () => {
+    $('producerChat').innerHTML = '';
+    $('consumerChat').innerHTML = '';
+    seenMessages.clear();
+    sentCount = 0;
+    receivedCount = 0;
+    $('sentCount').textContent = '0';
+    $('receivedCount').textContent = '0';
+    recordEvent('Чаты очищены');
+};
+['topic','group','consumer'].forEach(id => $(id).addEventListener('input', refreshLabels));
 $('message').addEventListener('keydown', e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) $('send').click(); });
 health();
 </script>
