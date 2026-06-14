@@ -1,5 +1,14 @@
 FROM provectuslabs/kafka-ui:latest
 
+USER root
+COPY kafka-ui-ca.pem /tmp/aiven-ca.pem
+RUN keytool -importcert -noprompt \
+    -alias aiven-project-ca \
+    -file /tmp/aiven-ca.pem \
+    -keystore "$JAVA_HOME/lib/security/cacerts" \
+    -storepass changeit
+USER kafkaui
+
 ENV DYNAMIC_CONFIG_ENABLED=true
 ENV JAVA_OPTS="-Xms64m -Xmx256m -XX:MaxMetaspaceSize=128m -XX:+ExitOnOutOfMemoryError"
 EXPOSE 8080
