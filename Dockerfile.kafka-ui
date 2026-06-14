@@ -1,3 +1,5 @@
 FROM provectuslabs/kafka-ui:latest
 
 ENV DYNAMIC_CONFIG_ENABLED=true
+
+CMD ["sh", "-c", "java -Dserver.port=${PORT:-8080} -jar /kafka-ui-api.jar"]
