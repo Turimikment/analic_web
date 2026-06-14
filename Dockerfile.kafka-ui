@@ -1,6 +1,7 @@
 FROM provectuslabs/kafka-ui:latest
 
 ENV DYNAMIC_CONFIG_ENABLED=true
+ENV JAVA_OPTS="-Xms64m -Xmx256m -XX:MaxMetaspaceSize=128m -XX:+ExitOnOutOfMemoryError"
 EXPOSE 8080
 
-ENTRYPOINT ["sh", "-c", "exec java -Dserver.address=0.0.0.0 -Dserver.port=${PORT:-8080} -jar /kafka-ui-api.jar"]
+ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -Dserver.address=0.0.0.0 -Dserver.port=${PORT:-8080} -jar /kafka-ui-api.jar"]
