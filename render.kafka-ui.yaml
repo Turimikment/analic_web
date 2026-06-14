@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: analic-kafka-ui
+    env: docker
+    plan: free
+    dockerfilePath: ./Dockerfile.kafka-ui
+    envVars:
+      - key: DYNAMIC_CONFIG_ENABLED
+        value: "true"
+      - key: KAFKA_CLUSTERS_0_NAME
+        value: Aiven Kafka
+      - key: KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS
+        sync: false
+      - key: KAFKA_CLUSTERS_0_PROPERTIES_SECURITY_PROTOCOL
+        value: SASL_SSL
+      - key: KAFKA_CLUSTERS_0_PROPERTIES_SASL_MECHANISM
+        value: PLAIN
+      - key: KAFKA_CLUSTERS_0_PROPERTIES_SASL_JAAS_CONFIG
+        sync: false
+      - key: KAFKA_CLUSTERS_0_READONLY
+        value: "false"
