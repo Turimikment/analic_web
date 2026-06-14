@@ -2,7 +2,7 @@ import os
 from datetime import datetime
 
 import requests
-from flask import Blueprint, current_app, jsonify, render_template, request, session
+from flask import Blueprint, current_app, jsonify, redirect, render_template, request, session
 
 kafka_bp = Blueprint('kafka', __name__)
 
@@ -100,13 +100,37 @@ def trainer_page():
     if not session.get('logged_in'):
         return render_template('index.html', error='Сначала войдите в норку')
     _, _, _, topic, group, _ = _kafka_config()
-    return render_template('kafka_trainer.html', username=session.get('username', 'Заяц'), topic=topic, group=group)
+    return render_template(
+        'kafka_trainer.html',
+        username=session.get('username', 'Заяц'),
+        topic=topic,
+        group=group,
+        kafka_ui_url=os.environ.get('KAFKA_UI_URL', '').strip(),
+    )
+
+
+@kafka_bp.route('/ui')
+def kafka_ui():
+    if not session.get('logged_in'):
+        return render_template('index.html', error='Сначала войдите в норку')
+    kafka_ui_url = os.environ.get('KAFKA_UI_URL', '').strip()
+    if not kafka_ui_url:
+        return jsonify({
+            'error': 'KAFKA_UI_URL не задан. Сначала задеплой Kafka UI отдельным сервисом и добавь URL в env основного Flask-сервиса.'
+        }), 404
+    return redirect(kafka_ui_url)
 
 
 @kafka_bp.route('/api/health')
 def health():
     _, _, _, topic, group, missing = _kafka_config()
-    return jsonify({'ok': not missing, 'missing': missing, 'topic': topic, 'group': group})
+    return jsonify({
+        'ok': not missing,
+        'missing': missing,
+        'topic': topic,
+        'group': group,
+        'kafka_ui_url': os.environ.get('KAFKA_UI_URL', '').strip(),
+    })
 
 
 @kafka_bp.route('/api/connect', methods=['POST'])
