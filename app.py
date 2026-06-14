@@ -1,5 +1,5 @@
 # app.py
-from flask import Flask, session
+from flask import Flask, session, render_template
 from flask_session import Session
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
 from spyne.server.wsgi import WsgiApplication
@@ -7,6 +7,7 @@ from config import Config
 from main.routes import main_bp
 from api.routes import api_bp
 from admin.routes import admin_bp
+from kafka.routes import kafka_bp
 from soap.soap_service import soap_app
 from utils.db_utils import init_db
 from flasgger import Swagger
@@ -59,6 +60,7 @@ def register_blueprints(app):
     app.register_blueprint(main_bp)
     app.register_blueprint(api_bp, url_prefix='/api')
     app.register_blueprint(admin_bp, url_prefix='/admin')
+    app.register_blueprint(kafka_bp, url_prefix='/kafka')
     logger.info("Blueprints registered")
 
 def register_error_handlers(app):
