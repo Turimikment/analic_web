@@ -87,6 +87,12 @@ def docs():
     """Страница с документацией по АПИ"""
     return render_template('docs.html')
 
+@main_bp.route('/docs/kafka')
+@login_required
+def kafka_docs():
+    """Страница с документацией по Kafka тренажёру и Kafka UI"""
+    return render_template('kafka_docs.html')
+
 @main_bp.route('/redis-stats')
 @login_required
 def redis_stats_page():
