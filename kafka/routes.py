@@ -8,6 +8,7 @@ kafka_bp = Blueprint('kafka', __name__)
 
 KAFKA_JSON = 'application/vnd.kafka.json.v2+json'
 KAFKA_V2 = 'application/vnd.kafka.v2+json'
+DEFAULT_KAFKA_UI_URL = 'https://analic-kafka-ui.onrender.com/'
 
 # Небольшой in-memory буфер нужен для учебного стенда: сообщение всё равно сначала
 # успешно отправляется в Aiven Kafka, а буфер помогает наглядно показать доставку,
@@ -36,6 +37,10 @@ def _kafka_config():
         'KAFKA_PASSWORD': password,
     }.items() if not value]
     return rest_url, username, password, topic, group, missing
+
+
+def _kafka_ui_url():
+    return os.environ.get('KAFKA_UI_URL', DEFAULT_KAFKA_UI_URL).strip()
 
 
 def _headers(content_type=KAFKA_JSON, accept=KAFKA_JSON):
@@ -105,7 +110,7 @@ def trainer_page():
         username=session.get('username', 'Заяц'),
         topic=topic,
         group=group,
-        kafka_ui_url=os.environ.get('KAFKA_UI_URL', '').strip(),
+        kafka_ui_url=_kafka_ui_url(),
     )
 
 
@@ -113,12 +118,7 @@ def trainer_page():
 def kafka_ui():
     if not session.get('logged_in'):
         return render_template('index.html', error='Сначала войдите в норку')
-    kafka_ui_url = os.environ.get('KAFKA_UI_URL', '').strip()
-    if not kafka_ui_url:
-        return jsonify({
-            'error': 'KAFKA_UI_URL не задан. Сначала задеплой Kafka UI отдельным сервисом и добавь URL в env основного Flask-сервиса.'
-        }), 404
-    return redirect(kafka_ui_url)
+    return redirect(_kafka_ui_url())
 
 
 @kafka_bp.route('/api/health')
@@ -129,7 +129,7 @@ def health():
         'missing': missing,
         'topic': topic,
         'group': group,
-        'kafka_ui_url': os.environ.get('KAFKA_UI_URL', '').strip(),
+        'kafka_ui_url': _kafka_ui_url(),
     })
 
 
