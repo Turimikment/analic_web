@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Документация Kafka тренажёра</title>
+    <style>
+        :root {
+            --bg: #FFF3E0;
+            --card: #ffffff;
+            --orange: #FF9800;
+            --orange-dark: #E64A19;
+            --brown: #5d4037;
+            --muted: #7d6b5b;
+            --line: #FFCC80;
+            --green: #2e7d32;
+            --blue: #1565c0;
+        }
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: 'Courier New', monospace; background: var(--bg); color: #2f2418; }
+        .header { background: var(--orange); color: white; padding: 16px 28px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,.18); position: sticky; top: 0; z-index: 5; }
+        .header b { font-size: 1.25em; }
+        .header a { color: white; background: #F57C00; padding: 8px 16px; border-radius: 18px; text-decoration: none; font-weight: bold; }
+        .wrap { max-width: 1100px; margin: 28px auto 50px; padding: 0 18px; }
+        .hero { background: white; border-radius: 24px; padding: 30px; box-shadow: 0 0 18px rgba(255,152,0,.18); border: 2px dashed var(--line); }
+        h1 { margin: 0 0 12px; color: var(--orange-dark); font-size: 2.2em; }
+        h2 { color: var(--orange-dark); margin-top: 0; }
+        h3 { color: var(--brown); margin-bottom: 8px; }
+        p, li { line-height: 1.55; }
+        .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin-top: 20px; }
+        .card { background: white; border-radius: 20px; padding: 22px; border: 1px solid #FFE0B2; box-shadow: 0 8px 22px rgba(119, 64, 12, .08); }
+        .flow { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; gap: 10px; align-items: center; text-align: center; margin: 16px 0; }
+        .node { background: #FFF8E1; border: 2px solid var(--line); border-radius: 16px; padding: 16px 10px; font-weight: bold; min-height: 74px; display: grid; place-items: center; }
+        .arrow { font-size: 1.7em; color: var(--orange-dark); }
+        .btns { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 18px; }
+        .btn { display: inline-block; color: white; background: var(--orange); padding: 12px 18px; border-radius: 16px; text-decoration: none; font-weight: bold; }
+        .btn.secondary { background: var(--brown); }
+        .step { display: grid; grid-template-columns: 42px 1fr; gap: 14px; align-items: start; margin: 14px 0; }
+        .num { background: #FFF8E1; color: var(--orange-dark); border: 2px solid var(--line); width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; font-weight: bold; }
+        code { background: #FFF8E1; padding: 2px 6px; border-radius: 6px; color: #9a3412; }
+        .note { background: #EAF8EF; border-left: 5px solid var(--green); padding: 14px 16px; border-radius: 12px; color: #1b5e20; }
+        .warning { background: #EFF6FF; border-left: 5px solid var(--blue); padding: 14px 16px; border-radius: 12px; color: #0d47a1; }
+        table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+        td, th { border-bottom: 1px solid #FFE0B2; padding: 10px; text-align: left; vertical-align: top; }
+        th { color: var(--brown); background: #FFF8E1; }
+        @media (max-width: 780px) { .grid { grid-template-columns: 1fr; } .flow { grid-template-columns: 1fr; } .arrow { transform: rotate(90deg); } .header { flex-direction: column; gap: 10px; align-items: flex-start; } }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <b>📚 Kafka документация</b>
+        <div>
+            <a href="{{ url_for('main.home') }}">На главную</a>
+            <a href="{{ url_for('kafka.trainer_page') }}">Открыть тренажёр</a>
+        </div>
+    </div>
+
+    <main class="wrap">
+        <section class="hero">
+            <h1>⚡ Kafka тренажёр и Kafka UI</h1>
+            <p>Эта страница объясняет, как пользоваться учебным чатом, что происходит внутри Kafka и зачем нужен Kafka UI.</p>
+            <div class="flow">
+                <div class="node">Продюсер<br><small>пишет событие</small></div>
+                <div class="arrow">→</div>
+                <div class="node">Kafka Topic<br><small>trainer-chat</small></div>
+                <div class="arrow">→</div>
+                <div class="node">Консюмер<br><small>читает группу</small></div>
+            </div>
+            <div class="btns">
+                <a class="btn" href="{{ url_for('kafka.trainer_page') }}">Открыть тренажёр Kafka</a>
+                <a class="btn secondary" href="{{ url_for('kafka.kafka_ui') }}" target="_blank">Открыть Kafka UI</a>
+            </div>
+        </section>
+
+        <section class="grid">
+            <article class="card">
+                <h2>Как пользоваться чатиком</h2>
+                <div class="step"><div class="num">1</div><div><b>Нажми “Подключиться”.</b><br>Сайт создаст consumer instance и подпишет его на topic.</div></div>
+                <div class="step"><div class="num">2</div><div><b>Напиши сообщение слева.</b><br>Левая колонка — это producer. Он отправляет событие в Aiven Kafka.</div></div>
+                <div class="step"><div class="num">3</div><div><b>Смотри правую колонку.</b><br>Правая колонка — consumer. Он читает сообщения через consumer group.</div></div>
+                <div class="step"><div class="num">4</div><div><b>Открой Kafka UI.</b><br>Проверь topic, сообщения, consumer group, offset и lag.</div></div>
+            </article>
+
+            <article class="card">
+                <h2>Что показывает тренажёр</h2>
+                <table>
+                    <tr><th>Элемент</th><th>Смысл</th></tr>
+                    <tr><td>Producer</td><td>Сервис, который отправляет событие в Kafka.</td></tr>
+                    <tr><td>Topic</td><td>Лог событий. В нашем стенде это <code>trainer-chat</code>.</td></tr>
+                    <tr><td>Consumer</td><td>Сервис, который читает события из topic.</td></tr>
+                    <tr><td>Consumer Group</td><td>Группа читателей. Kafka хранит offset для группы.</td></tr>
+                    <tr><td>Offset</td><td>Позиция сообщения внутри партиции.</td></tr>
+                    <tr><td>Lag</td><td>Сколько сообщений consumer ещё не обработал.</td></tr>
+                </table>
+            </article>
+
+            <article class="card">
+                <h2>Как пользоваться Kafka UI</h2>
+                <p>Kafka UI — это админка для просмотра Kafka-кластера. В ней можно показать студентам, что сообщения реально попадают в Kafka.</p>
+                <ol>
+                    <li>Открой Kafka UI по кнопке выше.</li>
+                    <li>Зайди в <code>Topics</code>.</li>
+                    <li>Открой topic <code>trainer-chat</code>.</li>
+                    <li>Посмотри вкладку сообщений и партиций.</li>
+                    <li>Открой <code>Consumer Groups</code> и найди <code>trainer-chat-group</code>.</li>
+                    <li>Покажи offset и lag после отправки сообщений из тренажёра.</li>
+                </ol>
+                <div class="warning">Kafka UI лучше использовать как просмотрщик. Не удаляй topic и consumer group во время занятия.</div>
+            </article>
+
+            <article class="card">
+                <h2>Что происходит под капотом</h2>
+                <p>Браузер не подключается к Kafka напрямую. Он обращается к Flask backend:</p>
+                <table>
+                    <tr><th>Endpoint</th><th>Что делает</th></tr>
+                    <tr><td><code>/kafka/api/connect</code></td><td>Создаёт consumer и подписывает его на topic.</td></tr>
+                    <tr><td><code>/kafka/api/send</code></td><td>Отправляет событие <code>support.message.created</code> в Kafka.</td></tr>
+                    <tr><td><code>/kafka/api/poll</code></td><td>Читает новые сообщения через consumer.</td></tr>
+                    <tr><td><code>/kafka/ui</code></td><td>Открывает внешний Kafka UI.</td></tr>
+                </table>
+                <div class="note">Секреты Aiven лежат только на сервере в env-переменных. Студент в браузере их не видит.</div>
+            </article>
+        </section>
+    </main>
+</body>
+</html>
