@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="ru">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>S3 case</title><link rel="stylesheet" href="styles.css"></head>
+<body><div class="layout"><aside class="sidebar"><h1>Integration Sandbox</h1><p>Order flow cases for system analysts.</p><nav class="nav"><a href="index.html">Home</a><a href="rest.html">REST</a><a href="database.html">Database</a><a href="redis.html">Redis</a><a href="kafka.html">Kafka</a><a class="active" href="s3.html">S3</a><a href="soap.html">SOAP</a><a href="logs.html">Logs</a></nav></aside><main>
+<section class="hero"><span class="badge">S3 / object storage</span><h2>Case: attach receipt or return photo</h2><p>The student learns bucket, object key, metadata and signed download links.</p></section>
+<section class="card"><h3>Business situation</h3><p>A customer uploads a receipt or damaged item photo. The file is stored in object storage. The database stores metadata and object key.</p></section>
+<section class="card"><h3>Object key example</h3><pre><code>orders/ord-10001/files/receipt.pdf
+returns/ord-10001/photos/damage-001.jpg</code></pre></section>
+<section class="card"><h3>Metadata example</h3><pre><code>{
+  "order_id": "ord-10001",
+  "object_key": "orders/ord-10001/files/receipt.pdf",
+  "file_name": "receipt.pdf",
+  "mime_type": "application/pdf",
+  "size_bytes": 245000
+}</code></pre></section>
+<section class="task"><h3>Student tasks</h3><ol><li>Find file metadata in database.</li><li>Find object key in storage browser.</li><li>Explain why file bytes are not stored in the order table.</li><li>Explain why public bucket is dangerous.</li></ol></section>
+<section class="note"><h3>Analyst takeaway</h3><p>For files, analyst should specify file type, size limit, storage key convention, access rules and retention period.</p></section>
+<div class="footer-nav"><a href="kafka.html">Back: Kafka</a><a href="soap.html">Next: SOAP</a></div>
+</main></div></body></html>
