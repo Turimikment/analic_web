@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions name="DeliveryService"
+             targetNamespace="http://sandbox.example.local/delivery"
+             xmlns="http://schemas.xmlsoap.org/wsdl/"
+             xmlns:tns="http://sandbox.example.local/delivery"
+             xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+             xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/">
+
+  <types>
+    <xsd:schema targetNamespace="http://sandbox.example.local/delivery">
+      <xsd:element name="CreateDeliveryRequest">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="requestId" type="xsd:string"/>
+            <xsd:element name="orderId" type="xsd:string"/>
+            <xsd:element name="city" type="xsd:string"/>
+            <xsd:element name="address" type="xsd:string"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="CreateDeliveryResponse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="deliveryId" type="xsd:string"/>
+            <xsd:element name="status" type="xsd:string"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+    </xsd:schema>
+  </types>
+
+  <message name="CreateDeliveryInput">
+    <part name="parameters" element="tns:CreateDeliveryRequest"/>
+  </message>
+  <message name="CreateDeliveryOutput">
+    <part name="parameters" element="tns:CreateDeliveryResponse"/>
+  </message>
+
+  <portType name="DeliveryPortType">
+    <operation name="CreateDelivery">
+      <input message="tns:CreateDeliveryInput"/>
+      <output message="tns:CreateDeliveryOutput"/>
+    </operation>
+  </portType>
+
+  <binding name="DeliveryBinding" type="tns:DeliveryPortType">
+    <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+    <operation name="CreateDelivery">
+      <soap:operation soapAction="CreateDelivery"/>
+      <input><soap:body use="literal"/></input>
+      <output><soap:body use="literal"/></output>
+    </operation>
+  </binding>
+
+  <service name="DeliveryService">
+    <port name="DeliveryPort" binding="tns:DeliveryBinding">
+      <soap:address location="https://sandbox.example.local/soap/delivery"/>
+    </port>
+  </service>
+</definitions>
