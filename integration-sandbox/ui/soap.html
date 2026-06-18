@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="ru">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SOAP case</title><link rel="stylesheet" href="styles.css"></head>
+<body><div class="layout"><aside class="sidebar"><h1>Integration Sandbox</h1><p>Order flow cases for system analysts.</p><nav class="nav"><a href="index.html">Home</a><a href="rest.html">REST</a><a href="database.html">Database</a><a href="redis.html">Redis</a><a href="kafka.html">Kafka</a><a href="s3.html">S3</a><a class="active" href="soap.html">SOAP</a><a href="logs.html">Logs</a></nav></aside><main>
+<section class="hero"><span class="badge">SOAP / WSDL</span><h2>Case: legacy delivery service</h2><p>The student opens WSDL and learns where operations, messages and XML fields are described.</p></section>
+<section class="card"><h3>Business situation</h3><p>Delivery partner is an old enterprise system. It accepts only SOAP request <code>CreateDelivery</code>.</p></section>
+<section class="card"><h3>SOAP body example</h3><pre><code>&lt;CreateDeliveryRequest&gt;
+  &lt;requestId&gt;req-2026-0001&lt;/requestId&gt;
+  &lt;orderId&gt;ord-10001&lt;/orderId&gt;
+  &lt;city&gt;City&lt;/city&gt;
+  &lt;address&gt;Main street 1&lt;/address&gt;
+&lt;/CreateDeliveryRequest&gt;</code></pre></section>
+<section class="task"><h3>Student tasks</h3><ol><li>Open <code>delivery.wsdl</code>.</li><li>Find operation <code>CreateDelivery</code>.</li><li>Find required fields.</li><li>Explain how WSDL differs from OpenAPI.</li></ol></section>
+<section class="note"><h3>Analyst takeaway</h3><p>SOAP is common in legacy enterprise integrations. Analyst should not fear XML: WSDL is just a formal contract.</p></section>
+<div class="footer-nav"><a href="s3.html">Back: S3</a><a href="logs.html">Next: Logs</a></div>
+</main></div></body></html>
