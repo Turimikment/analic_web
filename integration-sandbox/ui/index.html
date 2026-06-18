@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Integration Sandbox</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 980px; margin: 40px auto; padding: 0 20px; line-height: 1.55; }
+    h1 { margin-bottom: 8px; }
+    .lead { color: #444; font-size: 18px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-top: 24px; }
+    .card { border: 1px solid #ddd; border-radius: 12px; padding: 16px; background: #fff; }
+    .card h2 { margin-top: 0; font-size: 20px; }
+    code { background: #f3f3f3; padding: 2px 5px; border-radius: 4px; }
+    .flow { background: #f7f7f7; padding: 16px; border-radius: 12px; }
+  </style>
+</head>
+<body>
+  <h1>Integration Sandbox</h1>
+  <p class="lead">Safe training area for future system analysts: REST, SOAP/WSDL, database, Kafka, Redis, S3 and logs in one order processing case.</p>
+
+  <section class="flow">
+    <strong>Flow:</strong>
+    REST creates order -> DB stores state -> Redis caches status -> Kafka publishes event -> S3 stores file -> SOAP sends delivery request -> logs connect everything by <code>request_id</code>.
+  </section>
+
+  <div class="grid">
+    <div class="card"><h2>REST / Swagger</h2><p>Read OpenAPI contract and send <code>POST /orders</code>.</p></div>
+    <div class="card"><h2>Database</h2><p>Find order row, items and file metadata.</p></div>
+    <div class="card"><h2>Redis</h2><p>Check cached order status and TTL.</p></div>
+    <div class="card"><h2>Kafka</h2><p>Inspect <code>order_created</code> event and discuss idempotency.</p></div>
+    <div class="card"><h2>S3</h2><p>Upload receipt or return photo and find object key.</p></div>
+    <div class="card"><h2>SOAP / WSDL</h2><p>Read legacy delivery contract and XML operation.</p></div>
+    <div class="card"><h2>Logs</h2><p>Search by <code>request_id</code> and restore the full chain.</p></div>
+  </div>
+</body>
+</html>
