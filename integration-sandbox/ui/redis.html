@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="ru">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Redis case</title><link rel="stylesheet" href="styles.css"></head>
+<body><div class="layout"><aside class="sidebar"><h1>Integration Sandbox</h1><p>Order flow cases for system analysts.</p><nav class="nav"><a href="index.html">Home</a><a href="rest.html">REST</a><a href="database.html">Database</a><a class="active" href="redis.html">Redis</a><a href="kafka.html">Kafka</a><a href="s3.html">S3</a><a href="soap.html">SOAP</a><a href="logs.html">Logs</a></nav></aside><main>
+<section class="hero"><span class="badge">Redis</span><h2>Case: cached order status</h2><p>The student learns why cache exists, why it can be stale and what TTL means.</p></section>
+<section class="card"><h3>Business situation</h3><p>Order status is read often. To reduce database load, backend stores a short-lived copy in Redis.</p></section>
+<section class="card"><h3>Key and value</h3><pre><code>Key:
+order:ord-10001:status
+
+Value:
+{
+  "order_id": "ord-10001",
+  "status": "CREATED",
+  "cached_at": "2026-06-18T12:00:05Z"
+}
+
+TTL: 60 seconds</code></pre></section>
+<section class="task"><h3>Student tasks</h3><ol><li>Compare status in REST response, database and Redis.</li><li>Find a case where database status is newer than cache.</li><li>Explain why user may see old status for a short time.</li><li>Write a requirement for acceptable status delay.</li></ol></section>
+<section class="note"><h3>Analyst takeaway</h3><p>Cache improves speed, but creates consistency questions. Analyst should ask whether data must be real-time or near-real-time.</p></section>
+<div class="footer-nav"><a href="database.html">Back: Database</a><a href="kafka.html">Next: Kafka</a></div>
+</main></div></body></html>
