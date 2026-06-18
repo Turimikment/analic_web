@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="ru">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Database case</title><link rel="stylesheet" href="styles.css"></head>
+<body><div class="layout"><aside class="sidebar"><h1>Integration Sandbox</h1><p>Order flow cases for system analysts.</p><nav class="nav"><a href="index.html">Home</a><a href="rest.html">REST</a><a class="active" href="database.html">Database</a><a href="redis.html">Redis</a><a href="kafka.html">Kafka</a><a href="s3.html">S3</a><a href="soap.html">SOAP</a><a href="logs.html">Logs</a></nav></aside><main>
+<section class="hero"><span class="badge">Database</span><h2>Case: find order data in tables</h2><p>The student sees how business objects are stored: order, items and file metadata.</p></section>
+<section class="card"><h3>Business situation</h3><p>After REST request backend inserts rows into <code>orders</code> and <code>order_items</code>. Files are not stored as binary content in the order row.</p></section>
+<section class="card"><h3>Useful query</h3><pre><code>SELECT o.order_id, o.status, o.request_id, i.sku, i.quantity
+FROM orders o
+JOIN order_items i ON i.order_id = o.order_id
+WHERE o.order_id = 'ord-10001';</code></pre></section>
+<section class="card"><h3>File metadata query</h3><pre><code>SELECT order_id, object_key, file_name, mime_type, size_bytes
+FROM order_files
+WHERE order_id = 'ord-10001';</code></pre></section>
+<section class="task"><h3>Student tasks</h3><ol><li>Find the primary key of the order.</li><li>Explain why order items are in a separate table.</li><li>Find <code>request_id</code> and connect it with logs.</li><li>Explain why file storage uses <code>object_key</code>.</li></ol></section>
+<section class="note"><h3>Analyst takeaway</h3><p>The analyst should understand data ownership: transactional state is in database, large files are in object storage, cache is temporary.</p></section>
+<div class="footer-nav"><a href="rest.html">Back: REST</a><a href="redis.html">Next: Redis</a></div>
+</main></div></body></html>
