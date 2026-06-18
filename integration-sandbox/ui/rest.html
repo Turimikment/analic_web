@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="ru">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>REST case</title><link rel="stylesheet" href="styles.css"></head>
+<body><div class="layout"><aside class="sidebar"><h1>Integration Sandbox</h1><p>Order flow cases for system analysts.</p><nav class="nav"><a href="index.html">Home</a><a class="active" href="rest.html">REST</a><a href="database.html">Database</a><a href="redis.html">Redis</a><a href="kafka.html">Kafka</a><a href="s3.html">S3</a><a href="soap.html">SOAP</a><a href="logs.html">Logs</a></nav></aside><main>
+<section class="hero"><span class="badge">REST / Swagger</span><h2>Case: create an order through API</h2><p>The student reads the OpenAPI contract, sends a request and explains request, response, headers and validation errors.</p></section>
+<section class="card"><h3>Business situation</h3><p>A customer presses Buy. The frontend calls backend endpoint <code>POST /orders</code>. Backend creates order and returns its identifier.</p></section>
+<section class="card"><h3>Request example</h3><pre><code>POST /orders
+X-Request-Id: req-2026-0001
+Content-Type: application/json
+
+{
+  "customer_id": "usr-777",
+  "items": [{"sku": "SKU-001", "quantity": 2}],
+  "delivery_city": "City"
+}</code></pre></section>
+<section class="card"><h3>Response example</h3><pre><code>201 Created
+{
+  "order_id": "ord-10001",
+  "status": "CREATED",
+  "request_id": "req-2026-0001"
+}</code></pre></section>
+<section class="task"><h3>Student tasks</h3><ol><li>Find required fields in OpenAPI.</li><li>Explain why <code>X-Request-Id</code> is passed in headers.</li><li>Explain what happens if <code>quantity</code> is missing.</li><li>Describe success and validation error scenarios.</li></ol></section>
+<section class="note"><h3>Analyst takeaway</h3><p>REST contract is not just a URL. It is a promise about method, path, headers, body, status codes and error format.</p></section>
+<div class="footer-nav"><a href="index.html">Home</a><a href="database.html">Next: Database</a></div>
+</main></div></body></html>
