@@ -1,0 +1,33 @@
+openapi: 3.0.3
+info:
+  title: Order Sandbox REST API
+  version: 0.1.0
+paths:
+  /orders:
+    post:
+      summary: Create order
+      parameters:
+        - name: X-Request-Id
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            example:
+              customer_id: usr-777
+              items:
+                - sku: SKU-001
+                  quantity: 2
+              delivery_city: City
+      responses:
+        '201':
+          description: Order created
+  /orders/{order_id}:
+    get:
+      summary: Get order status
+      responses:
+        '200':
+          description: Order data
