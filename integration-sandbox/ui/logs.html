@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="ru">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Logs case</title><link rel="stylesheet" href="styles.css"></head>
+<body><div class="layout"><aside class="sidebar"><h1>Integration Sandbox</h1><p>Order flow cases for system analysts.</p><nav class="nav"><a href="index.html">Home</a><a href="rest.html">REST</a><a href="database.html">Database</a><a href="redis.html">Redis</a><a href="kafka.html">Kafka</a><a href="s3.html">S3</a><a href="soap.html">SOAP</a><a class="active" href="logs.html">Logs</a></nav></aside><main>
+<section class="hero"><span class="badge">Logs</span><h2>Case: find the integration chain by request_id</h2><p>The student searches logs and restores what happened across several systems.</p></section>
+<section class="card"><h3>Business situation</h3><p>Customer says order was created, but delivery did not start. The analyst searches all services by one correlation identifier.</p></section>
+<section class="card"><h3>Log examples</h3><pre><code>{"service":"order-api","request_id":"req-2026-0001","message":"POST /orders accepted","order_id":"ord-10001"}
+{"service":"orders-db","request_id":"req-2026-0001","message":"order row inserted","order_id":"ord-10001"}
+{"service":"events","request_id":"req-2026-0001","message":"order_created published","topic":"orders.events.v1"}
+{"service":"delivery-soap","request_id":"req-2026-0001","level":"ERROR","message":"address validation failed"}</code></pre></section>
+<section class="task"><h3>Student tasks</h3><ol><li>Find all log lines by <code>request_id</code>.</li><li>Restore the chain step by step.</li><li>Find failed service.</li><li>Decide which team should investigate.</li></ol></section>
+<section class="note"><h3>Analyst takeaway</h3><p>Good logs are part of requirements. Analyst should ask for request_id, business identifiers, service name, error type and clear message.</p></section>
+<div class="footer-nav"><a href="soap.html">Back: SOAP</a><a href="index.html">Home</a></div>
+</main></div></body></html>
