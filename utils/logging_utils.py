@@ -5,7 +5,7 @@ import time
 import uuid
 
 import requests
-from flask import g, request, session
+from flask import g, has_request_context, request, session
 
 
 class JsonFormatter(logging.Formatter):
@@ -59,12 +59,7 @@ class LokiHandler(logging.Handler):
                 }]
             }
 
-            # Keep Loki completely fail-safe for the application.  The short
-            # timeout prevents an unavailable Loki from noticeably delaying a
-            # normal request, while avoiding a background thread created before
-            # Gunicorn forks its worker process.
             response = requests.post(self.loki_url, json=payload, timeout=0.5)
-            print(f'[LOKI] push response: {response.status_code}', flush=True)
             if not response.ok:
                 body = (response.text or '')[:500]
                 print(
@@ -82,7 +77,6 @@ def _build_access_logger():
     logger.setLevel(logging.INFO)
     logger.propagate = False
 
-    # Avoid duplicate handlers when create_app() is called more than once.
     if logger.handlers:
         return logger
 
@@ -105,6 +99,33 @@ def _build_access_logger():
         print('[LOKI] disabled: LOKI_URL is not configured', flush=True)
 
     return logger
+
+
+def log_db_change(entity, operation, entity_id=None, fields=None, **metadata):
+    """Writes a safe DB audit event without logging field values or secrets."""
+    event = {
+        'event': 'db_change',
+        'component': 'db',
+        'entity': entity,
+        'operation': operation,
+        'entity_id': entity_id,
+        'fields': fields or [],
+    }
+
+    if has_request_context():
+        event['request_id'] = getattr(g, 'request_id', None)
+        event['user_id'] = session.get('user_id')
+        event['method'] = request.method
+        event['path'] = request.path
+
+    for key, value in metadata.items():
+        if value is not None:
+            event[key] = value
+
+    _build_access_logger().info(
+        'Database change',
+        extra={'event_data': event},
+    )
 
 
 def init_request_logging(app):
