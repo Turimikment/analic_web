@@ -3,7 +3,7 @@ import os
 from datetime import date, datetime
 from zoneinfo import ZoneInfo
 
-from flask import Blueprint, redirect, render_template, request, session, url_for
+from flask import Blueprint, make_response, redirect, render_template, request, session, url_for
 
 from . import db
 from .openrouter import customer_answer, make_review
@@ -33,7 +33,12 @@ def index():
     messages=db.get_messages(today_booking['id']) if today_booking else []
     review=db.get_review(today_booking['id']) if today_booking else None
     py,pm=(year-1,12) if month==1 else (year,month-1); ny,nm=(year+1,1) if month==12 else (year,month+1)
-    return render_template('ai_agent.html',username=session.get('username','Заяц'),today=today,year=year,month=month,month_name=MONTH_NAMES[month],weeks=weeks,booking_map=booking_map,slots=range(1,db.SLOTS_PER_DAY+1),question_limit=db.QUESTION_LIMIT,today_booking=today_booking,next_booking=next_booking,prev_year=py,prev_month=pm,next_year=ny,next_month=nm,error=request.args.get('error'),success=request.args.get('success'),messages=messages,review=review,intro=INTRO)
+    html=render_template('ai_agent.html',username=session.get('username','Заяц'),today=today,year=year,month=month,month_name=MONTH_NAMES[month],weeks=weeks,booking_map=booking_map,slots=range(1,db.SLOTS_PER_DAY+1),question_limit=db.QUESTION_LIMIT,today_booking=today_booking,next_booking=next_booking,prev_year=py,prev_month=pm,next_year=ny,next_month=nm,error=request.args.get('error'),success=request.args.get('success'),messages=messages,review=review,intro=INTRO)
+    response=make_response(html)
+    response.headers['Cache-Control']='no-store, no-cache, must-revalidate, max-age=0'
+    response.headers['Pragma']='no-cache'
+    response.headers['Expires']='0'
+    return response
 
 @ai_agent_bp.route('/book',methods=['POST'])
 def book():
