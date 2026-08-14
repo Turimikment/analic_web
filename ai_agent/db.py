@@ -21,9 +21,16 @@ def init_ai_agent_db():
                     slot_number SMALLINT NOT NULL CHECK (slot_number BETWEEN 1 AND 3),
                     questions_used SMALLINT NOT NULL DEFAULT 0 CHECK (questions_used >= 0 AND questions_used <= 15),
                     status VARCHAR(20) NOT NULL DEFAULT 'booked',
+                    request_in_flight BOOLEAN NOT NULL DEFAULT FALSE,
                     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                     UNIQUE (booking_date, slot_number), UNIQUE (user_id, booking_date)
                 )
+            ''')
+            # Migration for databases where the table was created before
+            # request_in_flight was introduced.
+            cursor.execute('''
+                ALTER TABLE ai_interview_bookings
+                ADD COLUMN IF NOT EXISTS request_in_flight BOOLEAN NOT NULL DEFAULT FALSE
             ''')
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS ai_interview_messages (
@@ -132,18 +139,60 @@ def get_messages(booking_id):
     finally: conn.close()
 
 
+def begin_question(user_id, booking_id):
+    """Atomically reserves the right to send one AI request for this booking."""
+    conn=get_db_connection()
+    try:
+        with conn.cursor() as c:
+            c.execute('''
+                UPDATE ai_interview_bookings
+                   SET request_in_flight=TRUE
+                 WHERE id=%s
+                   AND user_id=%s
+                   AND status IN ('booked','started')
+                   AND request_in_flight=FALSE
+                RETURNING id
+            ''',(booking_id,user_id))
+            row=c.fetchone()
+        conn.commit()
+        if not row:
+            raise ValueError('Предыдущий вопрос ещё обрабатывается. Дождитесь ответа.')
+    except Exception:
+        conn.rollback(); raise
+    finally:
+        conn.close()
+
+
+def release_question(user_id, booking_id):
+    """Clears an in-flight reservation after an AI/network failure."""
+    conn=get_db_connection()
+    try:
+        with conn.cursor() as c:
+            c.execute('''
+                UPDATE ai_interview_bookings
+                   SET request_in_flight=FALSE
+                 WHERE id=%s AND user_id=%s
+            ''',(booking_id,user_id))
+        conn.commit()
+    except Exception:
+        conn.rollback(); raise
+    finally:
+        conn.close()
+
+
 def save_exchange(user_id, booking_id, question, answer):
     conn=get_db_connection()
     try:
         with conn.cursor() as c:
-            c.execute("SELECT status FROM ai_interview_bookings WHERE id=%s AND user_id=%s FOR UPDATE",(booking_id,user_id))
+            c.execute("SELECT status,request_in_flight FROM ai_interview_bookings WHERE id=%s AND user_id=%s FOR UPDATE",(booking_id,user_id))
             row=c.fetchone()
             if not row or row[0] == 'finished': raise ValueError('Интервью недоступно')
+            if not row[1]: raise ValueError('Запрос уже был завершён или отменён')
             c.execute("SELECT COUNT(*) FROM ai_interview_messages WHERE booking_id=%s AND role='user'",(booking_id,))
             questions_used=c.fetchone()[0]
             if questions_used >= QUESTION_LIMIT: raise ValueError('Лимит вопросов исчерпан')
             c.execute("INSERT INTO ai_interview_messages (booking_id,role,content) VALUES (%s,'user',%s),(%s,'assistant',%s)",(booking_id,question,booking_id,answer))
-            c.execute("UPDATE ai_interview_bookings SET questions_used=%s,status='started' WHERE id=%s",(questions_used+1,booking_id))
+            c.execute("UPDATE ai_interview_bookings SET questions_used=%s,status='started',request_in_flight=FALSE WHERE id=%s",(questions_used+1,booking_id))
         conn.commit()
     except Exception:
         conn.rollback(); raise
@@ -154,7 +203,7 @@ def finish_interview(user_id, booking_id, review):
     conn=get_db_connection()
     try:
         with conn.cursor() as c:
-            c.execute("UPDATE ai_interview_bookings SET status='finished' WHERE id=%s AND user_id=%s AND status IN ('booked','started') RETURNING id",(booking_id,user_id))
+            c.execute("UPDATE ai_interview_bookings SET status='finished',request_in_flight=FALSE WHERE id=%s AND user_id=%s AND status IN ('booked','started') RETURNING id",(booking_id,user_id))
             if not c.fetchone(): raise ValueError('Интервью уже завершено или недоступно')
             c.execute("INSERT INTO ai_interview_messages (booking_id,role,content) VALUES (%s,'review',%s)",(booking_id,review))
         conn.commit()
