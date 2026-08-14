@@ -64,8 +64,21 @@ def get_booking_for_user_on_date(user_id, booking_date):
     conn=get_db_connection()
     try:
         with conn.cursor() as c:
-            c.execute('''SELECT id,user_id,booking_date,slot_number,questions_used,status FROM ai_interview_bookings
-                         WHERE user_id=%s AND booking_date=%s AND status IN ('booked','started','finished') LIMIT 1''',(user_id,booking_date))
+            c.execute('''
+                SELECT b.id,
+                       b.user_id,
+                       b.booking_date,
+                       b.slot_number,
+                       COUNT(m.id) FILTER (WHERE m.role='user')::int AS questions_used,
+                       b.status
+                FROM ai_interview_bookings b
+                LEFT JOIN ai_interview_messages m ON m.booking_id=b.id
+                WHERE b.user_id=%s
+                  AND b.booking_date=%s
+                  AND b.status IN ('booked','started','finished')
+                GROUP BY b.id,b.user_id,b.booking_date,b.slot_number,b.status
+                LIMIT 1
+            ''',(user_id,booking_date))
             return _booking(c.fetchone())
     finally: conn.close()
 
@@ -123,12 +136,14 @@ def save_exchange(user_id, booking_id, question, answer):
     conn=get_db_connection()
     try:
         with conn.cursor() as c:
-            c.execute("SELECT questions_used,status FROM ai_interview_bookings WHERE id=%s AND user_id=%s FOR UPDATE",(booking_id,user_id))
+            c.execute("SELECT status FROM ai_interview_bookings WHERE id=%s AND user_id=%s FOR UPDATE",(booking_id,user_id))
             row=c.fetchone()
-            if not row or row[1] == 'finished': raise ValueError('Интервью недоступно')
-            if row[0] >= QUESTION_LIMIT: raise ValueError('Лимит вопросов исчерпан')
+            if not row or row[0] == 'finished': raise ValueError('Интервью недоступно')
+            c.execute("SELECT COUNT(*) FROM ai_interview_messages WHERE booking_id=%s AND role='user'",(booking_id,))
+            questions_used=c.fetchone()[0]
+            if questions_used >= QUESTION_LIMIT: raise ValueError('Лимит вопросов исчерпан')
             c.execute("INSERT INTO ai_interview_messages (booking_id,role,content) VALUES (%s,'user',%s),(%s,'assistant',%s)",(booking_id,question,booking_id,answer))
-            c.execute("UPDATE ai_interview_bookings SET questions_used=questions_used+1,status='started' WHERE id=%s",(booking_id,))
+            c.execute("UPDATE ai_interview_bookings SET questions_used=%s,status='started' WHERE id=%s",(questions_used+1,booking_id))
         conn.commit()
     except Exception:
         conn.rollback(); raise
