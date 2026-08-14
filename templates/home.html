@@ -5,130 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Морковный Университет - Главная</title>
     <style>
-        body {
-            font-family: 'Courier New', monospace;
-            margin: 0;
-            padding: 0;
-            background: #FFF3E0;
-        }
-        
-        .user-header {
-            background: #FF9800;
-            padding: 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 1000;
-        }
-        
-        .user-header .username {
-            font-size: 1.4em;
-            font-weight: bold;
-            color: white;
-            text-shadow: 1px 1px 1px rgba(0,0,0,0.3);
-        }
-        
-        .user-header .logout-btn {
-            background: #F57C00;
-            color: white;
-            padding: 8px 20px;
-            border-radius: 20px;
-            text-decoration: none;
-            font-weight: bold;
-            transition: 0.3s;
-        }
-        
-        .user-header .logout-btn:hover {
-            background: #E65100;
-            transform: scale(1.05);
-        }
-        
-        .welcome-container {
-            max-width: 850px;
-            margin: 100px auto 40px;
-            padding: 30px;
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 0 15px rgba(255, 152, 0, 0.2);
-            text-align: center;
-        }
-        
-        .welcome-title {
-            color: #FF9800;
-            font-size: 2.5em;
-            margin-bottom: 40px;
-            text-shadow: 2px 2px #FFE0B2;
-        }
-        
-        .options-grid {
-            display: flex;
-            flex-direction: column;
-            gap: 24px;
-            margin-top: 40px;
-        }
-        
-        .option-card {
-            padding: 30px;
-            background: #FFF8E1;
-            border-radius: 15px;
-            border: 2px dashed #FFB74D;
-            transition: all 0.3s;
-            cursor: pointer;
-            text-align: left;
-        }
-        
-        .option-card:hover {
-            transform: scale(1.02);
-            box-shadow: 0 5px 15px rgba(255, 87, 34, 0.3);
-        }
-        
-        .option-card h3 {
-            color: #E64A19;
-            margin-top: 15px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .option-icon {
-            font-size: 2em;
-            margin-right: 15px;
-        }
-        
-        .option-content {
-            display: flex;
-            align-items: center;
-        }
-        
-        .option-text {
-            flex: 1;
-        }
-
-        .kafka-actions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 14px;
-        }
-
-        .small-link {
-            background: #FF9800;
-            color: white;
-            text-decoration: none;
-            padding: 8px 12px;
-            border-radius: 14px;
-            font-weight: bold;
-            font-size: .9em;
-        }
-
-        .small-link.secondary {
-            background: #795548;
-        }
+        body { font-family:'Courier New', monospace; margin:0; padding:0; background:#FFF3E0; }
+        .user-header { background:#FF9800; padding:15px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 2px 5px rgba(0,0,0,0.2); position:fixed; top:0; left:0; right:0; z-index:1000; }
+        .user-header .username { font-size:1.4em; font-weight:bold; color:white; text-shadow:1px 1px 1px rgba(0,0,0,0.3); }
+        .user-header .logout-btn { background:#F57C00; color:white; padding:8px 20px; border-radius:20px; text-decoration:none; font-weight:bold; transition:.3s; }
+        .user-header .logout-btn:hover { background:#E65100; transform:scale(1.05); }
+        .welcome-container { max-width:850px; margin:100px auto 40px; padding:30px; background:white; border-radius:20px; box-shadow:0 0 15px rgba(255,152,0,0.2); text-align:center; }
+        .welcome-title { color:#FF9800; font-size:2.5em; margin-bottom:40px; text-shadow:2px 2px #FFE0B2; }
+        .options-grid { display:flex; flex-direction:column; gap:24px; margin-top:40px; }
+        .option-card { padding:30px; background:#FFF8E1; border-radius:15px; border:2px dashed #FFB74D; transition:all .3s; cursor:pointer; text-align:left; }
+        .option-card:hover { transform:scale(1.02); box-shadow:0 5px 15px rgba(255,87,34,0.3); }
+        .option-card h3 { color:#E64A19; margin-top:15px; display:flex; align-items:center; gap:10px; }
+        .option-icon { font-size:2em; margin-right:15px; }
+        .option-content { display:flex; align-items:center; }
+        .option-text { flex:1; }
+        .kafka-actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:14px; }
+        .small-link { background:#FF9800; color:white; text-decoration:none; padding:8px 12px; border-radius:14px; font-weight:bold; font-size:.9em; }
+        .small-link.secondary { background:#795548; }
     </style>
 </head>
 <body>
@@ -139,14 +32,17 @@
 
     <div class="welcome-container">
         <h1 class="welcome-title">🐇 Добро пожаловать в норку, {{ username }}! 🥕</h1>
-        
         <div class="options-grid">
             <div class="option-card" onclick="location.href='/course'">
+                <div class="option-content"><div class="option-icon">🥕</div><div class="option-text"><h3>Обучение</h3><p>Изучи основы REST и SOAP API</p></div></div>
+            </div>
+
+            <div class="option-card" onclick="location.href='/ai-agent/'">
                 <div class="option-content">
-                    <div class="option-icon">🥕</div>
+                    <div class="option-icon">🤖</div>
                     <div class="option-text">
-                        <h3>Обучение</h3>
-                        <p>Изучи основы REST и SOAP API</p>
+                        <h3>AI-заказчик</h3>
+                        <p>Запишись на интервью, собери требования у AI-заказчика и получи разбор. 3 места в день, 15 вопросов.</p>
                     </div>
                 </div>
             </div>
@@ -165,25 +61,13 @@
                     </div>
                 </div>
             </div>
-            
+
             <div class="option-card" onclick="location.href='https://past-scowl-47b.notion.site/3-1f05961b8a09807e82dbe1ee6955f21e'">
-                <div class="option-content">
-                    <div class="option-icon">📚</div>
-                    <div class="option-text">
-                        <h3>Документация</h3>
-                        <p>Подробное руководство по API</p>
-                    </div>
-                </div>
+                <div class="option-content"><div class="option-icon">📚</div><div class="option-text"><h3>Документация</h3><p>Подробное руководство по API</p></div></div>
             </div>
-            
+
             <div class="option-card" onclick="location.href='/base'">
-                <div class="option-content">
-                    <div class="option-icon">🪣</div>
-                    <div class="option-text">
-                        <h3>Песочница</h3>
-                        <p>Экспериментируй с API</p>
-                    </div>
-                </div>
+                <div class="option-content"><div class="option-icon">🪣</div><div class="option-text"><h3>Песочница</h3><p>Экспериментируй с API</p></div></div>
             </div>
         </div>
     </div>
