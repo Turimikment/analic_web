@@ -88,6 +88,12 @@ class LokiQueueHandler(logging.Handler):
                         self.loki_url,
                         body,
                     )
+                else:
+                    delivery_logger.info(
+                        'Loki push OK: status=%s url=%s',
+                        response.status_code,
+                        self.loki_url,
+                    )
             except requests.RequestException as exc:
                 # Diagnostic message goes only to stdout and never affects requests.
                 delivery_logger.warning(
