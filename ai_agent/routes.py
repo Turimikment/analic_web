@@ -59,17 +59,29 @@ def cancel(booking_id):
 @ai_agent_bp.route('/ask',methods=['POST'])
 def ask():
     if not _require_login(): return redirect(url_for('main.index'))
-    booking=db.get_booking_for_user_on_date(session['user_id'],_today())
+    user_id=session['user_id']
+    booking=db.get_booking_for_user_on_date(user_id,_today())
     if not booking or booking['status']=='finished': return redirect(url_for('ai_agent.index',error='Интервью сегодня недоступно'))
     question=(request.form.get('question') or '').strip()
     if not question: return redirect(url_for('ai_agent.index',error='Введите вопрос'))
     if len(question)>1000: return redirect(url_for('ai_agent.index',error='Вопрос слишком длинный'))
     if booking['questions_used']>=db.QUESTION_LIMIT: return redirect(url_for('ai_agent.index',error='Лимит вопросов исчерпан'))
+
+    reserved=False
     try:
-        history=db.get_messages(booking['id']); answer=customer_answer(SYSTEM_PROMPT,history,question)
-        db.save_exchange(session['user_id'],booking['id'],question,answer)
+        # Atomic DB flag prevents a second browser request from starting another
+        # OpenRouter call while the first question is still being processed.
+        db.begin_question(user_id,booking['id'])
+        reserved=True
+        history=db.get_messages(booking['id'])
+        answer=customer_answer(SYSTEM_PROMPT,history,question)
+        db.save_exchange(user_id,booking['id'],question,answer)
+        reserved=False
         return redirect(url_for('ai_agent.index',tab='chat'))
     except Exception as exc:
+        if reserved:
+            try: db.release_question(user_id,booking['id'])
+            except Exception: pass
         return redirect(url_for('ai_agent.index',tab='chat',error=f'AI временно недоступен: {str(exc)[:180]}'))
 
 @ai_agent_bp.route('/finish',methods=['POST'])
