@@ -10,6 +10,7 @@ from admin.routes import admin_bp
 from kafka.routes import kafka_bp
 from soap.soap_service import soap_app
 from utils.db_utils import init_db
+from utils.logging_utils import init_request_logging
 from flasgger import Swagger
 import logging
 import os
@@ -30,6 +31,11 @@ def create_app():
     app.config['SESSION_PERMANENT'] = False
     app.config['SESSION_USE_SIGNER'] = True
     Session(app)
+
+    # Сквозное логирование HTTP-методов.
+    # Всегда пишет JSON в stdout; при наличии LOKI_URL дополнительно отправляет в Loki
+    # через фоновую очередь, поэтому недоступность Loki не ломает запросы.
+    init_request_logging(app)
     
     # Регистрация компонентов
     register_blueprints(app)
