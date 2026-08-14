@@ -2,7 +2,7 @@ from datetime import date
 from psycopg2 import errors
 from utils.db_utils import get_db_connection
 
-SLOTS_PER_DAY = 3
+SLOTS_PER_DAY = 2
 QUESTION_LIMIT = 24
 AGENT_IDS = ('business','developer')
 
@@ -17,7 +17,6 @@ def init_ai_agent_db():
                 request_in_flight BOOLEAN NOT NULL DEFAULT FALSE,created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 UNIQUE(booking_date,slot_number),UNIQUE(user_id,booking_date))''')
             c.execute("ALTER TABLE ai_interview_bookings ADD COLUMN IF NOT EXISTS request_in_flight BOOLEAN NOT NULL DEFAULT FALSE")
-            # Old deployments had questions_used <= 15. Drop that legacy check safely by discovering its name.
             c.execute('''DO $$ DECLARE r record; BEGIN
                 FOR r IN SELECT conname FROM pg_constraint
                     WHERE conrelid='ai_interview_bookings'::regclass AND contype='c'
@@ -67,12 +66,12 @@ def get_next_booking_for_user(user_id,today=None):
     finally: conn.close()
 
 def book_slot(user_id,booking_date,slot_number):
-    if slot_number not in (1,2,3): raise ValueError('Некорректный слот')
+    if slot_number not in (1,2): raise ValueError('Некорректный слот')
     conn=get_db_connection()
     try:
         with conn.cursor() as c:
             c.execute("SELECT id,booking_date FROM ai_interview_bookings WHERE user_id=%s AND booking_date>=CURRENT_DATE AND status IN ('booked','started') LIMIT 1",(user_id,)); ex=c.fetchone()
-            if ex: raise ValueError(f'У вас уже есть активная запись на {ex[1].strftime("%d.%m.%Y")}')
+            if ex: raise ValueError(f'У тебя уже есть активная запись на {ex[1].strftime("%d.%m.%Y")}')
             c.execute('INSERT INTO ai_interview_bookings(user_id,booking_date,slot_number) VALUES(%s,%s,%s) RETURNING id',(user_id,booking_date,slot_number)); bid=c.fetchone()[0]
         conn.commit(); return bid
     except errors.UniqueViolation: conn.rollback(); raise ValueError('Этот слот уже занят')
@@ -124,7 +123,7 @@ def begin_question(user_id,booking_id):
         with conn.cursor() as c:
             c.execute("UPDATE ai_interview_bookings SET request_in_flight=TRUE WHERE id=%s AND user_id=%s AND status IN ('booked','started') AND request_in_flight=FALSE RETURNING id",(booking_id,user_id)); row=c.fetchone()
         conn.commit()
-        if not row: raise ValueError('Предыдущий вопрос ещё обрабатывается. Дождитесь ответа.')
+        if not row: raise ValueError('Предыдущий вопрос ещё обрабатывается. Дождись ответа.')
     except Exception: conn.rollback(); raise
     finally: conn.close()
 
