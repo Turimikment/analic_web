@@ -40,6 +40,7 @@ class LokiQueueHandler(logging.Handler):
         self.service = service
         self.environment = environment
         self._queue = queue.Queue(maxsize=1000)
+        print(f'[LOKI] enabled: {self.loki_url}', flush=True)
         self._worker = threading.Thread(target=self._run, daemon=True, name='loki-log-worker')
         self._worker.start()
 
@@ -80,6 +81,7 @@ class LokiQueueHandler(logging.Handler):
                 }
 
                 response = requests.post(self.loki_url, json=payload, timeout=1.5)
+                print(f'[LOKI] push response: {response.status_code}', flush=True)
                 if not response.ok:
                     body = (response.text or '')[:500]
                     delivery_logger.warning(
@@ -95,13 +97,14 @@ class LokiQueueHandler(logging.Handler):
                         self.loki_url,
                     )
             except requests.RequestException as exc:
-                # Diagnostic message goes only to stdout and never affects requests.
+                print(f'[LOKI] push error: {exc}', flush=True)
                 delivery_logger.warning(
                     'Loki push error: url=%s error=%s',
                     self.loki_url,
                     exc,
                 )
             except Exception as exc:
+                print(f'[LOKI] unexpected error: {exc}', flush=True)
                 delivery_logger.warning('Unexpected Loki logging error: %s', exc)
             finally:
                 self._queue.task_done()
@@ -131,6 +134,8 @@ def _build_access_logger():
         )
         loki_handler.setFormatter(formatter)
         logger.addHandler(loki_handler)
+    else:
+        print('[LOKI] disabled: LOKI_URL is not configured', flush=True)
 
     return logger
 
