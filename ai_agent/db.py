@@ -28,13 +28,6 @@ def init_ai_agent_db():
             ''')
             c.execute("ALTER TABLE ai_interview_bookings ADD COLUMN IF NOT EXISTS request_in_flight BOOLEAN NOT NULL DEFAULT FALSE")
             c.execute("ALTER TABLE ai_interview_bookings ADD COLUMN IF NOT EXISTS request_started_at TIMESTAMP NULL")
-
-            # TEMPORARY TEST RESET: while we are debugging the booking flow,
-            # every application restart starts the AI trainer with no bookings.
-            # Messages/specs are removed automatically through ON DELETE CASCADE.
-            # REMOVE THIS DELETE BEFORE PRODUCTION.
-            c.execute("DELETE FROM ai_interview_bookings")
-
             c.execute('''DO $$ DECLARE r record; BEGIN
                 FOR r IN SELECT conname FROM pg_constraint
                     WHERE conrelid='ai_interview_bookings'::regclass AND contype='c'
