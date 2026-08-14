@@ -10,6 +10,11 @@ from . import db
 
 ai_agent_bp = Blueprint('ai_agent', __name__)
 
+MONTH_NAMES = [
+    '', 'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+    'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
+]
+
 
 def _today():
     tz_name = os.environ.get('APP_TIMEZONE', 'Europe/Moscow')
@@ -58,7 +63,7 @@ def index():
         today=today,
         year=year,
         month=month,
-        month_name=calendar.month_name[month],
+        month_name=MONTH_NAMES[month],
         weeks=weeks,
         booking_map=booking_map,
         slots=range(1, db.SLOTS_PER_DAY + 1),
