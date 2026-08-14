@@ -1,8 +1,6 @@
 import json
 import logging
 import os
-import queue
-import threading
 import time
 import uuid
 
@@ -31,83 +29,52 @@ class JsonFormatter(logging.Formatter):
         return json.dumps(payload, ensure_ascii=False, default=str)
 
 
-class LokiQueueHandler(logging.Handler):
-    """Non-blocking Loki handler. Logging failures never affect Flask requests."""
+class LokiHandler(logging.Handler):
+    """Simple fail-safe Loki handler suitable for Gunicorn workers."""
 
     def __init__(self, loki_url, service='analic-web', environment='production'):
         super().__init__()
         self.loki_url = loki_url.rstrip('/') + '/loki/api/v1/push'
         self.service = service
         self.environment = environment
-        self._queue = queue.Queue(maxsize=1000)
         print(f'[LOKI] enabled: {self.loki_url}', flush=True)
-        self._worker = threading.Thread(target=self._run, daemon=True, name='loki-log-worker')
-        self._worker.start()
 
     def emit(self, record):
         try:
             message = self.format(record)
-            component = 'app'
             event = getattr(record, 'event_data', None)
+            component = 'app'
             if isinstance(event, dict):
                 component = event.get('component') or component
 
-            item = {
-                'message': message,
-                'level': record.levelname.lower(),
-                'component': component,
+            payload = {
+                'streams': [{
+                    'stream': {
+                        'service': self.service,
+                        'environment': self.environment,
+                        'component': component,
+                        'level': record.levelname.lower(),
+                    },
+                    'values': [[str(time.time_ns()), message]],
+                }]
             }
-            self._queue.put_nowait(item)
-        except Exception:
-            # Observability must never break application logic.
-            pass
 
-    def _run(self):
-        delivery_logger = logging.getLogger('loki.delivery')
-
-        while True:
-            item = self._queue.get()
-            try:
-                payload = {
-                    'streams': [{
-                        'stream': {
-                            'service': self.service,
-                            'environment': self.environment,
-                            'component': item['component'],
-                            'level': item['level'],
-                        },
-                        'values': [[str(time.time_ns()), item['message']]],
-                    }]
-                }
-
-                response = requests.post(self.loki_url, json=payload, timeout=1.5)
-                print(f'[LOKI] push response: {response.status_code}', flush=True)
-                if not response.ok:
-                    body = (response.text or '')[:500]
-                    delivery_logger.warning(
-                        'Loki push failed: status=%s url=%s response=%s',
-                        response.status_code,
-                        self.loki_url,
-                        body,
-                    )
-                else:
-                    delivery_logger.info(
-                        'Loki push OK: status=%s url=%s',
-                        response.status_code,
-                        self.loki_url,
-                    )
-            except requests.RequestException as exc:
-                print(f'[LOKI] push error: {exc}', flush=True)
-                delivery_logger.warning(
-                    'Loki push error: url=%s error=%s',
-                    self.loki_url,
-                    exc,
+            # Keep Loki completely fail-safe for the application.  The short
+            # timeout prevents an unavailable Loki from noticeably delaying a
+            # normal request, while avoiding a background thread created before
+            # Gunicorn forks its worker process.
+            response = requests.post(self.loki_url, json=payload, timeout=0.5)
+            print(f'[LOKI] push response: {response.status_code}', flush=True)
+            if not response.ok:
+                body = (response.text or '')[:500]
+                print(
+                    f'[LOKI] push failed: status={response.status_code} response={body}',
+                    flush=True,
                 )
-            except Exception as exc:
-                print(f'[LOKI] unexpected error: {exc}', flush=True)
-                delivery_logger.warning('Unexpected Loki logging error: %s', exc)
-            finally:
-                self._queue.task_done()
+        except requests.RequestException as exc:
+            print(f'[LOKI] push error: {exc}', flush=True)
+        except Exception as exc:
+            print(f'[LOKI] unexpected error: {exc}', flush=True)
 
 
 def _build_access_logger():
@@ -127,7 +94,7 @@ def _build_access_logger():
 
     loki_url = os.environ.get('LOKI_URL', '').strip()
     if loki_url:
-        loki_handler = LokiQueueHandler(
+        loki_handler = LokiHandler(
             loki_url=loki_url,
             service=os.environ.get('LOKI_SERVICE', 'analic-web'),
             environment=os.environ.get('APP_ENV', os.environ.get('FLASK_ENV', 'production')),
