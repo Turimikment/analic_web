@@ -71,21 +71,16 @@ def ask():
     if not question:return redirect(url_for('ai_agent.index',tab='chat',agent=agent,error='Введите сообщение'))
     if len(question)>1500:return redirect(url_for('ai_agent.index',tab='chat',agent=agent,error='Сообщение слишком длинное'))
     if booking['questions_used']>=db.QUESTION_LIMIT:return redirect(url_for('ai_agent.index',tab='chat',agent=agent,error='Лимит сообщений исчерпан'))
-    reserved=False
     try:
-        db.begin_question(uid,booking['id']);reserved=True
         history=[{'role':m['role'],'content':m['content']} for m in db.get_messages(booking['id'],agent)]
         prompt=PROMPTS[agent]
         if agent=='developer':
             spec=db.get_latest_spec(booking['id'])
             prompt+=f"\n\nТекущая переданная спецификация аналитика:\nMERMAID:\n{spec['mermaid'] or '(не передана)'}\n\nAPI:\n{spec['api_spec'] or '(не передано)'}\n\nБизнес-правила:\n{spec['business_rules'] or '(не переданы)'}"
         answer=customer_answer(prompt,history,question)
-        db.save_exchange(uid,booking['id'],agent,question,answer);reserved=False
+        db.save_exchange(uid,booking['id'],agent,question,answer)
         return redirect(url_for('ai_agent.index',tab='chat',agent=agent))
     except Exception as exc:
-        if reserved:
-            try:db.release_question(uid,booking['id'])
-            except Exception:pass
         return redirect(url_for('ai_agent.index',tab='chat',agent=agent,error=f'AI временно недоступен: {str(exc)[:180]}'))
 
 @ai_agent_bp.route('/spec',methods=['POST'])
@@ -107,9 +102,9 @@ def finish():
     if not booking or booking['status']=='finished':return redirect(url_for('ai_agent.index',error='Симуляция недоступна'))
     try:
         transcript,spec=_review_context(booking['id'])
-        if not transcript:raise ValueError('Сначала пообщайтесь хотя бы с одним стейкхолдером')
+        if not transcript:raise ValueError('Сначала пообщайся хотя бы с одним стейкхолдером')
         context=f"Диалоги:\n{transcript}\n\nПоследняя спецификация:\nMERMAID:\n{spec['mermaid'] or '(нет)'}\n\nAPI:\n{spec['api_spec'] or '(нет)'}\n\nБизнес-правила:\n{spec['business_rules'] or '(нет)'}\n\nЭталон бизнеса:\n{BUSINESS_PROMPT}\n\nТехнический эталон:\n{DEVELOPER_PROMPT}"
-        review=make_review(REVIEW_PROMPT,'Полная симуляция', [{'role':'user','content':context}])
+        review=make_review(REVIEW_PROMPT,'Полная симуляция',[{'role':'user','content':context}])
         db.finish_interview(session['user_id'],booking['id'],review)
         return redirect(url_for('ai_agent.index',tab='chat',success='Симуляция завершена'))
     except Exception as exc:return redirect(url_for('ai_agent.index',tab='chat',error=f'Не удалось завершить: {str(exc)[:180]}'))
