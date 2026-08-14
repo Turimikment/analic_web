@@ -28,9 +28,13 @@ def init_ai_agent_db():
             ''')
             c.execute("ALTER TABLE ai_interview_bookings ADD COLUMN IF NOT EXISTS request_in_flight BOOLEAN NOT NULL DEFAULT FALSE")
             c.execute("ALTER TABLE ai_interview_bookings ADD COLUMN IF NOT EXISTS request_started_at TIMESTAMP NULL")
-            # Legacy lock fields are kept for a safe migration, but no longer
-            # participate in the chat flow. Clear any locks left by old workers.
             c.execute("UPDATE ai_interview_bookings SET request_in_flight=FALSE, request_started_at=NULL WHERE request_in_flight=TRUE OR request_started_at IS NOT NULL")
+
+            # Cancelled rows were hidden from the calendar but still occupied the
+            # UNIQUE(date, slot) key. Remove legacy cancelled bookings so a slot
+            # that looks free is actually bookable again.
+            c.execute("DELETE FROM ai_interview_bookings WHERE status='cancelled'")
+
             c.execute('''DO $$ DECLARE r record; BEGIN
                 FOR r IN SELECT conname FROM pg_constraint
                     WHERE conrelid='ai_interview_bookings'::regclass AND contype='c'
@@ -156,7 +160,8 @@ def cancel_booking(user_id, booking_id):
     conn = get_db_connection()
     try:
         with conn.cursor() as c:
-            c.execute("UPDATE ai_interview_bookings SET status='cancelled',request_in_flight=FALSE,request_started_at=NULL WHERE id=%s AND user_id=%s AND status='booked' AND booking_date>=CURRENT_DATE RETURNING id", (booking_id,user_id))
+            # Cancellation frees the UNIQUE(date, slot) key immediately.
+            c.execute("DELETE FROM ai_interview_bookings WHERE id=%s AND user_id=%s AND status='booked' AND booking_date>=CURRENT_DATE RETURNING id", (booking_id,user_id))
             row = c.fetchone()
         conn.commit()
         return bool(row)
