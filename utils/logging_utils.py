@@ -62,6 +62,8 @@ class LokiQueueHandler(logging.Handler):
             pass
 
     def _run(self):
+        delivery_logger = logging.getLogger('loki.delivery')
+
         while True:
             item = self._queue.get()
             try:
@@ -76,11 +78,26 @@ class LokiQueueHandler(logging.Handler):
                         'values': [[str(time.time_ns()), item['message']]],
                     }]
                 }
-                requests.post(self.loki_url, json=payload, timeout=1.5)
-            except Exception:
-                # Loki can be unavailable or sleeping on a free host.
-                # Drop the log entry and keep the application healthy.
-                pass
+
+                response = requests.post(self.loki_url, json=payload, timeout=1.5)
+                if not response.ok:
+                    body = (response.text or '')[:500]
+                    delivery_logger.warning(
+                        'Loki push failed: status=%s url=%s response=%s',
+                        response.status_code,
+                        self.loki_url,
+                        body,
+                    )
+            except requests.RequestException as exc:
+                # Diagnostic message goes only to normal application stdout.
+                # It is deliberately not sent back through this Loki handler.
+                delivery_logger.warning(
+                    'Loki push error: url=%s error=%s',
+                    self.loki_url,
+                    exc,
+                )
+            except Exception as exc:
+                delivery_logger.warning('Unexpected Loki logging error: %s', exc)
             finally:
                 self._queue.task_done()
 
