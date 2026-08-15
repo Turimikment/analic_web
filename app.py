@@ -1,5 +1,5 @@
 # app.py
-from flask import Flask, session, render_template
+from flask import Flask, session, render_template, send_from_directory
 from flask_session import Session
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
 from spyne.server.wsgi import WsgiApplication
@@ -42,6 +42,14 @@ def create_app():
     
     # Регистрация компонентов
     register_blueprints(app)
+
+    # Изолированный учебный стенд интеграций: статическая страница без влияния
+    # на API, БД, Kafka и AI-agent основного приложения.
+    @app.route('/integration-sandbox')
+    @app.route('/integration-sandbox/')
+    def integration_sandbox():
+        sandbox_dir = os.path.join(app.root_path, 'integration-sandbox', 'ui')
+        return send_from_directory(sandbox_dir, 'index.html')
     
     # Инициализация Swagger
     swagger = Swagger(app, config=app.config['SWAGGER'])
