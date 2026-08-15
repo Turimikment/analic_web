@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{ task.title }} — описание задачи</title>
+<style>
+:root{--orange:#FF9800;--cream:#FFF3E0;--paper:#FFF8E1;--text:#4E342E;--muted:#8D6E63;--line:#FFB74D}*{box-sizing:border-box}body{margin:0;background:var(--cream);color:var(--text);font-family:'Courier New',monospace}.page{max-width:900px;margin:30px auto;padding:0 16px}.card{background:white;border-radius:18px;box-shadow:0 5px 22px #ff980020;padding:26px}.eyebrow{color:#E65100;font-weight:bold;margin-bottom:8px}h1{margin:0 0 16px;color:#E65100}h2{margin-top:26px;font-size:1.05rem}.lead{font-size:1.08rem;line-height:1.55}.muted{color:var(--muted);line-height:1.5}.docs{background:var(--paper);border:1px solid #FFE0B2;border-radius:14px;padding:18px}.docs li{margin:8px 0;line-height:1.4}.hint{margin-top:22px;padding:14px;border-left:4px solid var(--orange);background:#FFF8E1}.back{display:inline-block;margin-top:22px;color:#E65100;font-weight:bold;text-decoration:none}
+</style>
+</head>
+<body><main class="page"><section class="card"><div class="eyebrow">🤖 Симулятор системного аналитика</div><h1>{{ task.title }}</h1><p class="lead">{{ task.description.lead }}</p><h2>Что нужно сделать</h2><p class="muted">{{ task.description.goal }}</p><h2>Ожидаемый результат</h2><p class="muted">{{ task.description.result }}</p>{% if task.docs %}<h2>Документация текущей системы</h2><div class="docs"><ul>{% for item in task.docs %}<li>{{ item }}</li>{% endfor %}</ul></div>{% endif %}<div class="hint">Не пытайся угадать скрытые требования. Используй документацию и общайся с Алексеем и Максимом как с реальными стейкхолдерами.</div><a class="back" href="javascript:window.close()">Закрыть окно</a></section></main></body></html>
