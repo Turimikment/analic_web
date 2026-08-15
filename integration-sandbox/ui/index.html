@@ -3,35 +3,125 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Integration Sandbox</title>
+  <title>Собери интеграцию</title>
   <style>
-    body { font-family: Arial, sans-serif; max-width: 980px; margin: 40px auto; padding: 0 20px; line-height: 1.55; }
-    h1 { margin-bottom: 8px; }
-    .lead { color: #444; font-size: 18px; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-top: 24px; }
-    .card { border: 1px solid #ddd; border-radius: 12px; padding: 16px; background: #fff; }
-    .card h2 { margin-top: 0; font-size: 20px; }
-    code { background: #f3f3f3; padding: 2px 5px; border-radius: 4px; }
-    .flow { background: #f7f7f7; padding: 16px; border-radius: 12px; }
+    :root {
+      --bg:#0b1020; --panel:#131a2d; --panel2:#182239; --line:#30405f;
+      --text:#eef3ff; --muted:#93a4c7; --accent:#7c9cff; --ok:#50d890;
+      --warn:#ffcc66; --bad:#ff6b7a; --rest:#75b8ff; --kafka:#c79cff;
+    }
+    *{box-sizing:border-box} body{margin:0;background:linear-gradient(135deg,#080d19,#10182b 60%,#0b1020);color:var(--text);font-family:Inter,system-ui,Arial,sans-serif;min-height:100vh}
+    button,select{font:inherit}.app{max-width:1500px;margin:0 auto;padding:22px}.top{display:flex;gap:18px;justify-content:space-between;align-items:flex-start;margin-bottom:18px}.top h1{margin:0 0 6px;font-size:30px}.top p{margin:0;color:var(--muted);max-width:800px}.badge{border:1px solid var(--line);border-radius:999px;padding:8px 12px;color:var(--muted);background:#10182a;white-space:nowrap}
+    .layout{display:grid;grid-template-columns:280px 1fr 330px;gap:16px}.panel{background:rgba(19,26,45,.94);border:1px solid #263654;border-radius:18px;box-shadow:0 16px 40px rgba(0,0,0,.22)}.side{padding:16px}.side h2,.events h2{font-size:15px;margin:0 0 12px;color:#c9d5f0;text-transform:uppercase;letter-spacing:.06em}.task{padding:14px;background:#10182a;border-radius:14px;border:1px solid #263654;color:#dbe5fb;font-size:14px;line-height:1.45;margin-bottom:14px}.task b{color:#fff}
+    .service{display:flex;align-items:center;gap:10px;padding:11px 12px;border:1px solid #2c3b59;border-radius:12px;background:#172139;margin:8px 0;cursor:pointer;transition:.15s}.service:hover{transform:translateY(-1px);border-color:#51678e}.service.active{outline:2px solid var(--accent);background:#1c2948}.ico{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:#243451;font-size:18px}.service small{display:block;color:var(--muted);margin-top:2px}
+    .workspace{min-height:680px;position:relative;overflow:hidden}.toolbar{display:flex;flex-wrap:wrap;gap:8px;padding:12px;border-bottom:1px solid #243451;background:#10182a}.btn{border:1px solid #38507b;background:#1b2945;color:#eef3ff;padding:9px 12px;border-radius:10px;cursor:pointer}.btn:hover{border-color:#6e8bc2}.btn.primary{background:#3158d4;border-color:#4f77ef}.btn.chaos{background:#4a2430;border-color:#8b3d52}.btn:disabled{opacity:.45;cursor:not-allowed}
+    .canvas{position:relative;height:620px;background-image:radial-gradient(#263654 1px,transparent 1px);background-size:22px 22px}.node{position:absolute;width:150px;padding:14px;border-radius:15px;border:1px solid #3b4f73;background:#172139;box-shadow:0 10px 24px rgba(0,0,0,.25);cursor:pointer;z-index:3}.node.selected{outline:2px solid var(--accent)}.node .title{font-weight:700;margin-bottom:4px}.node .sub{font-size:12px;color:var(--muted)}.node .status{font-size:12px;margin-top:9px;color:#a8b8d8}.node.ok{border-color:#318a61}.node.bad{border-color:#a84155;box-shadow:0 0 0 2px rgba(255,107,122,.14)}
+    svg{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none}.edge{stroke:#61769d;stroke-width:3;fill:none}.edge.rest{stroke:var(--rest)}.edge.kafka{stroke:var(--kafka);stroke-dasharray:8 6}.edge-label{fill:#dce6fa;font-size:12px;paint-order:stroke;stroke:#0b1020;stroke-width:5px;stroke-linejoin:round}.packet{fill:#fff;filter:drop-shadow(0 0 6px #fff)}
+    .events{padding:16px;min-height:680px}.log{height:510px;overflow:auto;background:#0b1221;border:1px solid #253654;border-radius:13px;padding:10px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}.entry{padding:7px 6px;border-bottom:1px solid #18243b;line-height:1.35}.entry.ok{color:#7ee2aa}.entry.warn{color:#ffd27a}.entry.bad{color:#ff8d98}.entry.info{color:#a9bce2}.score{margin-top:12px;padding:12px;border-radius:12px;background:#10182a;border:1px solid #263654}.score strong{font-size:22px}.score span{color:var(--muted);font-size:13px}.hint{margin-top:12px;color:var(--muted);font-size:13px;line-height:1.4}
+    .modal{position:fixed;inset:0;background:rgba(4,8,16,.72);display:none;align-items:center;justify-content:center;z-index:20}.modal.open{display:flex}.dialog{width:min(520px,92vw);background:#151f35;border:1px solid #38507b;border-radius:18px;padding:18px}.dialog h3{margin:0 0 12px}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.field{margin:10px 0}.field label{display:block;color:var(--muted);font-size:12px;margin-bottom:6px}.field select{width:100%;padding:10px;background:#0e1627;color:white;border:1px solid #344b72;border-radius:10px}.dialog-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+    @media(max-width:1050px){.layout{grid-template-columns:240px 1fr}.events{grid-column:1/-1;min-height:auto}.log{height:260px}}@media(max-width:760px){.layout{display:block}.panel{margin-bottom:14px}.canvas{height:650px}.top{display:block}.badge{display:inline-block;margin-top:10px}.service-list{display:grid;grid-template-columns:1fr 1fr;gap:6px}.service{margin:0}}
   </style>
 </head>
 <body>
-  <h1>Integration Sandbox</h1>
-  <p class="lead">Safe training area for future system analysts: REST, SOAP/WSDL, database, Kafka, Redis, S3 and logs in one order processing case.</p>
-
-  <section class="flow">
-    <strong>Flow:</strong>
-    REST creates order -> DB stores state -> Redis caches status -> Kafka publishes event -> S3 stores file -> SOAP sends delivery request -> logs connect everything by <code>request_id</code>.
-  </section>
-
-  <div class="grid">
-    <div class="card"><h2>REST / Swagger</h2><p>Read OpenAPI contract and send <code>POST /orders</code>.</p></div>
-    <div class="card"><h2>Database</h2><p>Find order row, items and file metadata.</p></div>
-    <div class="card"><h2>Redis</h2><p>Check cached order status and TTL.</p></div>
-    <div class="card"><h2>Kafka</h2><p>Inspect <code>order_created</code> event and discuss idempotency.</p></div>
-    <div class="card"><h2>S3</h2><p>Upload receipt or return photo and find object key.</p></div>
-    <div class="card"><h2>SOAP / WSDL</h2><p>Read legacy delivery contract and XML operation.</p></div>
-    <div class="card"><h2>Logs</h2><p>Search by <code>request_id</code> and restore the full chain.</p></div>
+<div class="app">
+  <div class="top">
+    <div><h1>⚡ Собери интеграцию</h1><p>Собери архитектуру обработки заказа, проверь happy path, а затем устрой системе проблемы. Цель — не просто провести запрос, а пережить повторную доставку, timeout и падение сервиса.</p></div>
+    <div class="badge">MVP · Integration Sandbox</div>
   </div>
+
+  <div class="layout">
+    <aside class="panel side">
+      <h2>Задача</h2>
+      <div class="task"><b>Заказ и бонусы</b><br>Frontend создаёт заказ. Order должен получить оплату через Payment. После успешной оплаты Bonus начисляет 5%, а Notification сообщает пользователю результат.</div>
+      <h2>Компоненты</h2>
+      <div class="service-list" id="serviceList">
+        <div class="service" data-type="frontend"><div class="ico">🖥️</div><div><b>Frontend</b><small>клиент</small></div></div>
+        <div class="service" data-type="order"><div class="ico">📦</div><div><b>Order</b><small>заказы</small></div></div>
+        <div class="service" data-type="payment"><div class="ico">💳</div><div><b>Payment</b><small>оплата</small></div></div>
+        <div class="service" data-type="bonus"><div class="ico">🎁</div><div><b>Bonus</b><small>бонусы</small></div></div>
+        <div class="service" data-type="notify"><div class="ico">🔔</div><div><b>Notification</b><small>уведомления</small></div></div>
+        <div class="service" data-type="kafka"><div class="ico">🚌</div><div><b>Kafka</b><small>event bus</small></div></div>
+      </div>
+      <div class="hint">Клик по компоненту добавляет его на поле. Клик по двум узлам подряд — создаёт связь между ними.</div>
+    </aside>
+
+    <main class="panel workspace">
+      <div class="toolbar">
+        <button class="btn" id="resetBtn">↺ Сбросить</button>
+        <button class="btn primary" id="runBtn">▶ Happy path</button>
+        <button class="btn chaos" id="chaosBtn">💥 Запустить хаос</button>
+        <button class="btn" id="templateBtn">✨ Пример схемы</button>
+      </div>
+      <div class="canvas" id="canvas">
+        <svg id="svg"><defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#61769d"/></marker></defs></svg>
+      </div>
+    </main>
+
+    <aside class="panel events">
+      <h2>События симуляции</h2>
+      <div class="log" id="log"></div>
+      <div class="score"><span>Архитектурная устойчивость</span><br><strong id="score">—</strong></div>
+      <div class="hint" id="verdict">Сначала собери схему и запусти happy path.</div>
+    </aside>
+  </div>
+</div>
+
+<div class="modal" id="edgeModal">
+  <div class="dialog">
+    <h3>Настроить интеграцию</h3>
+    <div class="row"><div class="field"><label>Источник</label><div id="fromName"></div></div><div class="field"><label>Получатель</label><div id="toName"></div></div></div>
+    <div class="field"><label>Тип интеграции</label><select id="protocol"><option value="REST">REST sync</option><option value="KAFKA">Kafka event</option></select></div>
+    <div class="row">
+      <div class="field"><label>Retry</label><select id="retry"><option value="no">Нет</option><option value="yes">Да</option></select></div>
+      <div class="field"><label>Idempotency</label><select id="idem"><option value="no">Нет</option><option value="yes">Да</option></select></div>
+    </div>
+    <div class="dialog-actions"><button class="btn" id="cancelEdge">Отмена</button><button class="btn primary" id="saveEdge">Добавить связь</button></div>
+  </div>
+</div>
+
+<script>
+const names={frontend:'Frontend',order:'Order',payment:'Payment',bonus:'Bonus',notify:'Notification',kafka:'Kafka'};
+const icons={frontend:'🖥️',order:'📦',payment:'💳',bonus:'🎁',notify:'🔔',kafka:'🚌'};
+const canvas=document.getElementById('canvas'),svg=document.getElementById('svg'),logEl=document.getElementById('log');
+let nodes=[],edges=[],selected=null,pendingEdge=null,nodeSeq=0,running=false;
+
+function log(text,type='info'){const d=document.createElement('div');d.className='entry '+type;d.textContent=new Date().toLocaleTimeString('ru-RU')+'  '+text;logEl.appendChild(d);logEl.scrollTop=logEl.scrollHeight}
+function clearLog(){logEl.innerHTML=''}
+function addNode(type,x,y){if(nodes.some(n=>n.type===type)){log(names[type]+' уже на схеме','warn');return}const n={id:'n'+(++nodeSeq),type,x:x??80+nodes.length*55,y:y??70+nodes.length*60};nodes.push(n);render();log('Добавлен компонент '+names[type]);}
+function render(){canvas.querySelectorAll('.node').forEach(e=>e.remove());svg.querySelectorAll('.dynamic').forEach(e=>e.remove());
+  edges.forEach(drawEdge);nodes.forEach(n=>{const el=document.createElement('div');el.className='node'+(selected===n.id?' selected':'');el.dataset.id=n.id;el.style.left=n.x+'px';el.style.top=n.y+'px';el.innerHTML=`<div class="title">${icons[n.type]} ${names[n.type]}</div><div class="sub">${n.type==='kafka'?'event broker':'service'}</div><div class="status">готов</div>`;el.onclick=()=>selectNode(n.id);makeDraggable(el,n);canvas.appendChild(el)})}
+function center(n){return{x:n.x+75,y:n.y+38}}
+function drawEdge(e){const a=nodes.find(n=>n.id===e.from),b=nodes.find(n=>n.id===e.to);if(!a||!b)return;const A=center(a),B=center(b);const line=document.createElementNS('http://www.w3.org/2000/svg','line');line.setAttribute('x1',A.x);line.setAttribute('y1',A.y);line.setAttribute('x2',B.x);line.setAttribute('y2',B.y);line.setAttribute('marker-end','url(#arrow)');line.setAttribute('class','dynamic edge '+(e.protocol==='KAFKA'?'kafka':'rest'));svg.appendChild(line);const t=document.createElementNS('http://www.w3.org/2000/svg','text');t.setAttribute('x',(A.x+B.x)/2);t.setAttribute('y',(A.y+B.y)/2-7);t.setAttribute('text-anchor','middle');t.setAttribute('class','dynamic edge-label');t.textContent=e.protocol+(e.retry==='yes'?' · retry':'')+(e.idem==='yes'?' · idem':'');svg.appendChild(t)}
+function selectNode(id){if(running)return;if(!selected){selected=id;render();return}if(selected===id){selected=null;render();return}pendingEdge={from:selected,to:id};selected=null;openEdgeModal();render()}
+function openEdgeModal(){const a=nodes.find(n=>n.id===pendingEdge.from),b=nodes.find(n=>n.id===pendingEdge.to);document.getElementById('fromName').textContent=names[a.type];document.getElementById('toName').textContent=names[b.type];document.getElementById('edgeModal').classList.add('open')}
+function makeDraggable(el,n){let sx,sy,ox,oy,moved=false;el.onpointerdown=ev=>{sx=ev.clientX;sy=ev.clientY;ox=n.x;oy=n.y;el.setPointerCapture(ev.pointerId);el.onpointermove=e=>{if(Math.abs(e.clientX-sx)+Math.abs(e.clientY-sy)<4)return;moved=true;n.x=Math.max(0,Math.min(canvas.clientWidth-150,ox+e.clientX-sx));n.y=Math.max(0,Math.min(canvas.clientHeight-85,oy+e.clientY-sy));el.style.left=n.x+'px';el.style.top=n.y+'px';redrawEdges()};el.onpointerup=()=>{el.onpointermove=null;if(moved){moved=false;setTimeout(()=>{},0)}}}}
+function redrawEdges(){svg.querySelectorAll('.dynamic').forEach(e=>e.remove());edges.forEach(drawEdge)}
+
+document.querySelectorAll('.service').forEach(s=>s.onclick=()=>addNode(s.dataset.type));
+document.getElementById('cancelEdge').onclick=()=>{pendingEdge=null;document.getElementById('edgeModal').classList.remove('open')};
+document.getElementById('saveEdge').onclick=()=>{if(edges.some(e=>e.from===pendingEdge.from&&e.to===pendingEdge.to)){log('Такая связь уже есть','warn')}else{edges.push({...pendingEdge,protocol:document.getElementById('protocol').value,retry:document.getElementById('retry').value,idem:document.getElementById('idem').value});log('Связь добавлена');}pendingEdge=null;document.getElementById('edgeModal').classList.remove('open');render()};
+
+function reset(){nodes=[];edges=[];selected=null;nodeSeq=0;running=false;clearLog();document.getElementById('score').textContent='—';document.getElementById('verdict').textContent='Сначала собери схему и запусти happy path.';render();log('Поле очищено')}
+function nodeByType(t){return nodes.find(n=>n.type===t)}
+function edgeByTypes(a,b){const A=nodeByType(a),B=nodeByType(b);return A&&B&&edges.find(e=>e.from===A.id&&e.to===B.id)}
+function pathExists(a,b,seen=new Set()){const A=typeof a==='string'?nodeByType(a):a,B=typeof b==='string'?nodeByType(b):b;if(!A||!B)return false;if(A.id===B.id)return true;if(seen.has(A.id))return false;seen.add(A.id);return edges.filter(e=>e.from===A.id).some(e=>{const nx=nodes.find(n=>n.id===e.to);return nx&&pathExists(nx,B,seen)})}
+async function animateEdge(e,label,type='ok'){const a=nodes.find(n=>n.id===e.from),b=nodes.find(n=>n.id===e.to);if(!a||!b)return;log(label,type);const A=center(a),B=center(b);const p=document.createElementNS('http://www.w3.org/2000/svg','circle');p.setAttribute('r','6');p.setAttribute('class','dynamic packet');svg.appendChild(p);const start=performance.now();await new Promise(resolve=>{function f(now){let q=Math.min(1,(now-start)/550);p.setAttribute('cx',A.x+(B.x-A.x)*q);p.setAttribute('cy',A.y+(B.y-A.y)*q);if(q<1)requestAnimationFrame(f);else resolve()}requestAnimationFrame(f)});p.remove();setNodeState(b.id,type==='bad'?'bad':'ok')}
+function setNodeState(id,state){const el=canvas.querySelector(`[data-id="${id}"]`);if(el){el.classList.remove('ok','bad');el.classList.add(state)}}
+function clearStates(){canvas.querySelectorAll('.node').forEach(el=>el.classList.remove('ok','bad'))}
+
+async function runHappy(){if(running)return;running=true;clearStates();clearLog();log('Запуск happy path…');const required=['frontend','order','payment','bonus','notify'];const missing=required.filter(t=>!nodeByType(t));if(missing.length){log('Не хватает компонентов: '+missing.map(t=>names[t]).join(', '),'bad');running=false;return}if(!pathExists('frontend','order')||!pathExists('order','payment')||!pathExists('payment','bonus')||!pathExists('payment','notify')){log('Схема не обеспечивает полный бизнес-поток','bad');document.getElementById('score').textContent='35/100';document.getElementById('verdict').textContent='Happy path не собран: проверь направление связей.';running=false;return}
+  const sequence=findFlowSequence();for(const item of sequence)await animateEdge(item.edge,item.text);log('Заказ оплачен, бонусы начислены, уведомление отправлено','ok');document.getElementById('score').textContent='70/100';document.getElementById('verdict').textContent='Happy path работает. Теперь проверь, переживёт ли схема сбой.';running=false}
+function findFlowSequence(){const out=[];function firstPath(fromType,toType){const s=nodeByType(fromType),t=nodeByType(toType),q=[[s,[]]],seen=new Set();while(q.length){const [n,p]=q.shift();if(!n)break;if(n.id===t.id)return p;if(seen.has(n.id))continue;seen.add(n.id);edges.filter(e=>e.from===n.id).forEach(e=>q.push([nodes.find(x=>x.id===e.to),p.concat(e)]))}return[]}
+  firstPath('frontend','order').forEach((e,i)=>out.push({edge:e,text:i?'Передача запроса':'POST /orders'}));firstPath('order','payment').forEach(e=>out.push({edge:e,text:'Инициирована оплата'}));firstPath('payment','bonus').forEach(e=>out.push({edge:e,text:'Событие успешной оплаты → Bonus'}));firstPath('payment','notify').forEach(e=>out.push({edge:e,text:'Событие успешной оплаты → Notification'}));return out}
+async function runChaos(){if(running)return;running=true;clearStates();clearLog();log('CHAOS: Payment обработал списание, но ответ потерян','warn');const payPath=findPath('order','payment');if(!payPath.length){log('Нет маршрута Order → Payment','bad');running=false;return}for(const e of payPath)await animateEdge(e,'Order отправляет оплату');const critical=payPath.find(e=>e.protocol==='REST')||payPath[payPath.length-1];setNodeState(critical.to,'bad');log('Timeout: Order не знает, прошла ли операция','bad');await sleep(650);
+  let score=45;let verdict='Система не знает результат оплаты.';if(critical.retry==='yes'&&critical.idem==='no'){log('Retry отправляет тот же платёж повторно','warn');await animateEdge(critical,'Повторный запрос без idempotency','bad');log('ДВОЙНОЕ СПИСАНИЕ: 10 000 → 8 000 → 6 000 ₽','bad');score=25;verdict='Retry есть, но без idempotency он сделал ситуацию хуже.'}else if(critical.retry==='yes'&&critical.idem==='yes'){log('Retry с тем же idempotency key','info');await animateEdge(critical,'Повторный запрос', 'ok');log('Payment вернул результат первой операции. Повторного списания нет.','ok');score=92;verdict='Схема пережила потерю ответа: retry + idempotency сработали.'}else if(critical.retry==='no'){log('Повтора нет: заказ остаётся в неопределённом состоянии','warn');score=55;verdict='Нет двойного списания, но нет и механизма восстановления после timeout.'}
+  const asyncGood=(edgeByTypes('payment','kafka')&&pathExists('kafka','bonus'))||(edgeByTypes('payment','bonus')?.protocol==='KAFKA');if(asyncGood){score=Math.min(100,score+5);log('Bonus отделён асинхронным событием — сбой бонусов не блокирует оплату','ok')}
+  document.getElementById('score').textContent=score+'/100';document.getElementById('verdict').textContent=verdict;running=false}
+function findPath(fromType,toType){const s=nodeByType(fromType),t=nodeByType(toType);if(!s||!t)return[];const q=[[s,[]]],seen=new Set();while(q.length){const [n,p]=q.shift();if(n.id===t.id)return p;if(seen.has(n.id))continue;seen.add(n.id);edges.filter(e=>e.from===n.id).forEach(e=>q.push([nodes.find(x=>x.id===e.to),p.concat(e)]))}return[]}
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function template(){reset();addNode('frontend',40,120);addNode('order',235,120);addNode('payment',430,120);addNode('kafka',610,300);addNode('bonus',805,220);addNode('notify',805,390);const f=nodeByType('frontend'),o=nodeByType('order'),p=nodeByType('payment'),k=nodeByType('kafka'),b=nodeByType('bonus'),n=nodeByType('notify');edges=[{from:f.id,to:o.id,protocol:'REST',retry:'no',idem:'no'},{from:o.id,to:p.id,protocol:'REST',retry:'yes',idem:'yes'},{from:p.id,to:k.id,protocol:'KAFKA',retry:'yes',idem:'yes'},{from:k.id,to:b.id,protocol:'KAFKA',retry:'yes',idem:'yes'},{from:k.id,to:n.id,protocol:'KAFKA',retry:'yes',idem:'yes'}];render();clearLog();log('Загружен пример архитектуры','info')}
+document.getElementById('resetBtn').onclick=reset;document.getElementById('runBtn').onclick=runHappy;document.getElementById('chaosBtn').onclick=runChaos;document.getElementById('templateBtn').onclick=template;
+log('Добавь компоненты и соедини их. Потом запускай систему.');
+</script>
 </body>
 </html>
