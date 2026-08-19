@@ -103,7 +103,7 @@ def game_view(game_id):
                 return render_template('errors/404.html'), 404
             if row[1] != session.get('user_id'):
                 return render_template('access_denied.html'), 403
-            return render_template('tic_tac_toe_game.html', game_id=game_id)
+            return render_template('tic_tac_toe_game.html', game_id=game_id, user_id=session.get('user_id'))
     finally:
         conn.close()
 
