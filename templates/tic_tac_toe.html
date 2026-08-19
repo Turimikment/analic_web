@@ -7,7 +7,7 @@
     <style>
         body{font-family:'Courier New',monospace;margin:0;background:#FFF3E0;color:#333}
         .wrap{max-width:900px;margin:50px auto;padding:30px;background:white;border-radius:20px;box-shadow:0 0 15px rgba(255,152,0,.2)}
-        h1,h2{color:#E64A19} .lead{font-size:1.1em;line-height:1.55}
+        h1,h2{color:#E64A19}.lead{font-size:1.1em;line-height:1.55}
         .badge{display:inline-block;background:#FFF8E1;border:2px dashed #FFB74D;border-radius:14px;padding:10px 15px;margin:8px 0}
         .actions{display:flex;gap:12px;flex-wrap:wrap;margin:22px 0}.btn{background:#FF9800;color:white;text-decoration:none;padding:11px 17px;border-radius:16px;font-weight:bold}.btn.secondary{background:#795548}
         .method{border-left:5px solid #FF9800;background:#FFF8E1;padding:14px 18px;margin:14px 0;border-radius:8px}.verb{font-weight:bold;color:#E64A19}.url{font-family:monospace;word-break:break-all}
@@ -31,15 +31,23 @@
     <h2>Методы</h2>
     <div class="method"><span class="verb">POST</span> <span class="url">/tic-tac-toe/api/users/{{ user_id }}/games</span><br>Создаёт новую партию. Возвращает <code>game_id</code>, пустое поле, статус и <code>visualization_url</code>.</div>
     <div class="method"><span class="verb">GET</span> <span class="url">/tic-tac-toe/api/users/{{ user_id }}/games/{game_id}</span><br>Возвращает текущее поле, статус игры, победителя, следующий ход и ссылку на визуализацию.</div>
-    <div class="method"><span class="verb">POST</span> <span class="url">/tic-tac-toe/api/users/{{ user_id }}/games/{game_id}/moves</span><br>Делает ход крестиком. Тело запроса: <code>{"cell": 4}</code>. После принятого хода сервер автоматически отвечает ноликом.</div>
+    <div class="method"><span class="verb">POST</span> <span class="url">/tic-tac-toe/api/users/{{ user_id }}/games/{game_id}/moves</span><br>Делает ход крестиком. Тело запроса: <code>{"cell": [1, 1]}</code>, где первое число — строка, второе — столбец. После принятого хода сервер автоматически отвечает ноликом.</div>
     <div class="method"><span class="verb">GET</span> <span class="url">/tic-tac-toe/api/users/{{ user_id }}/games</span><br>Показывает все партии пользователя — удобно, если играешь несколько одновременно.</div>
 
-    <h2>Нумерация клеток</h2>
-    <pre>0 | 1 | 2
---+---+--
-3 | 4 | 5
---+---+--
-6 | 7 | 8</pre>
+    <h2>Координаты клеток</h2>
+    <pre>[0,0] | [0,1] | [0,2]
+------+-------+------
+[1,0] | [1,1] | [1,2]
+------+-------+------
+[2,0] | [2,1] | [2,2]</pre>
+
+    <h2>Пример хода</h2>
+    <pre>POST /tic-tac-toe/api/users/{{ user_id }}/games/42/moves
+Content-Type: application/json
+
+{
+  "cell": [1, 1]
+}</pre>
 
     <h2>Пример старта</h2>
     <pre>POST /tic-tac-toe/api/users/{{ user_id }}/games
