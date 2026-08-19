@@ -10,6 +10,8 @@ from admin.routes import admin_bp
 from kafka.routes import kafka_bp
 from ai_agent.routes import ai_agent_bp
 from ai_agent.db import init_ai_agent_db
+from tic_tac_toe.routes import tic_tac_toe_bp
+from tic_tac_toe.db import init_tic_tac_toe_db
 from soap.soap_service import soap_app
 from utils.db_utils import init_db
 from utils.db_audit import init_db_audit
@@ -67,6 +69,7 @@ def create_app():
         try:
             init_db()
             init_ai_agent_db()
+            init_tic_tac_toe_db()
             logger.info("Database initialized successfully")
         except Exception as e:
             logger.error(f"Database initialization failed: {str(e)}")
@@ -80,6 +83,7 @@ def register_blueprints(app):
     app.register_blueprint(admin_bp, url_prefix='/admin')
     app.register_blueprint(kafka_bp, url_prefix='/kafka')
     app.register_blueprint(ai_agent_bp, url_prefix='/ai-agent')
+    app.register_blueprint(tic_tac_toe_bp, url_prefix='/tic-tac-toe')
     logger.info("Blueprints registered")
 
 def register_error_handlers(app):
