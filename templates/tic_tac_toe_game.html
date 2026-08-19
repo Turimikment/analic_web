@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Партия #{{ game_id }}</title>
+    <style>
+        body{font-family:'Courier New',monospace;margin:0;background:#FFF3E0;color:#333}.wrap{max-width:720px;margin:50px auto;padding:30px;background:white;border-radius:20px;box-shadow:0 0 15px rgba(255,152,0,.2);text-align:center}
+        h1{color:#E64A19}.board{width:330px;height:330px;margin:28px auto;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:7px}.cell{background:#FFF8E1;border:3px solid #FFB74D;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:4.2em;font-weight:bold;color:#E64A19}.cell.o{color:#5D4037}
+        .status{font-size:1.2em;background:#FFF8E1;padding:14px;border-radius:12px;margin:18px 0}.meta{line-height:1.6}.hint{background:#E8F5E9;padding:15px;border-radius:12px;text-align:left}.back{color:#E64A19;text-decoration:none;font-weight:bold}.pulse{font-size:.9em;color:#666}
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <a class="back" href="/tic-tac-toe/">← Инструкция и API</a>
+    <h1>❌⭕ Партия #{{ game_id }}</h1>
+    <div class="status" id="status">Загрузка состояния...</div>
+    <div class="board" id="board"></div>
+    <div class="meta">Ты играешь <b>X</b>, сервер — <b>O</b> · Ходов: <span id="moves">0</span></div>
+    <p class="pulse" id="sync">GET состояния...</p>
+    <div class="hint"><b>Поле некликабельное.</b> Сделай ход через REST:<br><code>POST /tic-tac-toe/api/users/{{ user_id }}/games/{{ game_id }}/moves</code><br><code>{"cell": 4}</code><br><br>После POST эта страница сама заберёт новое состояние через GET и покажет результат.</div>
+</div>
+<script>
+const gameId={{ game_id }};
+const userId={{ user_id }};
+const boardEl=document.getElementById('board');
+for(let i=0;i<9;i++){const cell=document.createElement('div');cell.className='cell';cell.dataset.cell=i;boardEl.appendChild(cell);}
+const labels={active:'Игра идёт',player_won:'Ты победил 🎉',bot_won:'Сервер победил',draw:'Ничья'};
+async function refresh(){
+  try{
+    const r=await fetch(`/tic-tac-toe/api/users/${userId}/games/${gameId}`,{cache:'no-store'});
+    if(!r.ok){document.getElementById('status').textContent=`Ошибка GET: ${r.status}`;return;}
+    const game=await r.json();
+    game.board.forEach((v,i)=>{const el=boardEl.children[i];el.textContent=v||'';el.className='cell'+(v==='O'?' o':'');});
+    document.getElementById('status').textContent=labels[game.status]||game.status;
+    document.getElementById('moves').textContent=game.moves_count;
+    document.getElementById('sync').textContent=`Последняя синхронизация: GET → 200 OK · ${new Date().toLocaleTimeString()}`;
+  }catch(e){document.getElementById('sync').textContent='Не удалось обновить состояние';}
+}
+refresh();setInterval(refresh,1000);
+</script>
+</body>
+</html>
