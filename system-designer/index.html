@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Конструктор системы</title>
     <style>
-        body{font-family:'Courier New',monospace;margin:0;background:#FFF3E0;color:#4E342E}.page{max-width:1100px;margin:40px auto;padding:0 20px}.top{display:flex;justify-content:space-between;align-items:center;gap:20px}.back{color:#E65100;text-decoration:none;font-weight:bold}.tabs{display:flex;gap:10px;margin:30px 0;flex-wrap:wrap}.tab{border:0;border-radius:18px;padding:12px 22px;font:inherit;font-weight:bold;cursor:pointer;background:#FFE0B2;color:#6D4C41}.tab.active{background:#FF9800;color:white}.panel{display:none;background:white;border:2px dashed #FFB74D;border-radius:18px;padding:24px;box-shadow:0 4px 14px rgba(255,152,0,.15)}.panel.active{display:block}.row{display:grid;grid-template-columns:180px 1fr;gap:14px;align-items:center;margin:14px 0}input,select,textarea{box-sizing:border-box;width:100%;padding:11px;border:1px solid #FFCC80;border-radius:10px;font:inherit;background:#FFFDF9}textarea{min-height:150px;resize:vertical}.actions{display:flex;gap:10px;margin-top:18px}.btn{border:0;border-radius:16px;padding:10px 18px;background:#FF9800;color:white;font:inherit;font-weight:bold;cursor:pointer}.hint{background:#FFF8E1;border-radius:12px;padding:14px;margin-top:18px}.task{background:#FFF8E1;border-left:5px solid #FF9800;border-radius:12px;padding:18px;margin:14px 0}.task h3{margin-top:0;color:#E65100}.task li{margin:8px 0}.db-grid{display:grid;grid-template-columns:1.4fr 1fr .6fr .6fr .6fr;gap:8px;align-items:center}.db-grid strong{padding:8px}.placeholder{color:#8D6E63}.mapping{margin-top:26px;padding-top:20px;border-top:1px solid #FFE0B2}.mapping-row{display:grid;grid-template-columns:1fr 50px 1fr;gap:10px;align-items:center;margin:10px 0}.arrow{text-align:center;font-weight:bold;color:#F57C00}@media(max-width:700px){.row,.mapping-row{grid-template-columns:1fr}.db-grid{grid-template-columns:1fr}.arrow{transform:rotate(90deg)}}
+        body{font-family:'Courier New',monospace;margin:0;background:#FFF3E0;color:#4E342E}.page{max-width:1100px;margin:40px auto;padding:0 20px}.top{display:flex;justify-content:space-between;align-items:center;gap:20px}.back{color:#E65100;text-decoration:none;font-weight:bold}.tabs{display:flex;gap:10px;margin:30px 0;flex-wrap:wrap}.tab{border:0;border-radius:18px;padding:12px 22px;font:inherit;font-weight:bold;cursor:pointer;background:#FFE0B2;color:#6D4C41}.tab.active{background:#FF9800;color:white}.panel{display:none;background:white;border:2px dashed #FFB74D;border-radius:18px;padding:24px;box-shadow:0 4px 14px rgba(255,152,0,.15)}.panel.active{display:block}.row{display:grid;grid-template-columns:180px 1fr;gap:14px;align-items:center;margin:14px 0}input,select,textarea{box-sizing:border-box;width:100%;padding:11px;border:1px solid #FFCC80;border-radius:10px;font:inherit;background:#FFFDF9}textarea{min-height:150px;resize:vertical}.actions{display:flex;gap:10px;margin-top:18px}.btn{border:0;border-radius:16px;padding:10px 18px;background:#FF9800;color:white;font:inherit;font-weight:bold;cursor:pointer}.hint{background:#FFF8E1;border-radius:12px;padding:14px;margin-top:18px}.task{background:#FFF8E1;border-left:5px solid #FF9800;border-radius:12px;padding:18px;margin:14px 0}.task h3{margin-top:0;color:#E65100}.task li{margin:8px 0}.db-grid{display:grid;grid-template-columns:1.4fr 1fr .6fr .6fr .6fr;gap:8px;align-items:center}.db-grid strong{padding:8px}.placeholder{color:#8D6E63}.mapping{margin-top:26px;padding-top:20px;border-top:1px solid #FFE0B2}@media(max-width:700px){.row{grid-template-columns:1fr}.db-grid{grid-template-columns:1fr}}
     </style>
 </head>
 <body>
@@ -40,34 +40,25 @@
 
     <section id="rest" class="panel">
         <h2>REST endpoint</h2>
-        <div class="row"><label>HTTP метод</label><select id="method"><option>GET</option><option selected>POST</option><option>PUT</option><option>PATCH</option><option>DELETE</option></select></div>
-        <div class="row"><label>Endpoint</label><input id="endpoint" value="/api/v1/bonus" placeholder="/api/v1/users/{id}"></div>
-        <div class="row"><label>Request body</label><textarea id="requestBody">{
-  "user_id": 123,
-  "amount": 500
-}</textarea></div>
-        <div class="row"><label>Response code</label><select id="responseCode"><option selected>200</option><option>201</option><option>400</option><option>404</option><option>409</option><option>500</option></select></div>
-        <div class="row"><label>Response body</label><textarea id="responseBody">{
-  "transaction_id": 456,
-  "balance": 1500
-}</textarea></div>
+        <div class="row"><label>HTTP метод</label><select id="method"><option selected disabled>Выбери метод</option><option>GET</option><option>POST</option><option>PUT</option><option>PATCH</option><option>DELETE</option></select></div>
+        <div class="row"><label>Endpoint</label><input id="endpoint" placeholder="Введите endpoint"></div>
+        <div class="row"><label>Request body</label><textarea id="requestBody" placeholder="Введите JSON запроса"></textarea></div>
+        <div class="row"><label>Response code</label><select id="responseCode"><option selected disabled>Выбери код</option><option>200</option><option>201</option><option>204</option><option>400</option><option>404</option><option>409</option><option>500</option></select></div>
+        <div class="row"><label>Response body</label><textarea id="responseBody" placeholder="Введите JSON ответа"></textarea></div>
         <div class="actions"><button class="btn" id="checkRest">Проверить JSON</button></div>
         <div id="restResult" class="hint">Пока проверяем только синтаксис JSON. Сохранение контракта добавим следующим этапом.</div>
     </section>
 
     <section id="db" class="panel">
         <h2>Модель БД</h2>
-        <div class="row"><label>Таблица</label><input value="transactions"></div>
+        <div class="row"><label>Таблица</label><input placeholder="Название таблицы"></div>
         <div class="db-grid"><strong>Поле</strong><strong>Тип</strong><strong>PK</strong><strong>FK</strong><strong>NULL</strong>
-            <input value="id"><select><option>integer</option><option>string</option><option>decimal</option><option>datetime</option></select><input type="checkbox" checked><input type="checkbox"><input type="checkbox">
-            <input value="user_id"><select><option>integer</option><option>string</option><option>decimal</option><option>datetime</option></select><input type="checkbox"><input type="checkbox" checked><input type="checkbox">
-            <input value="amount"><select><option>decimal</option><option>integer</option><option>string</option><option>datetime</option></select><input type="checkbox"><input type="checkbox"><input type="checkbox">
-            <input value="balance_after"><select><option>decimal</option><option>integer</option><option>string</option><option>datetime</option></select><input type="checkbox"><input type="checkbox"><input type="checkbox">
+            <input placeholder="Название поля"><select><option selected disabled>Тип</option><option>integer</option><option>string</option><option>decimal</option><option>datetime</option><option>boolean</option></select><input type="checkbox"><input type="checkbox"><input type="checkbox">
+            <input placeholder="Название поля"><select><option selected disabled>Тип</option><option>integer</option><option>string</option><option>decimal</option><option>datetime</option><option>boolean</option></select><input type="checkbox"><input type="checkbox"><input type="checkbox">
+            <input placeholder="Название поля"><select><option selected disabled>Тип</option><option>integer</option><option>string</option><option>decimal</option><option>datetime</option><option>boolean</option></select><input type="checkbox"><input type="checkbox"><input type="checkbox">
+            <input placeholder="Название поля"><select><option selected disabled>Тип</option><option>integer</option><option>string</option><option>decimal</option><option>datetime</option><option>boolean</option></select><input type="checkbox"><input type="checkbox"><input type="checkbox">
         </div>
-        <div class="mapping"><h2>Связь REST ↔ БД</h2><p class="placeholder">Пока визуальный скелет. Дальше сюда подставим поля, распарсенные из REST и модели БД.</p>
-            <div class="mapping-row"><select><option>request.user_id</option><option>request.amount</option><option>response.transaction_id</option><option>response.balance</option></select><div class="arrow">→</div><select><option>transactions.user_id</option><option>transactions.amount</option><option>transactions.id</option><option>transactions.balance_after</option></select></div>
-            <div class="mapping-row"><select><option>request.amount</option><option>request.user_id</option><option>response.transaction_id</option><option>response.balance</option></select><div class="arrow">→</div><select><option>transactions.amount</option><option>transactions.user_id</option><option>transactions.id</option><option>transactions.balance_after</option></select></div>
-        </div>
+        <div class="mapping"><h2>Связь REST ↔ БД</h2><p class="placeholder">Mapping появится здесь после того, как мы научим конструктор разбирать заполненные REST и БД поля.</p></div>
     </section>
 </div>
 <script>
@@ -77,8 +68,13 @@
     }));
     document.getElementById('checkRest').addEventListener('click',()=>{
         const out=document.getElementById('restResult');
-        try{JSON.parse(document.getElementById('requestBody').value);JSON.parse(document.getElementById('responseBody').value);out.textContent='✓ Request и response — валидный JSON';}
-        catch(e){out.textContent='✗ JSON невалиден: '+e.message;}
+        const request=document.getElementById('requestBody').value.trim();
+        const response=document.getElementById('responseBody').value.trim();
+        try{
+            if(request) JSON.parse(request);
+            if(response) JSON.parse(response);
+            out.textContent='✓ Заполненные JSON-поля валидны';
+        } catch(e){out.textContent='✗ JSON невалиден: '+e.message;}
     });
 </script>
 </body>
