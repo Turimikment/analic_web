@@ -5,15 +5,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Конструктор системы</title>
     <style>
-        body{font-family:'Courier New',monospace;margin:0;background:#FFF3E0;color:#4E342E}.page{max-width:1100px;margin:40px auto;padding:0 20px}.top{display:flex;justify-content:space-between;align-items:center;gap:20px}.back{color:#E65100;text-decoration:none;font-weight:bold}.tabs{display:flex;gap:10px;margin:30px 0}.tab{border:0;border-radius:18px;padding:12px 22px;font:inherit;font-weight:bold;cursor:pointer;background:#FFE0B2;color:#6D4C41}.tab.active{background:#FF9800;color:white}.panel{display:none;background:white;border:2px dashed #FFB74D;border-radius:18px;padding:24px;box-shadow:0 4px 14px rgba(255,152,0,.15)}.panel.active{display:block}.row{display:grid;grid-template-columns:180px 1fr;gap:14px;align-items:center;margin:14px 0}input,select,textarea{box-sizing:border-box;width:100%;padding:11px;border:1px solid #FFCC80;border-radius:10px;font:inherit;background:#FFFDF9}textarea{min-height:150px;resize:vertical}.actions{display:flex;gap:10px;margin-top:18px}.btn{border:0;border-radius:16px;padding:10px 18px;background:#FF9800;color:white;font:inherit;font-weight:bold;cursor:pointer}.hint{background:#FFF8E1;border-radius:12px;padding:14px;margin-top:18px}.db-grid{display:grid;grid-template-columns:1.4fr 1fr .6fr .6fr .6fr;gap:8px;align-items:center}.db-grid strong{padding:8px}.placeholder{color:#8D6E63}.mapping{margin-top:26px;padding-top:20px;border-top:1px solid #FFE0B2}.mapping-row{display:grid;grid-template-columns:1fr 50px 1fr;gap:10px;align-items:center;margin:10px 0}.arrow{text-align:center;font-weight:bold;color:#F57C00}@media(max-width:700px){.row,.mapping-row{grid-template-columns:1fr}.db-grid{grid-template-columns:1fr}.arrow{transform:rotate(90deg)}}
+        body{font-family:'Courier New',monospace;margin:0;background:#FFF3E0;color:#4E342E}.page{max-width:1100px;margin:40px auto;padding:0 20px}.top{display:flex;justify-content:space-between;align-items:center;gap:20px}.back{color:#E65100;text-decoration:none;font-weight:bold}.tabs{display:flex;gap:10px;margin:30px 0;flex-wrap:wrap}.tab{border:0;border-radius:18px;padding:12px 22px;font:inherit;font-weight:bold;cursor:pointer;background:#FFE0B2;color:#6D4C41}.tab.active{background:#FF9800;color:white}.panel{display:none;background:white;border:2px dashed #FFB74D;border-radius:18px;padding:24px;box-shadow:0 4px 14px rgba(255,152,0,.15)}.panel.active{display:block}.row{display:grid;grid-template-columns:180px 1fr;gap:14px;align-items:center;margin:14px 0}input,select,textarea{box-sizing:border-box;width:100%;padding:11px;border:1px solid #FFCC80;border-radius:10px;font:inherit;background:#FFFDF9}textarea{min-height:150px;resize:vertical}.actions{display:flex;gap:10px;margin-top:18px}.btn{border:0;border-radius:16px;padding:10px 18px;background:#FF9800;color:white;font:inherit;font-weight:bold;cursor:pointer}.hint{background:#FFF8E1;border-radius:12px;padding:14px;margin-top:18px}.task{background:#FFF8E1;border-left:5px solid #FF9800;border-radius:12px;padding:18px;margin:14px 0}.task h3{margin-top:0;color:#E65100}.task li{margin:8px 0}.db-grid{display:grid;grid-template-columns:1.4fr 1fr .6fr .6fr .6fr;gap:8px;align-items:center}.db-grid strong{padding:8px}.placeholder{color:#8D6E63}.mapping{margin-top:26px;padding-top:20px;border-top:1px solid #FFE0B2}.mapping-row{display:grid;grid-template-columns:1fr 50px 1fr;gap:10px;align-items:center;margin:10px 0}.arrow{text-align:center;font-weight:bold;color:#F57C00}@media(max-width:700px){.row,.mapping-row{grid-template-columns:1fr}.db-grid{grid-template-columns:1fr}.arrow{transform:rotate(90deg)}}
     </style>
 </head>
 <body>
 <div class="page">
     <div class="top"><div><h1>🧱 Конструктор системы</h1><div class="placeholder">Черновой каркас: REST → БД → mapping полей</div></div><a class="back" href="/home">← В норку</a></div>
-    <div class="tabs"><button class="tab active" data-tab="rest">REST</button><button class="tab" data-tab="db">БД</button></div>
+    <div class="tabs"><button class="tab active" data-tab="task">📋 Задание</button><button class="tab" data-tab="rest">REST</button><button class="tab" data-tab="db">БД</button></div>
 
-    <section id="rest" class="panel active">
+    <section id="task" class="panel active">
+        <h2>📋 Задание: придумай CRUD</h2>
+        <div class="task">
+            <h3>Что нужно сделать</h3>
+            <p>Придумай простую сущность, с которой пользователь сможет выполнять CRUD-операции. Например: заметки, задачи, книги, товары или питомцы.</p>
+            <ol>
+                <li>Определи, какие данные будут храниться у сущности.</li>
+                <li>Придумай REST endpoint'ы для <b>Create, Read, Update, Delete</b>.</li>
+                <li>Опиши JSON для запросов и ответов.</li>
+                <li>Спроектируй таблицу БД, в которой будут храниться данные.</li>
+                <li>Свяжи поля REST с полями таблицы БД.</li>
+            </ol>
+        </div>
+        <div class="hint"><b>Пример:</b> если выбрал «Заметки», можно начать с <code>POST /api/v1/notes</code>, а в БД создать таблицу <code>notes</code>. Не копируй пример целиком — придумай свой вариант.</div>
+    </section>
+
+    <section id="rest" class="panel">
         <h2>REST endpoint</h2>
         <div class="row"><label>HTTP метод</label><select id="method"><option>GET</option><option selected>POST</option><option>PUT</option><option>PATCH</option><option>DELETE</option></select></div>
         <div class="row"><label>Endpoint</label><input id="endpoint" value="/api/v1/bonus" placeholder="/api/v1/users/{id}"></div>
