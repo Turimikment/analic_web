@@ -36,7 +36,6 @@ def _bot_move(board):
     if not free:
         return board
 
-    # Try to win, then block the player, then prefer center/corners.
     for symbol in ('O', 'X'):
         for cell in free:
             probe = list(board)
@@ -213,15 +212,20 @@ def make_move(user_id, game_id):
           required: [cell]
           properties:
             cell:
-              type: integer
-              minimum: 0
-              maximum: 8
-              example: 4
+              type: array
+              minItems: 2
+              maxItems: 2
+              items:
+                type: integer
+                minimum: 0
+                maximum: 2
+              example: [1, 1]
+              description: Координаты клетки [row, column], индексы от 0 до 2.
     responses:
       200:
         description: Ход принят; возвращается новое состояние партии после ответа сервера.
       400:
-        description: Некорректный JSON или номер клетки.
+        description: Некорректный JSON или координаты клетки.
       403:
         description: Партия принадлежит другому пользователю.
       404:
@@ -231,11 +235,21 @@ def make_move(user_id, game_id):
     """
     data = request.get_json(silent=True)
     if not isinstance(data, dict) or 'cell' not in data:
-        return jsonify(error='BAD_REQUEST', message='JSON body with integer field "cell" is required'), 400
+        return jsonify(error='BAD_REQUEST', message='JSON body with field "cell": [row, column] is required'), 400
 
     cell = data.get('cell')
-    if isinstance(cell, bool) or not isinstance(cell, int) or cell < 0 or cell > 8:
-        return jsonify(error='BAD_REQUEST', message='cell must be an integer from 0 to 8'), 400
+    if (
+        not isinstance(cell, list)
+        or len(cell) != 2
+        or any(isinstance(value, bool) or not isinstance(value, int) for value in cell)
+    ):
+        return jsonify(error='BAD_REQUEST', message='cell must be an array [row, column]'), 400
+
+    row_index, column_index = cell
+    if not (0 <= row_index <= 2 and 0 <= column_index <= 2):
+        return jsonify(error='BAD_REQUEST', message='row and column must be integers from 0 to 2'), 400
+
+    board_index = row_index * 3 + column_index
 
     conn = get_db_connection()
     try:
@@ -256,10 +270,10 @@ def make_move(user_id, game_id):
                 return jsonify(error='GAME_FINISHED', message='The game is already finished'), 409
 
             board = list(row[2])
-            if board[cell] != '-':
+            if board[board_index] != '-':
                 return jsonify(error='CELL_OCCUPIED', message='This cell is already occupied'), 409
 
-            board[cell] = 'X'
+            board[board_index] = 'X'
             status, winner, next_turn = _status(board)
             moves_count = row[6] + 1
 
