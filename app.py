@@ -52,6 +52,14 @@ def create_app():
     def integration_sandbox():
         sandbox_dir = os.path.join(app.root_path, 'integration-sandbox', 'ui')
         return send_from_directory(sandbox_dir, 'index.html')
+
+    # Черновой конструктор REST + БД. Держим изолированным статическим экраном,
+    # чтобы развитие тренажёра не затрагивало существующие API и БД.
+    @app.route('/system-designer')
+    @app.route('/system-designer/')
+    def system_designer():
+        designer_dir = os.path.join(app.root_path, 'system-designer')
+        return send_from_directory(designer_dir, 'index.html')
     
     # Инициализация Swagger
     swagger = Swagger(app, config=app.config['SWAGGER'])
