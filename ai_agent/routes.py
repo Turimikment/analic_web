@@ -66,9 +66,9 @@ def index():
     next_booking = db.get_next_booking_for_user(uid, today)
     task_id, task = _selected_task(booking)
 
-    active_agent = request.args.get('agent', 'business')
+    active_agent = request.args.get('agent', 'product')
     if active_agent not in AGENTS:
-        active_agent = 'business'
+        active_agent = 'product'
     chats = {a: db.get_messages(booking['id'], a) if booking else [] for a in AGENTS}
     spec = db.get_latest_spec(booking['id']) if booking else {'mermaid': '', 'api_spec': '', 'business_rules': ''}
     review = db.get_review(booking['id']) if booking else None
@@ -135,7 +135,7 @@ def ask():
     uid = session['user_id']
     booking = db.get_booking_for_user_on_date(uid, _today())
     task_id, task = _selected_task(booking)
-    agent = request.form.get('agent', 'business')
+    agent = request.form.get('agent', 'product')
     if agent not in AGENTS:
         return redirect(url_for('ai_agent.index', tab='chat', task=task_id, error='Неизвестный собеседник'))
     if not booking or booking['status'] == 'finished':
@@ -150,12 +150,12 @@ def ask():
     try:
         history = [{'role': m['role'], 'content': m['content']} for m in db.get_messages(booking['id'], agent)]
         role_context = {
-            'product': "Ты Product Manager. Отвечай только про цель, приоритет, scope и пользовательский результат. Технические детали отправляй уточнять к владельцам систем.",
+            'product': "Ты Оля, Product Manager. Задача появилась после дейлика. Знаешь продуктовую цель, пользовательский результат, приоритет и границы MVP. Не знаешь детали контрактов сервисов и не принимаешь решения за бизнес. Если вопрос не твой — коротко скажи, чья это зона.",
             'business': "",
-            'analyst': "Ты системный аналитик соседней команды Loyalty. Отвечай про существующие контракты, данные, интеграции и ограничения. Не принимай продуктовые решения за Product или бизнес.",
-            'security': "Ты специалист информационной безопасности. Отвечай только про данные, доступы, аудит, логирование и требования ИБ. Не проектируй фичу за аналитика.",
+            'analyst': "Ты Илья, системный аналитик соседней команды Loyalty. Ты основной технический стейкхолдер по Loyalty: знаешь контракты, события, данные, ограничения и актуальное состояние документации. Не принимай продуктовые решения. Если студент спрашивает реализацию своей команды — это к Максиму.",
+            'security': "Ты Сергей из ИБ. Отвечай про классификацию и передачу данных, доступы, секреты, аудит и безопасное логирование. Не выдумывай запреты ради запретов и не проектируй фичу за аналитика.",
             'developer': "",
-            'qa': "Ты QA своей команды. Отвечай про проверяемость, граничные и ошибочные сценарии. Не придумывай бизнес-правила."
+            'qa': "Ты Катя, QA своей команды. Смотри на решение с точки зрения проверяемости, граничных условий, повторов, таймаутов и восстановления. Не придумывай бизнес-правила."
         }
         base_prompt = task['business_prompt'] if agent in ('product','business') else task['developer_prompt']
         prompt = base_prompt + "\n\nДОПОЛНИТЕЛЬНАЯ РОЛЬ:\n" + role_context.get(agent, '')
@@ -208,6 +208,6 @@ def finish():
         )
         review = make_review(task['review_prompt'], 'Полная симуляция', [{'role': 'user', 'content': context}])
         db.finish_interview(session['user_id'], booking['id'], review)
-        return redirect(url_for('ai_agent.index', tab='chat', task=task_id, success='Симуляция завершена'))
+        return redirect(url_for('ai_agent.index', tab='chat', task=task_id, success='Задача передана на refinement'))
     except Exception as exc:
         return redirect(url_for('ai_agent.index', tab='chat', task=task_id, error=f'Не удалось завершить: {str(exc)[:180]}'))
