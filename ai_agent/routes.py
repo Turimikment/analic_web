@@ -149,8 +149,17 @@ def ask():
         return redirect(url_for('ai_agent.index', tab='chat', agent=agent, task=task_id, error='Лимит сообщений исчерпан'))
     try:
         history = [{'role': m['role'], 'content': m['content']} for m in db.get_messages(booking['id'], agent)]
-        prompt = task['business_prompt'] if agent == 'business' else task['developer_prompt']
-        if agent == 'developer':
+        role_context = {
+            'product': "Ты Product Manager. Отвечай только про цель, приоритет, scope и пользовательский результат. Технические детали отправляй уточнять к владельцам систем.",
+            'business': "",
+            'analyst': "Ты системный аналитик соседней команды Loyalty. Отвечай про существующие контракты, данные, интеграции и ограничения. Не принимай продуктовые решения за Product или бизнес.",
+            'security': "Ты специалист информационной безопасности. Отвечай только про данные, доступы, аудит, логирование и требования ИБ. Не проектируй фичу за аналитика.",
+            'developer': "",
+            'qa': "Ты QA своей команды. Отвечай про проверяемость, граничные и ошибочные сценарии. Не придумывай бизнес-правила."
+        }
+        base_prompt = task['business_prompt'] if agent in ('product','business') else task['developer_prompt']
+        prompt = base_prompt + "\n\nДОПОЛНИТЕЛЬНАЯ РОЛЬ:\n" + role_context.get(agent, '')
+        if agent in ('analyst','security','developer','qa'):
             spec = db.get_latest_spec(booking['id'])
             prompt += f"\n\nТекущая переданная спецификация аналитика:\nMERMAID:\n{spec['mermaid'] or '(не передана)'}\n\nAPI:\n{spec['api_spec'] or '(не передано)'}\n\nБизнес-правила:\n{spec['business_rules'] or '(не переданы)'}"
         answer = customer_answer(prompt, history, question)
@@ -175,7 +184,7 @@ def save_spec():
         if len(mermaid) + len(api_spec) + len(rules) > 15000:
             raise ValueError('Спецификация слишком большая')
         db.save_spec(session['user_id'], booking['id'], mermaid, api_spec, rules)
-        return redirect(url_for('ai_agent.index', tab='chat', agent='developer', task=task_id, success='Спецификация передана Максиму'))
+        return redirect(url_for('ai_agent.index', tab='chat', agent='developer', task=task_id, success='Страница Confluence сохранена'))
     except Exception as exc:
         return redirect(url_for('ai_agent.index', tab='chat', agent='developer', task=task_id, error=str(exc)))
 
