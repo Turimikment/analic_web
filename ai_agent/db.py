@@ -4,7 +4,7 @@ from utils.db_utils import get_db_connection
 
 SLOTS_PER_DAY = 2
 QUESTION_LIMIT = 24
-AGENT_IDS = ('business', 'developer')
+AGENT_IDS = ('product', 'business', 'analyst', 'security', 'developer', 'qa')
 
 
 def init_ai_agent_db():
