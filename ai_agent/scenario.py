@@ -134,5 +134,5 @@ REVIEW_PROMPT = '''
 7. Короткий вывод об уровне работы.
 '''.strip()
 
-INTRO = AGENTS['business']['intro']
+INTRO = AGENTS['product']['intro']
 SYSTEM_PROMPT = BUSINESS_PROMPT
